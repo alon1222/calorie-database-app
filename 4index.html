@@ -77,7 +77,26 @@ nav button{background:#fff;color:#606872}nav button.active{background:#18202a;co
 <button class="primary" onclick="saveProduct()">שמור מוצר</button><button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
 </div></div>
 
-<script src="https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js"></script>
+<script>
+(function(){
+  function load(src, fallback){
+    var s=document.createElement('script');
+    s.src=src;
+    s.onload=function(){ window.__zxingLoaded=true; };
+    s.onerror=function(){
+      if(fallback){
+        var f=document.createElement('script');
+        f.src=fallback;
+        f.onload=function(){ window.__zxingLoaded=true; };
+        document.head.appendChild(f);
+      }
+    };
+    document.head.appendChild(s);
+  }
+  load('https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
+       'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js');
+})();
+</script>
 <script>
 let scannerControls=null, scannerStream=null;
 async function openScanner(){
@@ -90,8 +109,16 @@ async function openScanner(){
     barcodeVideo.srcObject=scannerStream;
     await barcodeVideo.play();
     if(!window.ZXingBrowser){
-      scannerStatus.textContent='מנוע הסריקה לא נטען. רענן את הדף ונסה שוב.';
-      return;
+      scannerStatus.textContent='טוען את מנוע הסריקה...';
+      let tries=0;
+      while(!window.ZXingBrowser && tries<20){
+        await new Promise(r=>setTimeout(r,250));
+        tries++;
+      }
+      if(!window.ZXingBrowser){
+        scannerStatus.textContent='מנוע הסריקה לא נטען. בדוק חיבור לאינטרנט ורענן פעם אחת.';
+        return;
+      }
     }
     scannerStatus.textContent='כוון את הברקוד למרכז ולחץ על "צלם וחפש מוצר".';
   }catch(e){
@@ -102,29 +129,36 @@ async function openScanner(){
 async function captureBarcode(){
   const btn=document.getElementById('captureBarcodeBtn');
   if(!window.ZXingBrowser){
-    scannerStatus.textContent='מנוע הסריקה לא נטען. רענן את הדף ונסה שוב.';
+    scannerStatus.textContent='מנוע הסריקה עדיין לא נטען. בדוק חיבור לאינטרנט ורענן פעם אחת.';
     return;
   }
   if(!barcodeVideo.videoWidth){
     scannerStatus.textContent='המצלמה עדיין נטענת. נסה שוב בעוד רגע.';
     return;
   }
+
   btn.disabled=true;
   btn.textContent='🔎 מזהה ברקוד...';
-  scannerStatus.textContent='מעבד את התמונה...';
+  scannerStatus.textContent='מצלם ומזהה את הברקוד...';
+
   try{
     const canvas=document.createElement('canvas');
     canvas.width=barcodeVideo.videoWidth;
     canvas.height=barcodeVideo.videoHeight;
-    canvas.getContext('2d').drawImage(barcodeVideo,0,0,canvas.width,canvas.height);
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(barcodeVideo,0,0,canvas.width,canvas.height);
+
+    // Decode the captured frame using ZXing's supported image-URL API.
+    const imageData=canvas.toDataURL('image/jpeg',0.95);
     const reader=new ZXingBrowser.BrowserMultiFormatReader();
-    const result=await reader.decodeFromCanvas(canvas);
+    const result=await reader.decodeFromImageUrl(imageData);
     const code=result.getText();
+
     showBarcodeResult(code);
     stopScanner();
     await searchBarcode(code);
   }catch(e){
-    scannerStatus.textContent='לא זוהה ברקוד בתמונה. קרב את המצלמה לברקוד, ודא שהוא חד ונסה שוב.';
+    scannerStatus.textContent='לא זוהה ברקוד. החזק את הברקוד ישר, קרוב וחד מול המצלמה ונסה שוב.';
   }finally{
     btn.disabled=false;
     btn.textContent='📸 צלם וחפש מוצר';
