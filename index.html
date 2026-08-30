@@ -187,11 +187,13 @@ async function searchBarcode(code){
     const carbs=n['carbohydrates_100g'] ?? n.carbohydrates ?? 0;
     const fat=n['fat_100g'] ?? n.fat ?? 0;
     box.innerHTML='<div class="card"><b>'+((p.product_name||'מוצר ללא שם'))+'</b>'+
-      '<div class="muted" style="margin-top:6px">'+(p.brands||'')+'</div>'+
-      '<div style="margin-top:8px">🔥 '+(kcal!==''?kcal:'לא ידוע')+' קל׳ / 100 ג׳</div>'+
-      '<div class="muted">💪 חלבון '+protein+' · 🍞 פחמ׳ '+carbs+' · 🥑 שומן '+fat+'</div>'+
-      '<div class="muted" style="margin-top:6px">ברקוד: '+code+'</div>'+
-    window.foundProduct={
+  '<div class="muted" style="margin-top:6px">'+(p.brands||'')+'</div>'+
+  '<div style="margin-top:8px">🔥 '+(kcal!==''?kcal:'לא ידוע')+' קל׳ / 100 ג׳</div>'+
+  '<div class="muted">💪 חלבון '+protein+' · 🍞 פחמ׳ '+carbs+' · 🥑 שומן '+fat+'</div>'+
+  '<div class="muted" style="margin-top:6px">ברקוד: '+code+'</div>'+
+  '</div>';
+
+window.foundProduct={
   name:p.product_name||'',
   brand:p.brands||'',
   barcode:code,
@@ -202,8 +204,9 @@ async function searchBarcode(code){
   weight:0,
   source:'Open Food Facts'
 };
+
 box.innerHTML +=
-  '<button class="primary" style="margin-top:12px" onclick="addFoundProduct()">＋ הוסף למאגר</button></div>';
+  '<button class="primary" style="margin-top:12px" onclick="addFoundProduct()">＋ הוסף למאגר</button>';
   }catch(e){
     box.innerHTML='<div class="muted">החיפוש נכשל. בדוק חיבור לאינטרנט ונסה שוב.</div>';
   }
