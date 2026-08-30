@@ -191,30 +191,49 @@ async function searchBarcode(code){
       '<div style="margin-top:8px">🔥 '+(kcal!==''?kcal:'לא ידוע')+' קל׳ / 100 ג׳</div>'+
       '<div class="muted">💪 חלבון '+protein+' · 🍞 פחמ׳ '+carbs+' · 🥑 שומן '+fat+'</div>'+
       '<div class="muted" style="margin-top:6px">ברקוד: '+code+'</div>'+
-      '<button class="primary" style="margin-top:12px" onclick="addFoundProduct('+JSON.stringify(JSON.stringify({name:p.product_name||'',brand:p.brands||'',barcode:code,kcal:kcal||0,protein:protein||0,carbs:carbs||0,fat:fat||0,weight:0,source:'Open Food Facts'}))+')">＋ הוסף למאגר</button></div>';
+    window.foundProduct={
+  name:p.product_name||'',
+  brand:p.brands||'',
+  barcode:code,
+  kcal:kcal||0,
+  protein:protein||0,
+  carbs:carbs||0,
+  fat:fat||0,
+  weight:0,
+  source:'Open Food Facts'
+};
+box.innerHTML +=
+  '<button class="primary" style="margin-top:12px" onclick="addFoundProduct()">＋ הוסף למאגר</button></div>';
   }catch(e){
     box.innerHTML='<div class="muted">החיפוש נכשל. בדוק חיבור לאינטרנט ונסה שוב.</div>';
   }
 }
-function addFoundProduct(serialized){
+function addFoundProduct(){
   try{
-    const p=JSON.parse(serialized);
-    if(!p.name || Number(p.kcal)<=0){
+    const p=window.foundProduct;
+
+    if(!p || !p.name || Number(p.kcal)<=0){
       alert('לא נמצאו נתוני תזונה מספיקים להוספת המוצר.');
       return;
     }
+
     if(db.products.some(x=>x.barcode && x.barcode===p.barcode)){
       closeScanner();
       show('products');
       alert('המוצר כבר נמצא במאגר.');
       return;
     }
+
     p.updated=new Date().toISOString().slice(0,10);
     db.products.push(p);
+
     save();
     renderProducts();
     closeScanner();
     show('products');
+
+    window.foundProduct=null;
+
     alert('המוצר נוסף למאגר בהצלחה.');
   }catch(e){
     console.error(e);
