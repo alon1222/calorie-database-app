@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>מאגר קלוריות</title>
+<!-- EDIT_DELETE_VERSION_3 -->
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#18202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.app{max-width:560px;margin:auto;min-height:100vh;background:#fff}
+header{padding:20px 18px 14px;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff;z-index:5}
+h1{margin:0;font-size:25px}.date{color:#68707a;margin-top:5px;font-size:14px}
+main{padding:16px}.card{background:#f7f8fa;border:1px solid #e4e7eb;border-radius:18px;padding:16px;margin-bottom:14px}
+.kcal{font-size:40px;font-weight:800}.muted{color:#68707a}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.macro{background:#fff;border:1px solid #e2e5e9;border-radius:12px;padding:10px;text-align:center}.macro b{display:block;font-size:18px}
+.progress{height:9px;background:#e4e7eb;border-radius:20px;overflow:hidden;margin:10px 0}.progress span{display:block;height:100%;background:#18202a;width:0}
+button,input{font:inherit}button{border:0;border-radius:12px;padding:12px 14px;cursor:pointer}.primary{width:100%;background:#18202a;color:white;font-weight:700}.secondary{background:#eef0f3}
+input{width:100%;padding:13px;border:1px solid #d7dbe0;border-radius:12px;margin-bottom:10px}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:#fff;border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(3,1fr);padding:8px}
+nav button{background:#fff;color:#606872}nav button.active{background:#18202a;color:#fff}
+.item{display:flex;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #e8eaed}.item:last-child{border-bottom:0}
+.badge{font-size:12px;background:#e9edf1;padding:4px 8px;border-radius:20px}
+.modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end;overflow:auto}.modal.open{display:flex}.sheet{background:#fff;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px;position:relative}
+.spacer{height:75px}.hidden{display:none}
+.product-actions{display:flex;gap:8px;margin-top:10px}.product-actions button{flex:1}
+.danger{background:#fce8e8;color:#9b1c1c}
+</style>
+</head>
+<body>
+<div class="app">
+<header><h1>מאגר קלוריות</h1><div class="date" id="date"></div></header>
+<main>
+<section id="today">
+<div class="card"><div class="muted">נצרכו היום</div><div><span class="kcal" id="kcal">0</span> קלוריות</div><div class="progress"><span id="kbar"></span></div><div class="muted"><span id="kleft">2,000</span> קלוריות נותרו</div></div>
+<div class="grid">
+<div class="macro"><span>💪 חלבון</span><b id="protein">0</b><small>/ 150 ג׳</small></div>
+<div class="macro"><span>🍞 פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
+<div class="macro"><span>🥑 שומן</span><b id="fat">0</b><small>/ 67 ג׳</small></div>
+</div>
+<div class="card" style="margin-top:14px"><button class="primary" onclick="openAdd()">＋ הוסף צריכה</button></div>
+<div class="card"><b>צריכה היום</b><div id="intake"></div></div>
+</section>
+
+<section id="products" class="hidden">
+<div class="card"><b>📦 <span id="productCount">0</span> מוצרים במאגר</b></div>
+<div class="card"><b>חיפוש במאגר</b><input id="search" placeholder="חפש מוצר..." oninput="renderProducts()"><button class="primary" onclick="openScanner()">📷 סרוק ברקוד</button><button class="secondary" style="width:100%;margin-top:8px" onclick="openProduct()">＋ הוסף מוצר</button></div>
+<div class="card" id="productList"></div>
+</section>
+
+<section id="month" class="hidden">
+<div class="card"><b>חודש</b><div class="muted" style="margin-top:6px">סיכום הצריכה לפי ימים</div><div id="monthList"></div></div>
+</section>
+<div class="spacer"></div>
+</main>
+<nav>
+<button id="n1" class="active" onclick="show('today')">היום</button>
+<button id="n2" onclick="show('products')">מאגר</button>
+<button id="n3" onclick="show('month')">חודש</button>
+</nav>
+</div>
+
+<div class="modal" id="scannerModal"><div class="sheet">
+<h2>סריקת ברקוד</h2>
+<div id="scannerStatus" class="muted" style="margin-bottom:10px">מכין את המצלמה...</div>
+<video id="barcodeVideo" playsinline muted style="width:100%;border-radius:16px;background:#111;max-height:55vh;object-fit:cover"></video><button id="captureBarcodeBtn" class="primary" style="width:100%;margin-top:12px" onclick="captureBarcode()">📸 צלם וחפש מוצר</button>
+<div id="barcodeResult" class="card" style="display:none;margin-top:12px"></div>
+<button class="secondary" style="width:100%;margin-top:8px" onclick="closeScanner()">✕ ביטול / סגור</button>
+</div></div>
+
+<div class="modal" id="addModal"><div class="sheet">
+<h2 id="addModalTitle">הוספת צריכה</h2><input id="foodSearch" placeholder="שם מוצר / מזון" oninput="suggest()"><div id="suggestions"></div>
+<select id="unitSelect" aria-label="יחידת מדידה"
+style="width:100%;padding:13px;border:1px solid #d7dbe0;border-radius:12px;margin-bottom:10px;display:block"
+onchange="updateIntakePreview()">
+<option value="g">גרם</option>
+<option value="ml">מ״ל</option>
+<option value="unit">יחידה</option>
+<option value="tsp">כפית</option>
+<option value="tbsp">כף</option>
+</select>
+<input id="grams" type="number" min="0" step="any" placeholder="כמות" oninput="updateIntakePreview()">
+<div id="intakePreview" class="card" style="display:none;margin-top:4px"></div>
+<button class="primary" id="addIntakeBtn" onclick="addIntake()">הוסף לצריכה</button><button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
+</div></div>
+
+<div class="modal" id="productModal"><div class="sheet">
+<h2 id="productModalTitle">הוספת מוצר למאגר</h2>
+<input id="pname" placeholder="שם המוצר"><input id="pbrand" placeholder="מותג"><input id="pbarcode" placeholder="ברקוד">
+<input id="pweight" type="number" placeholder="משקל האריזה (גרם)"><input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם">
+<input id="pprotein" type="number" placeholder="חלבון ל-100 גרם"><input id="pcarbs" type="number" placeholder="פחמימות ל-100 גרם"><input id="pfat" type="number" placeholder="שומן ל-100 גרם">
+<div class="card" style="margin-top:4px">
+<b>המרות ליחידות</b>
+<div class="muted" style="font-size:13px;margin:5px 0 10px">מלא רק כשידוע. אין צורך לנחש.</div>
+<input id="punitg" type="number" min="0" step="any" placeholder="משקל יחידה אחת (גרם)">
+<input id="ptspg" type="number" min="0" step="any" placeholder="משקל כפית אחת (גרם)">
+<input id="ptbspg" type="number" min="0" step="any" placeholder="משקל כף אחת (גרם)">
+<input id="pkcalml" type="number" min="0" step="any" placeholder="קלוריות ל-100 מ״ל">
+<input id="pproteinml" type="number" min="0" step="any" placeholder="חלבון ל-100 מ״ל">
+<input id="pcarbsml" type="number" min="0" step="any" placeholder="פחמימות ל-100 מ״ל">
+<input id="pfatml" type="number" min="0" step="any" placeholder="שומן ל-100 מ״ל">
+</div>
+
+<button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר</button><button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
+</div></div>
+
+<script>
+(function(){
+  function load(src, fallback){
+    var s=document.createElement('script');
+    s.src=src;
+    s.onload=function(){ window.__zxingLoaded=true; };
+    s.onerror=function(){
+      if(fallback){
+        var f=document.createElement('script');
+        f.src=fallback;
+        f.onload=function(){ window.__zxingLoaded=true; };
+        document.head.appendChild(f);
+      }
+    };
+    document.head.appendChild(s);
+  }
+  load('https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
+       'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js');
+})();
+</script>
+<script>
+let scannerControls=null, scannerStream=null;
+async function openScanner(){
+  lockPageScroll();
+  scannerModal.classList.add('open');
+  scannerStatus.textContent='מכין את המצלמה...';
+  barcodeResult.style.display='none';
+  try{
+    if(!navigator.mediaDevices?.getUserMedia) throw new Error('camera unavailable');
+    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    barcodeVideo.srcObject=scannerStream;
+    await barcodeVideo.play();
+    if(!window.ZXingBrowser){
+      scannerStatus.textContent='טוען את מנוע הסריקה...';
+      let tries=0;
+      while(!window.ZXingBrowser && tries<20){
+        await new Promise(r=>setTimeout(r,250));
+        tries++;
+      }
+      if(!window.ZXingBrowser){
+        scannerStatus.textContent='מנוע הסריקה לא נטען. בדוק חיבור לאינטרנט ורענן פעם אחת.';
+        return;
+      }
+    }
+    scannerStatus.textContent='כוון את הברקוד למרכז ולחץ על "צלם וחפש מוצר".';
+  }catch(e){
+    scannerStatus.textContent='לא ניתן לפתוח את המצלמה. ודא שהאתר ב-HTTPS ואשר גישה למצלמה.';
+  }
+}
+
+async function captureBarcode(){
+  const btn=document.getElementById('captureBarcodeBtn');
+  if(!window.ZXingBrowser){
+    scannerStatus.textContent='מנוע הסריקה עדיין לא נטען. בדוק חיבור לאינטרנט ורענן פעם אחת.';
+    return;
+  }
+  if(!barcodeVideo.videoWidth){
+    scannerStatus.textContent='המצלמה עדיין נטענת. נסה שוב בעוד רגע.';
+    return;
+  }
+
+  btn.disabled=true;
+  btn.textContent='🔎 מזהה ברקוד...';
+  scannerStatus.textContent='מצלם ומזהה את הברקוד...';
+
+  try{
+    const canvas=document.createElement('canvas');
+    canvas.width=barcodeVideo.videoWidth;
+    canvas.height=barcodeVideo.videoHeight;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(barcodeVideo,0,0,canvas.width,canvas.height);
+
+    const imageData=canvas.toDataURL('image/jpeg',0.95);
+    const reader=new ZXingBrowser.BrowserMultiFormatReader();
+    const result=await reader.decodeFromImageUrl(imageData);
+    const code=result.getText();
+
+    showBarcodeResult(code);
+    stopScanner();
+    await searchBarcode(code);
+  }catch(e){
+    scannerStatus.textContent='לא זוהה ברקוד. החזק את הברקוד ישר, קרוב וחד מול המצלמה ונסה שוב.'; barcodeResult.style.display='block'; barcodeResult.innerHTML='<button class="secondary" style="width:100%" onclick="captureBarcode()">📸 נסה לצלם שוב</button>';
+  }finally{
+    btn.disabled=false;
+    btn.textContent='📸 צלם וחפש מוצר';
+  }
+}
+function showBarcodeResult(code){
+  barcodeResult.style.display='block';
+  barcodeResult.innerHTML='<b>ברקוד זוהה</b><div style="font-size:22px;margin-top:6px;word-break:break-all">'+code+'</div><div id="barcodeSearchResult" style="margin-top:12px"></div>';
+  scannerStatus.textContent='הברקוד נקרא בהצלחה. מחפש מוצר...';
+}
+async function searchBarcode(code){
+  const box=document.getElementById('barcodeSearchResult');
+  box.innerHTML='<div class="muted">מחפש את המוצר לפי הברקוד...</div>';
+  try{
+    const url='https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'?fields=code,product_name,brands,quantity,nutriments';
+    const res=await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data.status!==1 || !data.product){
+      box.innerHTML='<div class="muted">לא נמצא מוצר עבור הברקוד הזה.</div>';
+      return;
+    }
+    const p=data.product, n=p.nutriments||{};
+    const kcal=n['energy-kcal_100g'] ?? n['energy-kcal'] ?? '';
+    const protein=n['proteins_100g'] ?? n.proteins ?? 0;
+    const carbs=n['carbohydrates_100g'] ?? n.carbohydrates ?? 0;
+    const fat=n['fat_100g'] ?? n.fat ?? 0;
+    box.innerHTML='<div class="card"><b>'+((p.product_name||'מוצר ללא שם'))+'</b>'+
+  '<div class="muted" style="margin-top:6px">'+(p.brands||'')+'</div>'+
+  '<div style="margin-top:8px">🔥 '+(kcal!==''?kcal:'לא ידוע')+' קל׳ / 100 ג׳</div>'+
+  '<div class="muted">💪 חלבון '+protein+' · 🍞 פחמ׳ '+carbs+' · 🥑 שומן '+fat+'</div>'+
+  '<div class="muted" style="margin-top:6px">ברקוד: '+code+'</div>'+
+  '</div>';
+
+window.foundProduct={
+  name:p.product_name||'',
+  brand:p.brands||'',
+  barcode:code,
+  kcal:kcal||0,
+  protein:protein||0,
+  carbs:carbs||0,
+  fat:fat||0,
+  weight:0,
+  source:'Open Food Facts'
+};
+
+box.innerHTML +=
+  '<button class="primary" style="margin-top:12px" onclick="addFoundProduct()">＋ הוסף למאגר</button>';
+  }catch(e){
+    box.innerHTML='<div class="muted">החיפוש נכשל. בדוק חיבור לאינטרנט ונסה שוב.</div>';
+  }
+}
+function addFoundProduct(){
+  try{
+    const p=window.foundProduct;
+
+    if(!p || !p.name || Number(p.kcal)<=0){
+      alert('לא נמצאו נתוני תזונה מספיקים להוספת המוצר.');
+      return;
+    }
+
+    const duplicateBarcode=p.barcode && db.products.findIndex(x=>
+      x.barcode && String(x.barcode)===String(p.barcode)
+    );
+
+    const duplicateName=db.products.findIndex(x=>
+      String(x.name||'').trim().toLowerCase()===String(p.name||'').trim().toLowerCase()
+    );
+
+    if(duplicateBarcode>=0){
+      closeScanner();
+      show('products');
+      alert('שגיאה: מוצר עם ברקוד זה כבר קיים במאגר.');
+      return;
+    }
+
+    if(duplicateName>=0){
+      closeScanner();
+      show('products');
+      alert('שגיאה: מוצר בשם זה כבר קיים במאגר.');
+      return;
+    }
+
+    p.updated=new Date().toISOString().slice(0,10);
+    db.products.push(p);
+
+    save();
+    renderProducts();
+    closeScanner();
+    show('products');
+
+    window.foundProduct=null;
+
+    alert('המוצר נוסף למאגר בהצלחה.');
+  }catch(e){
+    console.error(e);
+    alert('לא ניתן להוסיף את המוצר כרגע.');
+  }
+}
+function stopScanner(){
+  try{scannerControls?.stop();}catch(e){}
+  scannerControls=null;
+  scannerStream?.getTracks().forEach(t=>t.stop());
+  scannerStream=null;
+  if(barcodeVideo) barcodeVideo.srcObject=null;
+}
+function closeScanner(){stopScanner();scannerModal.classList.remove('open');if(!document.querySelector('.modal.open'))unlockPageScroll();}
+</script>
+<script>
+const KEY='calorie_db_v1';
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{products:[{"name":"Kinder Délice Cacao","brand":"Kinder / Ferrero","barcode":"8000500267035","weight":0,"kcal":452.0,"protein":5.5,"carbs":58.3,"fat":22.8,"source":"Open Food Facts (סריקת ברקוד)","updated":"30/08/2026"},{"name":"פסק זמן קלאסי חטיף שוקולד חלב במילוי ופל וקרם אגוזים","brand":"עלית","barcode":"72991008","weight":0,"kcal":552.0,"protein":8.2,"carbs":52.0,"fat":34.0,"source":"מקורות חיצוניים; נתון תואם למשקל האריזה","updated":"24/08/2026"},{"name":"תה ויסוצקי רגיל","brand":"ויסוצקי","barcode":"","weight":0,"kcal":0.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"נתון תזונתי סטנדרטי","updated":"24/08/2026"},{"name":"סוכר לבן","brand":"כללי","barcode":"","weight":0,"kcal":400.0,"protein":0.0,"carbs":100.0,"fat":0.0,"source":"נתון תזונתי סטנדרטי","updated":"24/08/2026"},{"name":"לחם לבן פרוס אנג'ל","brand":"אנג'ל","barcode":"","weight":0,"kcal":240.0,"protein":9.2,"carbs":45.1,"fat":1.7,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"ביצה","brand":"כללי","barcode":"","weight":0,"kcal":143.0,"protein":12.56,"carbs":0.72,"fat":9.51,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"שמן","brand":"כללי","barcode":"","weight":0,"kcal":884.0,"protein":0.0,"carbs":0.0,"fat":100.0,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"תפוח","brand":"כללי","barcode":"","weight":0,"kcal":52.0,"protein":0.26,"carbs":13.81,"fat":0.17,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"ספרייט זירו","brand":"קוקה-קולה","barcode":"7290013585233","weight":0,"kcal":1.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"טבלת הערכים שעל האריזה + אימות ברקוד במקור חיצוני","updated":"24/08/2026"},{"name":"חזה עוף מוכן","brand":"כללי","barcode":"","weight":0,"kcal":165.0,"protein":31.0,"carbs":0.0,"fat":3.6,"source":"USDA, ערך סטנדרטי לחזה עוף מבושל","updated":"24/08/2026"},{"name":"אורז בסמטי מבושל","brand":"כללי","barcode":"","weight":0,"kcal":118.0,"protein":2.9,"carbs":26.2,"fat":0.2,"source":"USDA, אורז לבן ארוך מבושל","updated":"24/08/2026"},{"name":"קוקה-קולה זירו","brand":"קוקה-קולה","barcode":"7290110115869","weight":0,"kcal":0.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"טבלת הערכים שעל האריזה (המקור המועדף)","updated":"24/08/2026"},{"name":"דנונה PRO 13 מעדן חלב בטעם שוקולד","brand":"דנונה / שטראוס","barcode":"7290110557102","weight":0,"kcal":99.0,"protein":8.7,"carbs":11.4,"fat":1.8,"source":"טבלת הערכים שעל האריזה + אימות ברקוד חיצוני","updated":"24/08/2026"},{"name":"דנונה PRO 11 מעדן חלב בטעם וניל","brand":"דנונה / שטראוס","barcode":"7290110571382","weight":0,"kcal":98.0,"protein":7.7,"carbs":12.1,"fat":2.0,"source":"טבלת הערכים שעל האריזה (המקור המועדף); זיהוי ברקוד אומת חיצונית","updated":"24/08/2026"},{"name":"קוטג׳ תנובה 5%","brand":"תנובה","barcode":"7290004127329","weight":0,"kcal":99.0,"protein":11.0,"carbs":1.5,"fat":5.0,"source":"טבלת הערכים שעל האריזה (מקור מועדף); זיהוי המוצר אומת באתר תנובה","updated":"24/08/2026"},{"name":"יוגורט יוטבתה 0% שומן","brand":"יוטבתה","barcode":"7290004124469","weight":0,"kcal":44.0,"protein":5.5,"carbs":4.5,"fat":0.0,"source":"טבלת הערכים שעל האריזה (מקור מועדף)","updated":"24/08/2026"},{"name":"רוטב צ׳ילי מתוק","brand":"מאסטר שף","barcode":"7290013358530","weight":0,"kcal":140.0,"protein":0.0,"carbs":35.0,"fat":0.0,"source":"טבלת הערכים שעל האריזה + אימות ברקוד במקור חיצוני","updated":"24/08/2026"},{"name":"סימפוניה גבינת במרקם שמנת 5% בטעם טבעי","brand":"סימפוניה / שטראוס","barcode":"7290004584351","weight":0,"kcal":108.0,"protein":10.0,"carbs":5.0,"fat":5.0,"source":"טבלת הערכים שעל האריזה + אימות ברקוד במקור חיצוני","updated":"24/08/2026"},{"name":"רוטב סויה קלאסי","brand":"אסם","barcode":"7290118425526","weight":0,"kcal":36.0,"protein":2.8,"carbs":6.1,"fat":0.0,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת מול מקור חיצוני","updated":"24/08/2026"},{"name":"חלב טרי 1%","brand":"תנובה","barcode":"7290000042435","weight":0,"kcal":43.0,"protein":3.4,"carbs":5.1,"fat":1.0,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"חלב טרי 3%","brand":"תנובה","barcode":"7290004131074","weight":0,"kcal":60.0,"protein":3.3,"carbs":4.95,"fat":3.0,"source":"טבלת הערכים התזונתיים שעל האריזה; ברקוד אומת מול אתר תנובה","updated":"24/08/2026"},{"name":"סילאן טבעי 100% תמרים","brand":"שקדיה","barcode":"7290113190863","weight":0,"kcal":292.0,"protein":1.3,"carbs":71.0,"fat":0.6,"source":"טבלת הערכים התזונתיים שעל האריזה; משקל האריזה אומת ממקורות חיצוניים לפי הברקוד","updated":"24/08/2026"},{"name":"ממרח שוקולד חלבי","brand":"השחר העולה","barcode":"7290000416021","weight":0,"kcal":504.0,"protein":3.57,"carbs":65.0,"fat":25.5,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי ברקוד אומת מול מקורות חיצוניים","updated":"24/08/2026"},{"name":"מעדן חלב GO בטעם שוקולד 12 ג׳ חלבון","brand":"תנובה GO","barcode":"7290110329136","weight":0,"kcal":107.0,"protein":10.0,"carbs":12.0,"fat":2.0,"source":"טבלת הערכים התזונתיים שעל האריזה + אימות ברקוד באתר תנובה","updated":"24/08/2026"},{"name":"גבינה לבנה 5% שומן","brand":"תנובה","barcode":"7290000048185","weight":0,"kcal":98.0,"protein":9.0,"carbs":4.3,"fat":5.0,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"פסטרמה הודו גתים - דלת שומן","brand":"טירת צבי","barcode":"7290000364292","weight":0,"kcal":89.0,"protein":16.0,"carbs":4.0,"fat":1.0,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"רוטב טריאקי","brand":"טעמי אסיה","barcode":"7290011966888","weight":0,"kcal":163.0,"protein":1.2,"carbs":39.5,"fat":1.3,"source":"טבלת הערכים התזונתיים שעל האריזה; הושווה למקור חיצוני","updated":"24/08/2026"},{"name":"פרו – משקה חלב עם בננה ודגנים מלאים","brand":"יטבתה פרו / שטראוס","barcode":"7290112343420","weight":0,"kcal":70.0,"protein":5.7,"carbs":7.8,"fat":1.7,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת במקור חיצוני","updated":"24/08/2026"},{"name":"פרו 25 משקה קפה עם חלבון חלב 1.5%","brand":"יטבתה / שטראוס","barcode":"7290107954976","weight":0,"kcal":70.0,"protein":7.2,"carbs":5.1,"fat":1.5,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת במקורות חיצוניים","updated":"24/08/2026"},{"name":"ממרח לייט הלמנס – ממרח מופחת קלוריות","brand":"הלמנס","barcode":"7290000120874","weight":0,"kcal":240.0,"protein":0.7,"carbs":6.9,"fat":23.4,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת במקור חיצוני","updated":"24/08/2026"},{"name":"קטשופ 50% פחות סוכר ונתרן","brand":"היינץ","barcode":"8715700124964","weight":0,"kcal":64.0,"protein":1.4,"carbs":11.9,"fat":0.0,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי ברקוד ומוצר אומתו במקור חיצוני","updated":"24/08/2026"},{"name":"ערגליות שוקו","brand":"אסם","barcode":"7290008775816","weight":0,"kcal":421.0,"protein":4.5,"carbs":71.0,"fat":13.2,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"תנובה / גלבוע","brand":"200 גרם","barcode":"גבינה צהובה גלבוע לייט 5% שומן, פרוסות","weight":177.0,"kcal":354.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"25/08/2026","updated":"177 קלוריות ל-100 גרם; אריזה 200 גרם = 354 קלוריות."},{"name":"חלי ממן","brand":"700 גרם","barcode":"לחם אחיד פלוס כוסמין מרובע","weight":205.0,"kcal":1435.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"25/08/2026","updated":"49 קלוריות לפרוסה. 4 פרוסות = 196 קלוריות. 700 גרם × 205 קק״ל ל-100 גרם = 1,435 קק״ל לאריזה."},{"name":"מקופלת","brand":"עלית","barcode":"72917589","weight":0,"kcal":534.0,"protein":6.5,"carbs":58.0,"fat":30.0,"source":"מקור חיצוני — FoodFact; ברקוד אומת לפי CHP","updated":"28/08/2026"},{"name":"רמזור","brand":"פלדמן","barcode":"7290101105145","weight":0,"kcal":77.0,"protein":0.0,"carbs":19.2,"fat":0.0,"source":"נתוני האריזה שבתמונה","updated":"28/08/2026"},{"name":"ספגטי מס' 8","brand":"אסם","barcode":"7290000608808","weight":0,"kcal":351.0,"protein":11.0,"carbs":71.0,"fat":1.9,"source":"טבלת הערכים שעל האריזה","updated":"30/08/2026"}],intake:{}};
+
+const EXCEL_PRODUCTS_V63=[{"name":"Kinder Délice Cacao","brand":"Kinder / Ferrero","barcode":"8000500267035","weight":0,"kcal":452.0,"protein":5.5,"carbs":58.3,"fat":22.8,"source":"Open Food Facts (סריקת ברקוד)","updated":"30/08/2026"},{"name":"פסק זמן קלאסי חטיף שוקולד חלב במילוי ופל וקרם אגוזים","brand":"עלית","barcode":"72991008","weight":0,"kcal":552.0,"protein":8.2,"carbs":52.0,"fat":34.0,"source":"מקורות חיצוניים; נתון תואם למשקל האריזה","updated":"24/08/2026"},{"name":"תה ויסוצקי רגיל","brand":"ויסוצקי","barcode":"","weight":0,"kcal":0.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"נתון תזונתי סטנדרטי","updated":"24/08/2026"},{"name":"סוכר לבן","brand":"כללי","barcode":"","weight":0,"kcal":400.0,"protein":0.0,"carbs":100.0,"fat":0.0,"source":"נתון תזונתי סטנדרטי","updated":"24/08/2026"},{"name":"לחם לבן פרוס אנג'ל","brand":"אנג'ל","barcode":"","weight":0,"kcal":240.0,"protein":9.2,"carbs":45.1,"fat":1.7,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"ביצה","brand":"כללי","barcode":"","weight":0,"kcal":143.0,"protein":12.56,"carbs":0.72,"fat":9.51,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"שמן","brand":"כללי","barcode":"","weight":0,"kcal":884.0,"protein":0.0,"carbs":0.0,"fat":100.0,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"תפוח","brand":"כללי","barcode":"","weight":0,"kcal":52.0,"protein":0.26,"carbs":13.81,"fat":0.17,"source":"נתון תזונתי סטנדרטי/הערכה לפי יחידה","updated":"24/08/2026"},{"name":"ספרייט זירו","brand":"קוקה-קולה","barcode":"7290013585233","weight":0,"kcal":1.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"טבלת הערכים שעל האריזה + אימות ברקוד במקור חיצוני","updated":"24/08/2026"},{"name":"חזה עוף מוכן","brand":"כללי","barcode":"","weight":0,"kcal":165.0,"protein":31.0,"carbs":0.0,"fat":3.6,"source":"USDA, ערך סטנדרטי לחזה עוף מבושל","updated":"24/08/2026"},{"name":"אורז בסמטי מבושל","brand":"כללי","barcode":"","weight":0,"kcal":118.0,"protein":2.9,"carbs":26.2,"fat":0.2,"source":"USDA, אורז לבן ארוך מבושל","updated":"24/08/2026"},{"name":"קוקה-קולה זירו","brand":"קוקה-קולה","barcode":"7290110115869","weight":0,"kcal":0.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"טבלת הערכים שעל האריזה (המקור המועדף)","updated":"24/08/2026"},{"name":"דנונה PRO 13 מעדן חלב בטעם שוקולד","brand":"דנונה / שטראוס","barcode":"7290110557102","weight":0,"kcal":99.0,"protein":8.7,"carbs":11.4,"fat":1.8,"source":"טבלת הערכים שעל האריזה + אימות ברקוד חיצוני","updated":"24/08/2026"},{"name":"דנונה PRO 11 מעדן חלב בטעם וניל","brand":"דנונה / שטראוס","barcode":"7290110571382","weight":0,"kcal":98.0,"protein":7.7,"carbs":12.1,"fat":2.0,"source":"טבלת הערכים שעל האריזה (המקור המועדף); זיהוי ברקוד אומת חיצונית","updated":"24/08/2026"},{"name":"קוטג׳ תנובה 5%","brand":"תנובה","barcode":"7290004127329","weight":0,"kcal":99.0,"protein":11.0,"carbs":1.5,"fat":5.0,"source":"טבלת הערכים שעל האריזה (מקור מועדף); זיהוי המוצר אומת באתר תנובה","updated":"24/08/2026"},{"name":"יוגורט יוטבתה 0% שומן","brand":"יוטבתה","barcode":"7290004124469","weight":0,"kcal":44.0,"protein":5.5,"carbs":4.5,"fat":0.0,"source":"טבלת הערכים שעל האריזה (מקור מועדף)","updated":"24/08/2026"},{"name":"רוטב צ׳ילי מתוק","brand":"מאסטר שף","barcode":"7290013358530","weight":0,"kcal":140.0,"protein":0.0,"carbs":35.0,"fat":0.0,"source":"טבלת הערכים שעל האריזה + אימות ברקוד במקור חיצוני","updated":"24/08/2026"},{"name":"סימפוניה גבינת במרקם שמנת 5% בטעם טבעי","brand":"סימפוניה / שטראוס","barcode":"7290004584351","weight":0,"kcal":108.0,"protein":10.0,"carbs":5.0,"fat":5.0,"source":"טבלת הערכים שעל האריזה + אימות ברקוד במקור חיצוני","updated":"24/08/2026"},{"name":"רוטב סויה קלאסי","brand":"אסם","barcode":"7290118425526","weight":0,"kcal":36.0,"protein":2.8,"carbs":6.1,"fat":0.0,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת מול מקור חיצוני","updated":"24/08/2026"},{"name":"חלב טרי 1%","brand":"תנובה","barcode":"7290000042435","weight":0,"kcal":43.0,"protein":3.4,"carbs":5.1,"fat":1.0,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"חלב טרי 3%","brand":"תנובה","barcode":"7290004131074","weight":0,"kcal":60.0,"protein":3.3,"carbs":4.95,"fat":3.0,"source":"טבלת הערכים התזונתיים שעל האריזה; ברקוד אומת מול אתר תנובה","updated":"24/08/2026"},{"name":"סילאן טבעי 100% תמרים","brand":"שקדיה","barcode":"7290113190863","weight":0,"kcal":292.0,"protein":1.3,"carbs":71.0,"fat":0.6,"source":"טבלת הערכים התזונתיים שעל האריזה; משקל האריזה אומת ממקורות חיצוניים לפי הברקוד","updated":"24/08/2026"},{"name":"ממרח שוקולד חלבי","brand":"השחר העולה","barcode":"7290000416021","weight":0,"kcal":504.0,"protein":3.57,"carbs":65.0,"fat":25.5,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי ברקוד אומת מול מקורות חיצוניים","updated":"24/08/2026"},{"name":"מעדן חלב GO בטעם שוקולד 12 ג׳ חלבון","brand":"תנובה GO","barcode":"7290110329136","weight":0,"kcal":107.0,"protein":10.0,"carbs":12.0,"fat":2.0,"source":"טבלת הערכים התזונתיים שעל האריזה + אימות ברקוד באתר תנובה","updated":"24/08/2026"},{"name":"גבינה לבנה 5% שומן","brand":"תנובה","barcode":"7290000048185","weight":0,"kcal":98.0,"protein":9.0,"carbs":4.3,"fat":5.0,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"פסטרמה הודו גתים - דלת שומן","brand":"טירת צבי","barcode":"7290000364292","weight":0,"kcal":89.0,"protein":16.0,"carbs":4.0,"fat":1.0,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"רוטב טריאקי","brand":"טעמי אסיה","barcode":"7290011966888","weight":0,"kcal":163.0,"protein":1.2,"carbs":39.5,"fat":1.3,"source":"טבלת הערכים התזונתיים שעל האריזה; הושווה למקור חיצוני","updated":"24/08/2026"},{"name":"פרו – משקה חלב עם בננה ודגנים מלאים","brand":"יטבתה פרו / שטראוס","barcode":"7290112343420","weight":0,"kcal":70.0,"protein":5.7,"carbs":7.8,"fat":1.7,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת במקור חיצוני","updated":"24/08/2026"},{"name":"פרו 25 משקה קפה עם חלבון חלב 1.5%","brand":"יטבתה / שטראוס","barcode":"7290107954976","weight":0,"kcal":70.0,"protein":7.2,"carbs":5.1,"fat":1.5,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת במקורות חיצוניים","updated":"24/08/2026"},{"name":"ממרח לייט הלמנס – ממרח מופחת קלוריות","brand":"הלמנס","barcode":"7290000120874","weight":0,"kcal":240.0,"protein":0.7,"carbs":6.9,"fat":23.4,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי הברקוד אומת במקור חיצוני","updated":"24/08/2026"},{"name":"קטשופ 50% פחות סוכר ונתרן","brand":"היינץ","barcode":"8715700124964","weight":0,"kcal":64.0,"protein":1.4,"carbs":11.9,"fat":0.0,"source":"טבלת הערכים התזונתיים שעל האריזה; זיהוי ברקוד ומוצר אומתו במקור חיצוני","updated":"24/08/2026"},{"name":"ערגליות שוקו","brand":"אסם","barcode":"7290008775816","weight":0,"kcal":421.0,"protein":4.5,"carbs":71.0,"fat":13.2,"source":"טבלת הערכים התזונתיים שעל האריזה","updated":"24/08/2026"},{"name":"תנובה / גלבוע","brand":"200 גרם","barcode":"גבינה צהובה גלבוע לייט 5% שומן, פרוסות","weight":177.0,"kcal":354.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"25/08/2026","updated":"177 קלוריות ל-100 גרם; אריזה 200 גרם = 354 קלוריות."},{"name":"חלי ממן","brand":"700 גרם","barcode":"לחם אחיד פלוס כוסמין מרובע","weight":205.0,"kcal":1435.0,"protein":0.0,"carbs":0.0,"fat":0.0,"source":"25/08/2026","updated":"49 קלוריות לפרוסה. 4 פרוסות = 196 קלוריות. 700 גרם × 205 קק״ל ל-100 גרם = 1,435 קק״ל לאריזה."},{"name":"מקופלת","brand":"עלית","barcode":"72917589","weight":0,"kcal":534.0,"protein":6.5,"carbs":58.0,"fat":30.0,"source":"מקור חיצוני — FoodFact; ברקוד אומת לפי CHP","updated":"28/08/2026"},{"name":"רמזור","brand":"פלדמן","barcode":"7290101105145","weight":0,"kcal":77.0,"protein":0.0,"carbs":19.2,"fat":0.0,"source":"נתוני האריזה שבתמונה","updated":"28/08/2026"},{"name":"ספגטי מס' 8","brand":"אסם","barcode":"7290000608808","weight":0,"kcal":351.0,"protein":11.0,"carbs":71.0,"fat":1.9,"source":"טבלת הערכים שעל האריזה","updated":"30/08/2026"}];
+(function migrateExcelProducts(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(!raw) return;
+    const saved=JSON.parse(raw);
+    if(!saved || !Array.isArray(saved.products)) return;
+    const merged=[...saved.products];
+    EXCEL_PRODUCTS_V63.forEach(p=>{
+      const idx=merged.findIndex(x=>
+        (p.barcode && x.barcode && String(p.barcode)===String(x.barcode)) ||
+        (!p.barcode && x.name===p.name)
+      );
+      if(idx>=0) merged[idx]=Object.assign({},merged[idx],p);
+      else merged.push(Object.assign({},p));
+    });
+    saved.products=merged;
+    localStorage.setItem(KEY,JSON.stringify(saved));
+    db=saved;
+  }catch(e){console.error('Excel migration failed',e);}
+})();
+
+const todayKey=()=>new Date().toISOString().slice(0,10);
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function today(){return db.intake[todayKey()]||[]}
+function renderToday(){
+ let a=today(), k=a.reduce((s,x)=>s+x.kcal,0),p=a.reduce((s,x)=>s+x.protein,0),c=a.reduce((s,x)=>s+x.carbs,0),f=a.reduce((s,x)=>s+x.fat,0);
+ kcal.textContent=Math.round(k);protein.textContent=round1(p);carbs.textContent=round1(c);fat.textContent=round1(f);
+ kleft.textContent=Math.max(0,Math.round(2000-k)).toLocaleString('he-IL');kbar.style.width=Math.min(100,k/2000*100)+'%';
+ intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted">${x.amount??x.grams} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted">💪 ${round1(x.protein)} · 🍞 ${round1(x.carbs)} · 🥑 ${round1(x.fat)}</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px">עדיין לא דווחה צריכה היום.</div>';
+}
+function round1(v){return Math.round(Number(v||0)*10)/10}
+function renderProducts(){
+ productCount.textContent=db.products.length;
+ let q=(document.getElementById('search').value||'').toLowerCase();
+ let arr=db.products.filter(x=>(x.name+' '+(x.brand||'')+' '+(x.barcode||'')).toLowerCase().includes(q));
+ productList.innerHTML=arr.map(x=>{
+  const i=db.products.indexOf(x);
+  const conv=[x.unit_g?'יחידה '+x.unit_g+' ג׳':'',x.tsp_g?'כפית '+x.tsp_g+' ג׳':'',x.tbsp_g?'כף '+x.tbsp_g+' ג׳':''].filter(Boolean).join(' · ');
+  return `<div class="item"><div style="flex:1"><b>${x.name}</b><div class="muted">${x.brand||''}${x.barcode?' · '+x.barcode:''} · ${x.kcal||0} קל׳ / 100 ג׳</div><div class="muted">חלבון ${x.protein||0} · פחמ׳ ${x.carbs||0} · שומן ${x.fat||0}</div>${conv?`<div class="muted" style="font-size:12px">המרות: ${conv}</div>`:''}</div><div style="display:flex;flex-direction:column;gap:6px;min-width:82px"><span class="badge" style="text-align:center">${x.weight||''} ג׳</span><button class="secondary" onclick="editProduct(${i})">✏️ עריכה</button><button class="secondary" onclick="deleteProduct(${i})">🗑️ מחיקה</button></div></div>`;
+ }).join('')||'<div class="muted">לא נמצאו מוצרים.</div>';
+}
+function renderMonth(){
+ let keys=Object.keys(db.intake).sort().reverse(), sums=keys.map(d=>{let a=db.intake[d];return [d,a.reduce((s,x)=>s+x.kcal,0),a.reduce((s,x)=>s+x.protein,0),a.reduce((s,x)=>s+x.carbs,0),a.reduce((s,x)=>s+x.fat,0)]});
+ monthList.innerHTML=sums.length?sums.map(x=>`<div class="item"><div><b>${new Date(x[0]+'T12:00:00').toLocaleDateString('he-IL')}</b><div class="muted">🔥 ${Math.round(x[1])} · 💪 ${x[2].toFixed(1)} · 🍞 ${x[3].toFixed(1)} · 🥑 ${x[4].toFixed(1)}</div></div></div>`).join(''):'<div class="muted" style="padding-top:12px">אין עדיין נתונים.</div>';
+}
+function show(id){['today','products','month'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));['n1','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','products','month'][i]===id));if(id==='today')renderToday();if(id==='products')renderProducts();if(id==='month')renderMonth()}
+function lockPageScroll(){document.body.style.overflow='hidden';}
+function unlockPageScroll(){document.body.style.overflow='';}
+function openAdd(){
+  window.editingIntakeIndex=null;
+  addModalTitle.textContent='הוספת צריכה';
+  addIntakeBtn.textContent='הוסף לצריכה';
+  addModal.classList.add('open');
+  selected=null;
+  grams.value='';
+  unitSelect.innerHTML='<option value="g">גרם</option><option value="ml">מ״ל</option><option value="unit">יחידה</option><option value="tsp">כפית</option><option value="tbsp">כף</option>';
+  unitSelect.value='g';
+  unitSelect.style.display='block';
+  intakePreview.style.display='none';
+  suggest();
+}
+function openProduct(){window.editingProductIndex=null;document.querySelector('#productModal h2').textContent='הוספת מוצר למאגר';document.querySelectorAll('#productModal input').forEach(x=>x.value='');lockPageScroll();productModal.classList.add('open')}
+function closeModal(){
+ document.querySelectorAll('.modal').forEach(x=>x.classList.remove('open'));
+ unlockPageScroll();
+ window.editingIntakeIndex=null;
+}
+function suggest(){let q=(foodSearch.value||'').toLowerCase();let a=db.products.filter(x=>(x.name+' '+(x.brand||'')).toLowerCase().includes(q)).slice(0,5);suggestions.innerHTML=a.map(x=>`<button class="secondary" style="margin:3px" onclick="selectFood(${db.products.indexOf(x)})">${x.name}</button>`).join('')}
+let selected=null;
+function selectFood(i){
+  selected=db.products[i];
+  foodSearch.value=selected.name;
+  suggestions.innerHTML='<span class="muted">נבחר: '+selected.name+'</span>';
+  unitSelect.style.display='block';
+  grams.focus({preventScroll:true});
+  updateIntakePreview();
+}
+function getUnitConversion(p,unit){
+ const text=((p.name||'')+' '+(p.brand||'')).toLowerCase();
+ if(unit==='unit'&&Number(p.unit_g)>0)return Number(p.unit_g);
+ if(unit==='tsp'&&Number(p.tsp_g)>0)return Number(p.tsp_g);
+ if(unit==='tbsp'&&Number(p.tbsp_g)>0)return Number(p.tbsp_g);
+ return 0;
+}
+function calcIntake(p,unit,a){
+ a=Number(a)||0;let g=null;
+ if(unit==='g')g=a;
+ if(unit==='unit'){const v=getUnitConversion(p,'unit');if(v>0)g=a*v;}
+ if(unit==='tsp'){const v=getUnitConversion(p,'tsp');if(v>0)g=a*v;}
+ if(unit==='tbsp'){const v=getUnitConversion(p,'tbsp');if(v>0)g=a*v;}
+ if(unit==='ml'&&Number(p.kcal_ml)>0)return {known:true,kcal:Number(p.kcal_ml)*a,protein:Number(p.protein_ml||0)*a,carbs:Number(p.carbs_ml||0)*a,fat:Number(p.fat_ml||0)*a};
+ if(g===null)return {known:false,kcal:0,protein:0,carbs:0,fat:0};
+ let r=g/100;return {known:true,kcal:Number(p.kcal||0)*r,protein:Number(p.protein||0)*r,carbs:Number(p.carbs||0)*r,fat:Number(p.fat||0)*r};
+}
+function updateIntakePreview(){
+ if(!selected||!(Number(grams.value)>0)){intakePreview.style.display='none';return}
+ let r=calcIntake(selected,unitSelect.value,grams.value);intakePreview.style.display='block';
+ intakePreview.innerHTML=r.known?`<b>לפני הוספה</b><div style="margin-top:8px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b>אין נתון המרה</b><div class="muted">אין במאגר נתון מתאים ליחידת המדידה הזו.</div>`;
+}
+function addIntake(){
+ let a=Number(grams.value);if(!selected)selected=db.products.find(x=>x.name===foodSearch.value.trim());
+ if(!selected||!a||a<=0)return alert('בחר מוצר והזן כמות');
+ let unit=unitSelect.value||'g',r=calcIntake(selected,unit,a);if(!r.known)return alert('אין במאגר נתון המרה מתאים ליחידת המדידה שנבחרה.');
+ let label=unitSelect.options[unitSelect.selectedIndex]?.text||'גרם';
+ let item={name:selected.name,amount:a,unit:unit,unitLabel:label,kcal:r.kcal,protein:r.protein,carbs:r.carbs,fat:r.fat};
+ if(window.editingIntakeIndex!==null&&window.editingIntakeIndex!==undefined)db.intake[todayKey()][window.editingIntakeIndex]=item;else(db.intake[todayKey()]??=[]).push(item);
+ save();selected=null;grams.value='';foodSearch.value='';intakePreview.style.display='none';closeModal();renderToday();
+}
+function editIntake(i){
+ let x=today()[i],idx=db.products.findIndex(p=>p.name===x.name);if(!x||idx<0)return alert('המוצר לא נמצא במאגר.');
+ window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'g';grams.value=x.amount??x.grams??'';updateIntakePreview();
+}
+function removeIntake(i){if(!today()[i])return;if(!confirm('למחוק את הצריכה הזו?'))return;today().splice(i,1);save();renderToday()}
+let editingProductIndex=null;
+
+function openProduct(){
+ editingProductIndex=null;
+ document.getElementById('productModalTitle').textContent='הוספת מוצר למאגר';
+ document.getElementById('saveProductBtn').textContent='שמור מוצר';
+ document.querySelectorAll('#productModal input').forEach(x=>x.value='');
+ document.getElementById('productModal').classList.add('open');
+}
+function editProduct(i){
+ const p=db.products[i]; if(!p)return;
+ editingProductIndex=i;
+ document.getElementById('productModalTitle').textContent='עריכת מוצר';
+ document.getElementById('saveProductBtn').textContent='שמור שינויים';
+ pname.value=p.name||''; pbrand.value=p.brand||''; pbarcode.value=p.barcode||'';
+ pweight.value=p.weight||''; pkcal.value=p.kcal||''; pprotein.value=p.protein||'';
+ pcarbs.value=p.carbs||''; pfat.value=p.fat||'';
+ punitg.value=p.unit_g||''; ptspg.value=p.tsp_g||''; ptbspg.value=p.tbsp_g||'';
+ document.getElementById('productModal').classList.add('open');
+}
+function deleteProduct(i){
+ const p=db.products[i]; if(!p)return;
+ if(!confirm('למחוק את "'+(p.name||'המוצר')+'" מהמאגר?'))return;
+ db.products.splice(i,1); save(); renderProducts();
+}
+function closeModal(){
+ document.querySelectorAll('.modal').forEach(x=>x.classList.remove('open'));
+ editingProductIndex=null;
+}
+function saveProduct(){
+ const isEdit=editingProductIndex!==null;
+ const old=isEdit?db.products[editingProductIndex]:null;
+ const p={
+  name:pname.value.trim(),brand:pbrand.value.trim(),barcode:pbarcode.value.trim(),
+  weight:Number(pweight.value)||0,kcal:Number(pkcal.value)||0,protein:Number(pprotein.value)||0,
+  carbs:Number(pcarbs.value)||0,fat:Number(pfat.value)||0,
+  unit_g:Number(punitg.value)||0,tsp_g:Number(ptspg.value)||0,tbsp_g:Number(ptbspg.value)||0,
+  source:old?.source||'הוזן ידנית',updated:new Date().toISOString().slice(0,10)
+ };
+ if(!p.name||!p.kcal)return alert('שם המוצר וקלוריות ל-100 גרם הם חובה');
+ if(!isEdit && p.barcode && db.products.some(x=>x.barcode===p.barcode))return alert('המוצר או הברקוד כבר קיימים במאגר.');
+ if(isEdit)db.products[editingProductIndex]=p; else db.products.push(p);
+ save(); editingProductIndex=null; closeModal(); renderProducts();
+}
+
+dateText();renderToday();
+</script>
+</body></html>
