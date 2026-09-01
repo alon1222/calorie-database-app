@@ -185,19 +185,19 @@ function handleImportFile(event){
 }
 
 function renderToday(){
- let a=today(), k=a.reduce((s,x)=>s+x.kcal,0),p=a.reduce((s,x)=>s+x.protein,0),c=a.reduce((s,x)=>s+x.carbs,0),f=a.reduce((s,x)=>s+x.fat,0);
+ let a=today(), k=a.reduce((s,x)=>s+(x.kcal||0),0),p=a.reduce((s,x)=>s+(x.protein||0),0),c=a.reduce((s,x)=>s+(x.carbs||0),0),f=a.reduce((s,x)=>s+(x.fat||0),0);
  kcal.textContent=Math.round(k);protein.textContent=round1(p);carbs.textContent=round1(c);fat.textContent=round1(f);
  kleft.textContent=Math.max(0,Math.round(2000-k)).toLocaleString('he-IL');kbar.style.width=Math.min(100,k/2000*100)+'%';
- intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted">${x.amount} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted">💪 ${round1(x.protein)} · 🍞 ${round1(x.carbs)} · 🥑 ${round1(x.fat)}</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px">עדיין לא דווחה צריכה היום.</div>';
+ intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted">${x.amount} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted">💪 ${round1(x.protein)}ג׳ · 🍞 ${round1(x.carbs)}ג׳ · 🥑 ${round1(x.fat)}ג׳</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px">עדיין לא דווחה צריכה היום.</div>';
 }
 
 function showDailySummaryModal(){
   const dateStr = new Date().toLocaleDateString('he-IL');
   const a = today();
-  const k = a.reduce((s,x)=>s+x.kcal, 0);
-  const p = a.reduce((s,x)=>s+x.protein, 0);
-  const c = a.reduce((s,x)=>s+x.carbs, 0);
-  const f = a.reduce((s,x)=>s+x.fat, 0);
+  const k = a.reduce((s,x)=>s+(x.kcal||0), 0);
+  const p = a.reduce((s,x)=>s+(x.protein||0), 0);
+  const c = a.reduce((s,x)=>s+(x.carbs||0), 0);
+  const f = a.reduce((s,x)=>s+(x.fat||0), 0);
   
   let txt = `📊 סיכום יומי — ${dateStr}\n\n`;
   txt += `🔥 נצרכו: ${Math.round(k)} קלוריות\n`;
@@ -260,7 +260,7 @@ function renderProducts(){
 }
 
 function renderMonth(){
- let keys=Object.keys(db.intake).sort().reverse(), sums=keys.map(d=>{let a=db.intake[d];return [d,a.reduce((s,x)=>s+x.kcal,0),a.reduce((s,x)=>s+x.protein,0),a.reduce((s,x)=>s+x.carbs,0),a.reduce((s,x)=>s+x.fat,0)]});
+ let keys=Object.keys(db.intake).sort().reverse(), sums=keys.map(d=>{let a=db.intake[d];return [d,a.reduce((s,x)=>s+(x.kcal||0),0),a.reduce((s,x)=>s+(x.protein||0),0),a.reduce((s,x)=>s+(x.carbs||0),0),a.reduce((s,x)=>s+(x.fat||0),0)]});
  monthList.innerHTML=sums.length?sums.map(x=>`<div class="item"><div><b>${new Date(x[0]+'T12:00:00').toLocaleDateString('he-IL')}</b><div class="muted">🔥 ${Math.round(x[1])} · 💪 ${round1(x[2])} · 🍞 ${round1(x[3])} · 🥑 ${round1(x[4])}</div></div></div>`).join(''):'<div class="muted" style="padding-top:12px">אין עדיין נתונים.</div>';
 }
 
@@ -346,7 +346,16 @@ function addIntake(){
  let unit=unitSelect.value||'unit',r=calcIntake(selected,unit,a);
  if(!r.known)return alert('למוצר זה לא הוגדר משקל יחידה במאגר. אנא בחר גרם או עדכן את משקל היחידה במאגר.');
  let label=unitSelect.options[unitSelect.selectedIndex]?.text||'יחידה';
- let item={name:selected.name,amount:a,unit:unit,unitLabel:label,kcal:r.kcal,protein:r.protein,carbs:r.carbs,fat:r.fat};
+ let item={
+   name:selected.name,
+   amount:a,
+   unit:unit,
+   unitLabel:label,
+   kcal:r.kcal,
+   protein:r.protein,
+   carbs:r.carbs,
+   fat:r.fat
+ };
  if(window.editingIntakeIndex!==null&&window.editingIntakeIndex!==undefined)db.intake[todayKey()][window.editingIntakeIndex]=item;
  else(db.intake[todayKey()]??=[]).push(item);
  save();selected=null;grams.value='1';foodSearch.value='';intakePreview.style.display='none';closeModal();renderToday();
