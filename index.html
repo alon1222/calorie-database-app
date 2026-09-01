@@ -20,7 +20,7 @@ nav button{background:#fff;color:#606872}nav button.active{background:#18202a;co
 .badge{font-size:12px;background:#e9edf1;padding:4px 8px;border-radius:20px;display:inline-block}
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end;overflow:auto}.modal.open{display:flex}.sheet{background:#fff;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px;position:relative}
 .spacer{height:75px}.hidden{display:none}
-textarea{resize:vertical;min-height:60px}
+textarea{resize:vertical;min-height:50px}
 </style>
 </head>
 <body>
@@ -85,14 +85,14 @@ textarea{resize:vertical;min-height:60px}
 <div class="modal" id="addModal"><div class="sheet">
 <h2 id="addModalTitle">הוספת צריכה</h2><input id="foodSearch" placeholder="שם מוצר / מזון" oninput="suggest()"><div id="suggestions"></div>
 <select id="unitSelect" onchange="updateIntakePreview()">
+<option value="unit">יחידה</option>
 <option value="g">גרם</option>
 <option value="ml">מ״ל</option>
-<option value="unit">יחידה</option>
-<option value="tsp">כפית (5 ג׳/מ״ל)</option>
-<option value="tbsp">כף (15 ג׳/מ״ל)</option>
-<option value="cup">כוס (240 ג׳/מ״ל)</option>
+<option value="tsp">כפית (5 ג׳)</option>
+<option value="tbsp">כף (15 ג׳)</option>
+<option value="cup">כוס (240 ג׳)</option>
 </select>
-<input id="grams" type="number" min="0" step="any" placeholder="כמות" oninput="updateIntakePreview()">
+<input id="grams" type="number" min="0" step="any" placeholder="כמות" value="1" oninput="updateIntakePreview()">
 <div id="intakePreview" class="card" style="display:none;margin-top:4px"></div>
 <button class="primary" id="addIntakeBtn" onclick="addIntake()">הוסף לצריכה</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
@@ -100,21 +100,19 @@ textarea{resize:vertical;min-height:60px}
 
 <div class="modal" id="productModal"><div class="sheet">
 <h2>הוספת מוצר למאגר</h2>
-<input id="pname" placeholder="שם המוצר">
-<input id="pbrand" placeholder="מותג/יצרן">
-<input id="pbarcode" placeholder="ברקוד (EAN/UPC)">
+<input id="pname" placeholder="שם המוצר (למשל: פסק זמן)">
 <div style="display:flex;gap:8px">
-<input id="pweight" type="number" placeholder="משקל אריזה (גרם)">
-<input id="ppackageml" type="number" placeholder="נפח אריזה (מ״ל)">
+<input id="pbrand" placeholder="מותג/יצרן (רשות)">
+<input id="pbarcode" placeholder="ברקוד (רשות)">
 </div>
+<input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
 <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
-<input id="pprotein" type="number" placeholder="חלבון ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
-<input id="pcarbs" type="number" placeholder="פחמימות ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
-<input id="pfat" type="number" placeholder="שומן ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
-<input id="punitg" type="number" min="0" step="any" placeholder="משקל/נפח יחידה אחת בלבד (גרם/מ״ל)" oninput="updateProductUnitCalc()">
-<div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:#eef2f7"></div>
-<input id="psource" placeholder="מקור הנתונים (למשל: אריזה, OpenFoodFacts)">
-<textarea id="pnotes" placeholder="הערות חשובות"></textarea>
+<div style="display:flex;gap:6px">
+<input id="pprotein" type="number" placeholder="חלבון ל-100ג׳" oninput="updateProductUnitCalc()">
+<input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
+<input id="pfat" type="number" placeholder="שומן ל-100ג׳" oninput="updateProductUnitCalc()">
+</div>
+<div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:#eef2f7;font-size:14px"></div>
 <button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
 </div></div>
@@ -230,17 +228,15 @@ function copySummaryText(){
 function updateProductUnitCalc(){
   const unitG = Number(punitg.value)||0;
   const k = Number(pkcal.value)||0;
+  const prot = Number(pprotein.value)||0;
+  const carb = Number(pcarbs.value)||0;
+  const fatVal = Number(pfat.value)||0;
   
-  if(k > 0){
+  if(unitG > 0 && k > 0){
     productUnitPreview.style.display = 'block';
-    let html = `<b>חישוב אוטומטי ליחידות מידה מ-100 ג׳:</b><br>`;
-    if(unitG > 0){
-      html += `• <b>יחידה אחת (${unitG} ג׳):</b> ${round1(k * unitG / 100)} קק״ל<br>`;
-    }
-    html += `• <b>כפית (5 ג׳):</b> ${round1(k * 5 / 100)} קק״ל<br>`;
-    html += `• <b>כף (15 ג׳):</b> ${round1(k * 15 / 100)} קק״ל<br>`;
-    html += `• <b>כוס (240 ג׳):</b> ${round1(k * 240 / 100)} קק״ל`;
-    productUnitPreview.innerHTML = html;
+    const mult = unitG / 100;
+    productUnitPreview.innerHTML = `<b>✨ חישוב אוטומטי ליחידה אחת (${unitG}ג׳):</b><br>` +
+      `🔥 <b>${round1(k * mult)}</b> קק״ל | 💪 <b>${round1(prot * mult)}</b>ג׳ חלבון | 🍞 <b>${round1(carb * mult)}</b>ג׳ פחמימות | 🥑 <b>${round1(fatVal * mult)}</b>ג׳ שומן`;
   } else {
     productUnitPreview.style.display = 'none';
   }
@@ -251,15 +247,11 @@ function renderProducts(){
  let q=(search.value||'').toLowerCase(),arr=db.products.filter(x=>(x.name+' '+(x.brand||'')+' '+(x.barcode||'')).toLowerCase().includes(q));
  productList.innerHTML=arr.map(x=>{
    const i=db.products.indexOf(x);
-   const weightText = x.weight ? `${x.weight} ג׳` : (x.package_ml ? `${x.package_ml} מ״ל` : '-');
    const unitKcal = x.unit_g && x.kcal ? round1(x.kcal * x.unit_g / 100) : null;
    return `<div class="item"><div style="flex:1"><b>${x.name}</b>
    <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
-   <div class="muted">משקל/נפח: ${weightText} | קלוריות ל-100 ג׳/מ״ל: ${x.kcal} קק״ל</div>
-   ${unitKcal ? `<div class="muted"><b>ליחידה (${x.unit_g} ג׳):</b> ${unitKcal} קק״ל</div>` : ''}
-   <div class="muted">💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳ (ל-100ג׳/מ״ל)</div>
-   ${x.source ? `<div class="muted" style="font-size:12px">מקור: ${x.source}</div>` : ''}
-   ${x.notes ? `<div class="muted" style="font-size:12px">הערות: ${x.notes}</div>` : ''}
+   <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
+   ${unitKcal ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל</div>` : ''}
    </div><div style="display:flex;flex-direction:column;gap:6px;min-width:76px">
    <button class="secondary" onclick="editProduct(${i})">✏️ ערוך</button>
    <button class="secondary" onclick="deleteProduct(${i})">🗑️ מחק</button>
@@ -283,7 +275,8 @@ function openAdd(){
   lockPageScroll();
   addModal.classList.add('open');
   selected=null;
-  grams.value='';
+  grams.value='1';
+  unitSelect.value='unit';
   foodSearch.value='';
   intakePreview.style.display='none';
   suggest();
@@ -292,7 +285,7 @@ function openAdd(){
 function openProduct(){
   window.editingProductIndex=null;
   document.querySelector('#productModal h2').textContent='הוספת מוצר למאגר';
-  document.querySelectorAll('#productModal input, #productModal textarea').forEach(x=>x.value='');
+  document.querySelectorAll('#productModal input').forEach(x=>x.value='');
   productUnitPreview.style.display='none';
   lockPageScroll();
   productModal.classList.add('open');
@@ -343,25 +336,25 @@ function updateIntakePreview(){
  if(!selected||!(Number(grams.value)>0)){intakePreview.style.display='none';return}
  let r=calcIntake(selected,unitSelect.value,grams.value);
  intakePreview.style.display='block';
- intakePreview.innerHTML=r.known?`<b>לפני הוספה</b><div style="margin-top:8px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b>אין נתון המרה</b><div class="muted">למוצר זה לא הוגדר משקל יחידה. יש להשתמש בגרם, כפית, כף או כוס.</div>`;
+ intakePreview.innerHTML=r.known?`<b>לפני הוספה</b><div style="margin-top:8px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b>אין משקל יחידה מוגדר</b><div class="muted">למוצר זה לא הוגדר משקל יחידה במאגר. עדכן את המוצר במאגר או השתמש בגרמים.</div>`;
 }
 
 function addIntake(){
  let a=Number(grams.value);
  if(!selected)selected=db.products.find(x=>x.name===foodSearch.value.trim());
  if(!selected||!a||a<=0)return alert('בחר מוצר והזן כמות');
- let unit=unitSelect.value||'g',r=calcIntake(selected,unit,a);
- if(!r.known)return alert('למוצר זה לא הוגדר משקל יחידה במאגר.');
- let label=unitSelect.options[unitSelect.selectedIndex]?.text||'גרם';
+ let unit=unitSelect.value||'unit',r=calcIntake(selected,unit,a);
+ if(!r.known)return alert('למוצר זה לא הוגדר משקל יחידה במאגר. אנא בחר גרם או עדכן את משקל היחידה במאגר.');
+ let label=unitSelect.options[unitSelect.selectedIndex]?.text||'יחידה';
  let item={name:selected.name,amount:a,unit:unit,unitLabel:label,kcal:r.kcal,protein:r.protein,carbs:r.carbs,fat:r.fat};
  if(window.editingIntakeIndex!==null&&window.editingIntakeIndex!==undefined)db.intake[todayKey()][window.editingIntakeIndex]=item;
  else(db.intake[todayKey()]??=[]).push(item);
- save();selected=null;grams.value='';foodSearch.value='';intakePreview.style.display='none';closeModal();renderToday();
+ save();selected=null;grams.value='1';foodSearch.value='';intakePreview.style.display='none';closeModal();renderToday();
 }
 
 function editIntake(i){
  let x=today()[i],idx=db.products.findIndex(p=>p.name===x.name);if(!x||idx<0)return alert('המוצר לא נמצא במאגר.');
- window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'g';grams.value=x.amount||'';updateIntakePreview();
+ window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'unit';grams.value=x.amount||'1';updateIntakePreview();
 }
 
 function removeIntake(i){if(!today()[i])return;if(!confirm('למחוק את הצריכה הזו?'))return;today().splice(i,1);save();renderToday()}
@@ -371,15 +364,11 @@ function saveProduct(){
   name:pname.value.trim(),
   brand:pbrand.value.trim(),
   barcode:pbarcode.value.trim(),
-  weight:Number(pweight.value)||0,
-  package_ml:Number(ppackageml.value)||0,
   kcal:Number(pkcal.value)||0,
   protein:Number(pprotein.value)||0,
   carbs:Number(pcarbs.value)||0,
   fat:Number(pfat.value)||0,
   unit_g:Number(punitg.value)||0,
-  source:psource.value.trim()||'הוזן ידנית',
-  notes:pnotes.value.trim(),
   updated:new Date().toLocaleDateString('he-IL')
  };
  if(!p.name||p.kcal<0)return alert('שם המוצר וקלוריות ל-100 גרם הם חובה');
@@ -405,9 +394,8 @@ function editProduct(i){
  document.querySelector('#productModal h2').textContent='עריכת מוצר';
  lockPageScroll();productModal.classList.add('open');
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
- pweight.value=p.weight||'';ppackageml.value=p.package_ml||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
- punitg.value=p.unit_g||'';psource.value=p.source||'';pnotes.value=p.notes||'';
+ punitg.value=p.unit_g||'';
  updateProductUnitCalc();
 }
 
@@ -448,12 +436,18 @@ async function searchBarcode(code){
     const data=await res.json();
     if(data.status===1&&data.product){
       const p=data.product, n=p.nutriments||{};
+      let unitG = Number(p.product_quantity) || 0;
+      
       window.foundProduct={
         name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
+        unit_g:unitG,
         kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
-        source:'Open Food Facts',updated:new Date().toLocaleDateString('he-IL')
+        updated:new Date().toLocaleDateString('he-IL')
       };
-      barcodeResult.innerHTML=`<b>${window.foundProduct.name}</b><br>קלוריות: ${window.foundProduct.kcal} ל-100ג׳<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
+      
+      let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(window.foundProduct.kcal * unitG / 100)} קק״ל` : '';
+      
+      barcodeResult.innerHTML=`<b>${window.foundProduct.name}</b><br>קלוריות ל-100ג׳: ${window.foundProduct.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
     }else{barcodeResult.innerHTML='המוצר לא נמצא ב-OpenFoodFacts';}
   }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש המוצר';}
 }
@@ -474,4 +468,3 @@ dateText();renderToday();
 </script>
 </body>
 </html>
-
