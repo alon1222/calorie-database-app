@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>מאגר קלוריות</title>
+<title>מאגר קלוריות AI</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f5f6f8;color:#18202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
@@ -23,8 +23,7 @@ nav button{background:#fff;color:#606872}nav button.active{background:#18202a;co
 .sheet{background:#fff;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px 22px 0 0;position:relative;touch-action:pan-y}
 .spacer{height:75px}.hidden{display:none}
 textarea{resize:vertical;min-height:50px}
-.search-res-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer;background:#fff;border-radius:8px;margin-bottom:6px}
-.search-res-item:hover{background:#f0f4f8}
+.ai-box{background:linear-gradient(135deg, #f0f4ff 0%, #e6eeef 100%);border:1px solid #c7d2fe;border-radius:14px;padding:12px;margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -49,12 +48,13 @@ textarea{resize:vertical;min-height:50px}
 <div class="card" style="display:flex;justify-content:space-between;align-items:center">
   <b>📦 <span id="productCount">0</span> מוצרים במאגר</b>
   <div style="display:flex;gap:6px">
+    <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="openSettings()">⚙️ API</button>
     <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="exportBackup()">📤 גיבוי</button>
     <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="importBackup()">📥 שחזור</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImportFile(event)">
   </div>
 </div>
-<div class="card"><b>חיפוש במאגר</b><input id="search" placeholder="חפש מוצר..." oninput="renderProducts()"><button class="primary" onclick="openScanner()">📷 סרוק ברקוד</button><button class="secondary" style="width:100%;margin-top:8px" onclick="openProduct()">＋ הוסף מוצר</button></div>
+<div class="card"><b>חיפוש במאגר</b><input id="search" placeholder="חפש מוצר..." oninput="renderProducts()"><button class="primary" onclick="openScanner()">📷 סרוק ברקוד</button><button class="secondary" style="width:100%;margin-top:8px" onclick="openProduct()">＋ הוסף מוצר (תומך AI)</button></div>
 <div class="card" id="productList"></div>
 </section>
 
@@ -69,6 +69,14 @@ textarea{resize:vertical;min-height:50px}
 <button id="n3" onclick="show('month')">חודש</button>
 </nav>
 </div>
+
+<div class="modal" id="settingsModal"><div class="sheet">
+<h2>⚙️ הגדרת Gemini API Key</h2>
+<div class="muted" style="font-size:13px;margin-bottom:10px">הכנס את מפתח ה-API החינמי מ-Google AI Studio כדי לאפשר מילוי אוטומטי באמצעות AI:</div>
+<input id="apiKeyInput" type="password" placeholder="הדבק API Key כאן (AIzaSy...)">
+<button class="primary" onclick="saveApiKey()">שמור מפתח</button>
+<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
+</div></div>
 
 <div class="modal" id="summaryModal"><div class="sheet">
 <h2>📊 סיכום יומי</h2>
@@ -105,12 +113,14 @@ textarea{resize:vertical;min-height:50px}
 <div class="modal" id="productModal"><div class="sheet">
 <h2 id="productModalTitle">מוצר במאגר</h2>
 
-<div>
-  <input id="pNameSearch" placeholder="🔍 חפש ברשת למילוי אוטומטי (למשל: חזה עוף)..." oninput="searchOnlineProduct(this.value)">
-  <div id="onlineSearchResults" style="max-height:160px;overflow-y:auto;margin-bottom:10px"></div>
+<div class="ai-box">
+  <b>✨ זיהוי וניתוח אוטומטי (Gemini AI)</b>
+  <div style="display:flex;gap:6px;margin-top:8px">
+    <input id="aiQuery" style="margin:0" placeholder="לדוגמה: חזה עוף מבושל, 200 גרם...">
+    <button class="primary" style="width:auto;white-space:nowrap" onclick="fetchWithAI()">חפש ב-AI</button>
+  </div>
+  <div id="aiStatus" class="muted" style="font-size:12px;margin-top:6px"></div>
 </div>
-
-<hr style="border:0;border-top:1px solid #eee;margin:10px 0 14px">
 
 <div id="productFormFields">
   <input id="pname" placeholder="שם המוצר *">
@@ -118,7 +128,6 @@ textarea{resize:vertical;min-height:50px}
     <input id="pbrand" placeholder="מותג/יצרן (רשות)">
     <input id="pbarcode" placeholder="ברקוד (רשות)">
   </div>
-  <div id="barcodeStatus" class="muted" style="margin-top:-6px;margin-bottom:10px;font-size:12px;display:none"></div>
   <input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
   <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל *" oninput="updateProductUnitCalc()">
   <div style="display:flex;gap:6px">
@@ -153,26 +162,21 @@ textarea{resize:vertical;min-height:50px}
 </script>
 <script>
 const KEY='calorie_db_v1';
+const API_KEY_STORAGE='gemini_api_key_v1';
 
-// רשימת מוצרי יסוד מובנית כברירת מחדל
 const DEFAULT_PRODUCTS = [
   { name: 'חזה עוף (לא מבושל)', brand: 'כללי', barcode: '', kcal: 110, protein: 23, carbs: 0, fat: 1.2, unit_g: 150, updated: 'מובנה' },
   { name: 'חזה עוף מבושל/צלי', brand: 'כללי', barcode: '', kcal: 165, protein: 31, carbs: 0, fat: 3.6, unit_g: 150, updated: 'מובנה' },
+  { name: 'חזה אווז', brand: 'כללי', barcode: '', kcal: 338, protein: 16, carbs: 0, fat: 30, unit_g: 200, updated: 'מובנה' },
   { name: 'ביצה L', brand: 'כללי', barcode: '', kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.5, unit_g: 60, updated: 'מובנה' },
   { name: 'אורז לבן מבושל', brand: 'כללי', barcode: '', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, unit_g: 150, updated: 'מובנה' },
   { name: 'שיבולת שועל', brand: 'כללי', barcode: '', kcal: 389, protein: 16.9, carbs: 66, fat: 6.9, unit_g: 40, updated: 'מובנה' },
-  { name: 'טונה בשמן (מסוננת)', brand: 'כללי', barcode: '', kcal: 198, protein: 29, carbs: 0, fat: 8.2, unit_g: 112, updated: 'מובנה' },
-  { name: 'טונה במים (מסוננת)', brand: 'כללי', barcode: '', kcal: 116, protein: 26, carbs: 0, fat: 1, unit_g: 112, updated: 'מובנה' },
-  { name: 'שמן זית', brand: 'כללי', barcode: '', kcal: 884, protein: 0, carbs: 0, fat: 100, unit_g: 14, updated: 'מובנה' },
-  { name: 'קוטג׳ 5%', brand: 'כללי', barcode: '', kcal: 95, protein: 11, carbs: 1.5, fat: 5, unit_g: 250, updated: 'מובנה' }
+  { name: 'טונה בשמן (מסוננת)', brand: 'כללי', barcode: '', kcal: 198, protein: 29, carbs: 0, fat: 8.2, unit_g: 112, updated: 'מובנה' }
 ];
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
   db = { products: DEFAULT_PRODUCTS, intake: {} };
-  localStorage.setItem(KEY, JSON.stringify(db));
-} else if(!db.products || db.products.length === 0) {
-  db.products = DEFAULT_PRODUCTS;
   localStorage.setItem(KEY, JSON.stringify(db));
 }
 
@@ -182,121 +186,67 @@ function todayKey(){return new Date().toISOString().slice(0,10)}
 function today(){return db.intake[todayKey()]||[]}
 function round1(v){return Math.round(Number(v||0)*10)/10}
 
-function cleanCode(str){
-  return String(str || '').replace(/\D/g, '').trim();
+function cleanCode(str){ return String(str || '').replace(/\D/g, '').trim(); }
+
+function openSettings(){
+  apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
+  lockPageScroll();
+  settingsModal.classList.add('open');
 }
 
-let searchTimeout = null;
+function saveApiKey(){
+  const key = apiKeyInput.value.trim();
+  if(key) {
+    localStorage.setItem(API_KEY_STORAGE, key);
+    alert('מפתח ה-API נשמר בהצלחה!');
+  } else {
+    localStorage.removeItem(API_KEY_STORAGE);
+    alert('מפתח ה-API הוסר.');
+  }
+  closeModal();
+}
 
-const dictHE2EN = {
-  'חזה עוף': 'chicken breast',
-  'עוף': 'chicken',
-  'חזה אווז': 'duck breast',
-  'אווז': 'goose',
-  'בקר': 'beef',
-  'בשר טחון': 'minced meat',
-  'סטייק': 'steak',
-  'פרגית': 'chicken thigh',
-  'הודו': 'turkey',
-  'ביצה': 'egg',
-  'חלב': 'milk',
-  'גבינה': 'cheese',
-  'קוטג': 'cottage cheese',
-  'יוגורט': 'yogurt',
-  'לחם': 'bread',
-  'אורז': 'rice',
-  'טונה': 'tuna',
-  'שיבולת שועל': 'oats',
-  'תפוח אדמה': 'potato',
-  'בטטה': 'sweet potato',
-  'שמן זית': 'olive oil'
-};
-
-function searchOnlineProduct(query){
-  query = query.trim();
-  if(query.length < 2) {
-    onlineSearchResults.innerHTML = '';
+async function fetchWithAI(){
+  const query = aiQuery.value.trim();
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  if(!query) return alert('נא להזין שם מאכל לחיפוש');
+  if(!apiKey) {
+    alert('לא הוגדר API Key! נא להגדיר דרך כפתור ⚙️ API');
+    openSettings();
     return;
   }
-  
-  clearTimeout(searchTimeout);
-  onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">🔍 מחפש ברשת...</div>';
-  
-  searchTimeout = setTimeout(async () => {
-    try {
-      let products = [];
-      
-      let url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(query) + '&search_simple=1&action=process&json=1&page_size=8';
-      let res = await fetch(url);
-      let data = await res.json();
-      products = data.products || [];
 
-      let translated = dictHE2EN[query];
-      if(!translated) {
-        for(let key in dictHE2EN) {
-          if(query.includes(key)) { translated = dictHE2EN[key]; break; }
-        }
-      }
+  aiStatus.textContent = '⚡ מנתח נתונים תזונתיים בעזרת AI...';
+  
+  const promptText = `Provide nutrition values per 100g/ml for: "${query}". Return ONLY a raw JSON object with keys: "name" (Hebrew name), "kcal" (number), "protein" (number), "carbs" (number), "fat" (number), "unit_g" (estimated standard serving size in grams if applicable, else 0). No Markdown, no code blocks, pure JSON.`;
 
-      if((products.length < 2) && translated) {
-        let url2 = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(translated) + '&search_simple=1&action=process&json=1&page_size=8';
-        let res2 = await fetch(url2);
-        let data2 = await res2.json();
-        let enProducts = data2.products || [];
-        let existingCodes = new Set(products.map(p => p.code));
-        enProducts.forEach(p => {
-          if(!existingCodes.has(p.code)) products.push(p);
-        });
-      }
-      
-      if(products.length > 0) {
-        onlineSearchResults.innerHTML = products.map((p, idx) => {
-          const n = p.nutriments || {};
-          const k = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0);
-          const prot = round1(n['proteins_100g'] || n['proteins'] || 0);
-          const carb = round1(n['carbohydrates_100g'] || n['carbohydrates'] || 0);
-          const fat = round1(n['fat_100g'] || n['fat'] || 0);
-          const brand = p.brands || 'כללי';
-          const pName = p.product_name || p.product_name_en || query;
-          
-          return `<div class="search-res-item" onclick="selectOnlineResult(${idx})">
-            <b>${pName}</b> <small class="muted">(${brand})</small>
-            <div class="muted" style="font-size:12px;margin-top:2px">
-              🔥 ${k} קק״ל | 💪 ${prot}ג׳ | 🍞 ${carb}ג׳ | 🥑 ${fat}ג׳ ל-100ג׳
-            </div>
-          </div>`;
-        }).join('');
-        window._currentOnlineResults = products;
-      } else {
-        onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">לא נמצאו תוצאות ברשת. באפשרותך למלא את הפרטים ידנית למטה.</div>';
-      }
-    } catch(e) {
-      console.error(e);
-      onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">⚠️ שגיאה בתקשורת. ניתן להזין את הנתונים ידנית.</div>';
-    }
-  }, 350);
-}
-
-function selectOnlineResult(idx){
-  if(!window._currentOnlineResults || !window._currentOnlineResults[idx]) return;
-  const p = window._currentOnlineResults[idx];
-  const n = p.nutriments || {};
-  
-  pname.value = p.product_name || p.product_name_en || pNameSearch.value;
-  pbrand.value = p.brands || '';
-  pbarcode.value = p.code || pbarcode.value || '';
-  pkcal.value = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0);
-  pprotein.value = round1(n['proteins_100g'] || n['proteins'] || 0);
-  pcarbs.value = round1(n['carbohydrates_100g'] || n['carbohydrates'] || 0);
-  pfat.value = round1(n['fat_100g'] || n['fat'] || 0);
-  if(p.product_quantity) punitg.value = p.product_quantity;
-  
-  onlineSearchResults.innerHTML = '';
-  pNameSearch.value = '';
-  updateProductUnitCalc();
-  
-  productUnitPreview.style.display = 'block';
-  productUnitPreview.innerHTML = `✅ <b>הנתונים נשאבו בהצלחה!</b><br>לחץ/י על "שמור מוצר למאגר" למטה.`;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }]
+      })
+    });
+    
+    const data = await res.json();
+    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    textResult = textResult.replace(/```json|```/g, '').trim();
+    
+    const parsed = JSON.parse(textResult);
+    pname.value = parsed.name || query;
+    pkcal.value = parsed.kcal || 0;
+    pprotein.value = parsed.protein || 0;
+    pcarbs.value = parsed.carbs || 0;
+    pfat.value = parsed.fat || 0;
+    if(parsed.unit_g) punitg.value = parsed.unit_g;
+    
+    aiStatus.textContent = '✅ הנתונים מולאו בהצלחה!';
+    updateProductUnitCalc();
+  } catch(e) {
+    console.error(e);
+    aiStatus.textContent = '❌ שגיאה בפנייה ל-AI. ודא שמפתח ה-API תקין.';
+  }
 }
 
 function exportBackup(){
@@ -309,9 +259,7 @@ function exportBackup(){
   dlAnchorElem.remove();
 }
 
-function importBackup(){
-  document.getElementById('importFile').click();
-}
+function importBackup(){ document.getElementById('importFile').click(); }
 
 function handleImportFile(event){
   const file = event.target.files[0];
@@ -321,19 +269,15 @@ function handleImportFile(event){
     try {
       const imported = JSON.parse(e.target.result);
       if(imported && typeof imported === 'object' && Array.isArray(imported.products)){
-        if(confirm('האם להחליף את הנתונים הקיימים בנתונים מקובץ הגיבוי?')){
+        if(confirm('האם להחליף את הנתונים הקיימים?')){
           db = imported;
           save();
           renderToday();
           renderProducts();
-          alert('הגיבוי שוחזר בהצלחה!');
+          alert('הגיבוי שוחזר!');
         }
-      } else {
-        alert('קובץ לא תקין.');
-      }
-    } catch(err) {
-      alert('שגיאה בקריאת הקובץ.');
-    }
+      } else alert('קובץ לא תקין.');
+    } catch(err) { alert('שגיאה בקריאת הקובץ.'); }
   };
   reader.readAsText(file);
 }
@@ -356,12 +300,8 @@ function showDailySummaryModal(){
   let txt = `📊 סיכום יומי — ${dateStr}\n\n`;
   txt += `🔥 נצרכו: ${Math.round(k)} קלוריות\n`;
   txt += `🎯 יעד יומי: 2,000 קלוריות\n`;
-  
-  if(k <= 2000){
-    txt += `🟢 נשארו: ${Math.round(2000 - k)} קלוריות\n`;
-  } else {
-    txt += `🔴 חריגה מהיעד: ${Math.round(k - 2000)} קלוריות\n`;
-  }
+  if(k <= 2000) txt += `🟢 נשארו: ${Math.round(2000 - k)} קלוריות\n`;
+  else txt += `🔴 חריגה מהיעד: ${Math.round(k - 2000)} קלוריות\n`;
   
   txt += `\n💪 חלבון: ${round1(p)} / 150 גרם\n`;
   txt += `🍞 פחמימות: ${round1(c)} / 200 גרם\n`;
@@ -391,9 +331,7 @@ function updateProductUnitCalc(){
     const mult = unitG / 100;
     productUnitPreview.innerHTML = `<b>✨ חישוב אוטומטי ליחידה אחת (${unitG}ג׳):</b><br>` +
       `🔥 <b>${round1(k * mult)}</b> קק״ל | 💪 <b>${round1(prot * mult)}</b>ג׳ חלבון | 🍞 <b>${round1(carb * mult)}</b>ג׳ פחמימות | 🥑 <b>${round1(fatVal * mult)}</b>ג׳ שומן`;
-  } else {
-    productUnitPreview.style.display = 'none';
-  }
+  } else productUnitPreview.style.display = 'none';
 }
 
 function renderProducts(){
@@ -411,7 +349,7 @@ function renderProducts(){
    <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
    <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
    ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
-   </div><div style="display:flex;flex-direction:column;gap:6px;min-width:110px">
+   </div><div style="display:flex;flex-direction:column;gap:6px;min-width:90px">
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
    </div></div>`
@@ -455,9 +393,8 @@ function openProduct(){
   window.editingProductIndex=null;
   productModalTitle.textContent='הוספת מוצר למאגר';
   document.querySelectorAll('#productModal input').forEach(x=>x.value='');
-  document.getElementById('barcodeStatus').style.display='none';
+  aiStatus.textContent = '';
   productUnitPreview.style.display='none';
-  onlineSearchResults.innerHTML = '';
   lockPageScroll();
   productModal.classList.add('open');
 }
@@ -572,9 +509,7 @@ function editProduct(i){
  const p=db.products[i];if(!p)return;
  window.editingProductIndex=i;
  productModalTitle.textContent='עריכת מוצר במאגר';
- document.getElementById('barcodeStatus').style.display='none';
- onlineSearchResults.innerHTML = '';
- pNameSearch.value = '';
+ aiStatus.textContent = '';
  lockPageScroll();productModal.classList.add('open');
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
