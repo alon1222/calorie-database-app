@@ -27,6 +27,8 @@ textarea{resize:vertical;min-height:50px}
 .ai-box{background:#f0f3ff;border:1px solid #c7d2fe;border-radius:14px;padding:12px;margin-bottom:12px}
 .badge-barcode{background:#e0e7ff;color:#3730a3;font-size:11px;padding:2px 6px;border-radius:6px;font-weight:600}
 .duplicate-warning{background:#fff5f5;border:1px solid #feb2b2;color:#c53030;border-radius:12px;padding:10px;font-size:13px;margin-bottom:10px;display:none}
+.product-img{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-left:10px;border:1px solid #ddd}
+.ai-option-card{display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;border:1px solid #c7d2fe;background:#fff;padding:10px;border-radius:14px}
 </style>
 </head>
 <body>
@@ -150,6 +152,15 @@ textarea{resize:vertical;min-height:50px}
     <input id="pbrand" placeholder="מותג/יצרן (רשות)">
     <input id="pbarcode" placeholder="ברקוד (רשות)" oninput="checkBarcodeProtection()">
   </div>
+  
+  <div style="margin-bottom:10px">
+    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">📷 תמונת מוצר (רשות):</label>
+    <input type="file" id="pImageInput" accept="image/*" onchange="previewProductImage(event)" style="padding:8px">
+    <div id="imgPreviewContainer" style="display:none;margin-top:6px;text-align:center">
+      <img id="imgPreview" style="max-height:100px;border-radius:12px;border:1px solid #ddd">
+    </div>
+  </div>
+
   <input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
   <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל *" oninput="updateProductUnitCalc()">
   <div style="display:flex;gap:6px">
@@ -162,6 +173,14 @@ textarea{resize:vertical;min-height:50px}
 
 <button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר למאגר</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
+</div></div>
+
+<!-- מודאל בחירת אופציות AI עם תמונות -->
+<div class="modal" id="aiOptionsModal"><div class="sheet">
+<h2>✨ בחר את המוצר המדויק</h2>
+<div class="muted" style="font-size:13px;margin-bottom:10px">מצאנו כמה אופציות מתאימות ב-AI כולל תמונה זיהוי:</div>
+<div id="aiOptionsList"></div>
+<button class="secondary" style="width:100%;margin-top:8px" onclick="document.getElementById('aiOptionsModal').classList.remove('open')">✕ ביטול</button>
 </div></div>
 
 <script>
@@ -185,6 +204,8 @@ textarea{resize:vertical;min-height:50px}
 <script>
 const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
+
+let currentImageData = "";
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
@@ -218,7 +239,6 @@ function checkRealtimeDuplicate(){
   }
   
   let matchedIndex = -1;
-  
   for(let i = 0; i < db.products.length; i++) {
     if(editing !== null && editing !== undefined && i === editing) continue;
     let target = normalizeStr(db.products[i].name);
@@ -256,7 +276,6 @@ function saveApiKey(){
   closeModal();
 }
 
-// בדיקה והשלמה אוטומטית של משקל יחידה ב-AI במידה ולא קיים במאגר
 async function handleUnitSelection() {
   const unit = unitSelect.value;
   const status = document.getElementById('aiUnitStatus');
@@ -294,7 +313,6 @@ async function handleUnitSelection() {
       const parsed = JSON.parse(textResult);
       if (parsed.unit_g && parsed.unit_g > 0) {
         selected.unit_g = parsed.unit_g;
-        // עדכון המוצר במאגר הכללי כדי שיזכור לפעמים הבאות
         const pIdx = db.products.findIndex(x => x.name === selected.name);
         if (pIdx >= 0) db.products[pIdx].unit_g = parsed.unit_g;
         save();
@@ -348,10 +366,10 @@ async function fetchProductWithAI(){
     return;
   }
 
-  aiStatus.textContent = '⚡ מנתח נתונים וממלא שדות ב-AI...';
+  aiStatus.textContent = '⚡ מחפש 3-4 אופציות כולל תמונות ב-AI...';
   aiStatus.style.color = '#4f46e5';
   
-  const promptText = `Provide accurate nutritional facts per 100g or 100ml for the product: "${nameVal}". Also specify standard single portion/unit weight in grams if applicable. Return ONLY a valid JSON object without markdown or code blocks: {"kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}`;
+  const promptText = `For the food query: "${nameVal}", provide 3 to 4 common food variations in Hebrew with accurate nutrition per 100g, estimated unit weight in grams, and a representative direct image URL (from Wikimedia/Unsplash/public food image URL). Return ONLY a JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number, "image_url": "string"}]`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -368,21 +386,72 @@ async function fetchProductWithAI(){
     let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     textResult = textResult.replace(/```json|```/g, '').trim();
     
-    const parsed = JSON.parse(textResult);
-    if(parsed.kcal !== undefined) pkcal.value = parsed.kcal;
-    if(parsed.protein !== undefined) pprotein.value = parsed.protein;
-    if(parsed.carbs !== undefined) pcarbs.value = parsed.carbs;
-    if(parsed.fat !== undefined) pfat.value = parsed.fat;
-    if(parsed.unit_g !== undefined && parsed.unit_g > 0) punitg.value = parsed.unit_g;
-    
-    aiStatus.textContent = '✅ הנתונים הושלמו בהצלחה!';
-    aiStatus.style.color = '#2f855a';
-    updateProductUnitCalc();
+    const options = JSON.parse(textResult);
+    if (Array.isArray(options) && options.length > 0) {
+      showAiOptionsModal(options);
+      aiStatus.textContent = '✅ בחר את המוצר המדויק מהרשימה!';
+      aiStatus.style.color = '#2f855a';
+    } else {
+      throw new Error('לא התקבלו אופציות לבחירה');
+    }
   } catch(e) {
     console.error(e);
     aiStatus.textContent = '❌ שגיאה: ' + e.message;
     aiStatus.style.color = '#c53030';
   }
+}
+
+function showAiOptionsModal(options) {
+  const container = document.getElementById('aiOptionsList');
+  container.innerHTML = options.map((opt, idx) => `
+    <div class="ai-option-card" onclick="applyAiSelection(${idx})">
+      <img src="${opt.image_url || 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=100&q=80'}" class="product-img" onerror="this.src='https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=100&q=80'">
+      <div style="flex:1">
+        <b>${opt.name}</b>
+        <div class="muted" style="font-size:12px;margin-top:4px">
+          🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
+          ${opt.unit_g ? `<br>⚡ משקל יחידה: ${opt.unit_g}ג׳` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+  
+  window.__currentAiOptions = options;
+  document.getElementById('aiOptionsModal').classList.add('open');
+}
+
+function applyAiSelection(index) {
+  const opt = window.__currentAiOptions[index];
+  if(!opt) return;
+  
+  pname.value = opt.name;
+  pkcal.value = opt.kcal || 0;
+  pprotein.value = opt.protein || 0;
+  pcarbs.value = opt.carbs || 0;
+  pfat.value = opt.fat || 0;
+  if(opt.unit_g) punitg.value = opt.unit_g;
+  
+  if(opt.image_url) {
+    currentImageData = opt.image_url;
+    document.getElementById('imgPreview').src = currentImageData;
+    document.getElementById('imgPreviewContainer').style.display = 'block';
+  }
+  
+  document.getElementById('aiOptionsModal').classList.remove('open');
+  updateProductUnitCalc();
+  checkRealtimeDuplicate();
+}
+
+function previewProductImage(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    currentImageData = e.target.result;
+    document.getElementById('imgPreview').src = currentImageData;
+    document.getElementById('imgPreviewContainer').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
 }
 
 function exportBackup(){
@@ -482,7 +551,9 @@ function renderProducts(){
    const unitFat = mult ? round1((x.fat||0) * mult) : 0;
    const hasBarcode = Boolean(x.barcode);
 
-   return `<div class="item"><div style="flex:1"><b>${x.name}</b> ${hasBarcode ? '<span class="badge-barcode">🏷️ ברקוד</span>' : ''}
+   return `<div class="item" style="align-items:center">
+   ${x.image ? `<img src="${x.image}" class="product-img">` : ''}
+   <div style="flex:1"><b>${x.name}</b> ${hasBarcode ? '<span class="badge-barcode">🏷️ ברקוד</span>' : ''}
    <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
    <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
    ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
@@ -533,6 +604,8 @@ function openProduct(){
   document.querySelectorAll('#productModal input').forEach(x=>x.value='');
   aiStatus.textContent = '';
   document.getElementById('duplicateNotice').style.display = 'none';
+  currentImageData = "";
+  document.getElementById('imgPreviewContainer').style.display = 'none';
   productUnitPreview.style.display='none';
   lockPageScroll();
   productModal.classList.add('open');
@@ -636,6 +709,7 @@ function saveProduct(){
   carbs:Number(pcarbs.value)||0,
   fat:Number(pfat.value)||0,
   unit_g:Number(punitg.value)||0,
+  image:currentImageData||"",
   updated:new Date().toLocaleDateString('he-IL')
  };
  if(!p.name||p.kcal<0)return alert('שם המוצר וקלוריות ל-100 גרם הם חובה');
@@ -683,6 +757,13 @@ function editProduct(i){
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
  punitg.value=p.unit_g||'';
+ currentImageData = p.image || "";
+ if(currentImageData) {
+   document.getElementById('imgPreview').src = currentImageData;
+   document.getElementById('imgPreviewContainer').style.display = 'block';
+ } else {
+   document.getElementById('imgPreviewContainer').style.display = 'none';
+ }
  document.getElementById('duplicateNotice').style.display = 'none';
  checkBarcodeProtection();
  updateProductUnitCalc();
@@ -738,6 +819,7 @@ async function searchBarcode(code){
         name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
         unit_g:unitG,
         kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
+        image:p.image_front_url||'',
         updated:new Date().toLocaleDateString('he-IL')
       };
       
