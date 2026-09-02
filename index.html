@@ -176,32 +176,12 @@ textarea{resize:vertical;min-height:50px}
 const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 
-const DEFAULT_PRODUCTS = [
-  { name: 'חזה עוף (לא מבושל)', brand: 'כללי', barcode: '', kcal: 110, protein: 23, carbs: 0, fat: 1.2, unit_g: 150, updated: 'מובנה' },
-  { name: 'חזה עוף מבושל/צלי', brand: 'כללי', barcode: '', kcal: 165, protein: 31, carbs: 0, fat: 3.6, unit_g: 150, updated: 'מובנה' },
-  { name: 'גבינה צהובה 5%', brand: 'כללי', barcode: '', kcal: 168, protein: 32, carbs: 0.5, fat: 5, unit_g: 20, updated: 'מובנה' },
-  { name: 'קוטג׳ 5%', brand: 'כללי', barcode: '', kcal: 95, protein: 11, carbs: 1.5, fat: 5, unit_g: 250, updated: 'מובנה' },
-  { name: 'חזה אווז', brand: 'כללי', barcode: '', kcal: 338, protein: 16, carbs: 0, fat: 30, unit_g: 200, updated: 'מובנה' },
-  { name: 'ביצה L', brand: 'כללי', barcode: '', kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.5, unit_g: 60, updated: 'מובנה' },
-  { name: 'אורז לבן מבושל', brand: 'כללי', barcode: '', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, unit_g: 150, updated: 'מובנה' },
-  { name: 'שיבולת שועל', brand: 'כללי', barcode: '', kcal: 389, protein: 16.9, carbs: 66, fat: 6.9, unit_g: 40, updated: 'מובנה' },
-  { name: 'טונה בשמן (מסוננת)', brand: 'כללי', barcode: '', kcal: 198, protein: 29, carbs: 0, fat: 8.2, unit_g: 112, updated: 'מובנה' }
-];
-
+// נטען אך ורק את הנתונים השמורים ב-localStorage ללא הוספת מובנים אוטומטית
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
-  db = { products: DEFAULT_PRODUCTS, intake: {} };
-} else {
-  DEFAULT_PRODUCTS.forEach(defItem => {
-    const idx = db.products.findIndex(p => p.name === defItem.name);
-    if(idx === -1) {
-      db.products.push(defItem);
-    } else if(db.products[idx].updated === 'מובנה') {
-      db.products[idx] = defItem;
-    }
-  });
+  db = { products: [], intake: {} };
+  save();
 }
-save();
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
@@ -210,6 +190,34 @@ function today(){return db.intake[todayKey()]||[]}
 function round1(v){return Math.round(Number(v||0)*10)/10}
 
 function cleanCode(str){ return String(str || '').replace(/\D/g, '').trim(); }
+
+// מנגנון חישוב דמיון מחרוזות (Levenshtein Distance)
+function getSimilarity(a, b) {
+  a = a.toLowerCase().trim();
+  b = b.toLowerCase().trim();
+  if (a === b) return 1.0;
+  if (!a.length || !b.length) return 0.0;
+  
+  let matrix = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  let maxLen = Math.max(a.length, b.length);
+  return 1 - matrix[b.length][a.length] / maxLen;
+}
 
 function openSettings(){
   apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
@@ -544,6 +552,7 @@ function saveProduct(){
  if(!p.name||p.kcal<0)return alert('שם המוצר וקלוריות ל-100 גרם הם חובה');
  const editing=window.editingProductIndex;
  
+ // 1. בדיקת כפילות ברקוד
  if(p.barcode){
    const duplicate=db.products.findIndex((x,i)=>i!==editing && x.barcode && cleanCode(x.barcode)===cleanCode(p.barcode));
    if(duplicate>=0){
@@ -551,6 +560,30 @@ function saveProduct(){
        db.products[duplicate]=Object.assign({}, db.products[duplicate], p);
        save();closeModal();renderProducts();return;
      } else return;
+   }
+ } else {
+   // 2. בדיקת דמיון שמות (כאשר אין ברקוד)
+   let similarIndex = -1;
+   let highestSim = 0;
+   db.products.forEach((x, i) => {
+     if(i !== editing) {
+       let sim = getSimilarity(p.name, x.name);
+       if(sim > 0.75 && sim > highestSim) { // סף דמיון של 75%
+         highestSim = sim;
+         similarIndex = i;
+       }
+     }
+   });
+
+   if(similarIndex >= 0) {
+     const similarName = db.products[similarIndex].name;
+     if(!confirm(`⚠️ נמצא מוצר בעל שם דומה במאגר: "${similarName}".\n\nהאם מדובר באותו מוצר? לחץ 'אישור' כדי לעדכן אותו, או 'ביטול' כדי לשמור כמוצר חדש.`)) {
+       // בחרו לשמור כמוצר חדש בכל זאת - ממשיכים
+     } else {
+       // אישרו שמדובר במוצר הקיים - נעדכן אותו
+       db.products[similarIndex] = Object.assign({}, db.products[similarIndex], p);
+       save();closeModal();renderProducts();return;
+     }
    }
  }
  
