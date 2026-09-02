@@ -115,11 +115,10 @@ textarea{resize:vertical;min-height:50px}
 
 <div class="ai-box">
   <b>✨ זיהוי וניתוח אוטומטי (Gemini AI)</b>
-  <div style="display:flex;gap:6px;margin-top:8px">
-    <input id="aiQuery" style="margin:0" placeholder="לדוגמה: חזה עוף מבושל, 200 גרם...">
-    <button class="primary" style="width:auto;white-space:nowrap" onclick="fetchWithAI()">חפש ב-AI</button>
+  <div style="margin-top:8px">
+    <input id="aiQuery" style="margin:0; width:100%; font-size:16px;" placeholder="הקלד שם מוצר, לדוגמה: חזה עוף מבושל 200 גרם..." oninput="autoFetchAI()">
   </div>
-  <div id="aiStatus" class="muted" style="font-size:12px;margin-top:6px"></div>
+  <div id="aiStatus" class="muted" style="font-size:12px;margin-top:6px;min-height:16px;"></div>
 </div>
 
 <div id="productFormFields">
@@ -206,13 +205,29 @@ function saveApiKey(){
   closeModal();
 }
 
+let aiSearchTimer = null;
+function autoFetchAI() {
+  clearTimeout(aiSearchTimer);
+  const query = aiQuery.value.trim();
+  if(!query) {
+    aiStatus.textContent = '';
+    return;
+  }
+  aiStatus.textContent = '⏳ ממתין לסיום הקלדה...';
+  
+  // השהיה של 1.2 שניות מאז ההקלדה האחרונה
+  aiSearchTimer = setTimeout(() => {
+    fetchWithAI();
+  }, 1200); 
+}
+
 async function fetchWithAI(){
   const query = aiQuery.value.trim();
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
-  if(!query) return alert('נא להזין שם מאכל לחיפוש');
+  if(!query) return;
+  
   if(!apiKey) {
-    alert('לא הוגדר API Key! נא להגדיר דרך כפתור ⚙️ API');
-    openSettings();
+    aiStatus.textContent = '❌ לא הוגדר API Key! נא להגדיר דרך כפתור ⚙️ API במאגר';
     return;
   }
 
@@ -246,7 +261,7 @@ async function fetchWithAI(){
     pfat.value = parsed.fat || 0;
     if(parsed.unit_g) punitg.value = parsed.unit_g;
     
-    aiStatus.textContent = '✅ הנתונים מולאו בהצלחה!';
+    aiStatus.textContent = '✅ הנתונים נטענו בהצלחה!';
     updateProductUnitCalc();
   } catch(e) {
     console.error(e);
