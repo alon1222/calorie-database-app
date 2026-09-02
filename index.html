@@ -232,7 +232,7 @@ function updateProductUnitCalc(){
   const carb = Number(pcarbs.value)||0;
   const fatVal = Number(pfat.value)||0;
   
-  if(unitG > 0 && k > 0){
+  if(unitG > 0 && (k > 0 || prot > 0 || carb > 0 || fatVal > 0)){
     productUnitPreview.style.display = 'block';
     const mult = unitG / 100;
     productUnitPreview.innerHTML = `<b>✨ חישוב אוטומטי ליחידה אחת (${unitG}ג׳):</b><br>` +
@@ -247,11 +247,16 @@ function renderProducts(){
  let q=(search.value||'').toLowerCase(),arr=db.products.filter(x=>(x.name+' '+(x.brand||'')+' '+(x.barcode||'')).toLowerCase().includes(q));
  productList.innerHTML=arr.map(x=>{
    const i=db.products.indexOf(x);
-   const unitKcal = x.unit_g && x.kcal ? round1(x.kcal * x.unit_g / 100) : null;
+   const mult = x.unit_g ? x.unit_g / 100 : 0;
+   const unitKcal = mult ? round1(x.kcal * mult) : null;
+   const unitProt = mult ? round1((x.protein||0) * mult) : 0;
+   const unitCarb = mult ? round1((x.carbs||0) * mult) : 0;
+   const unitFat = mult ? round1((x.fat||0) * mult) : 0;
+
    return `<div class="item"><div style="flex:1"><b>${x.name}</b>
    <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
    <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
-   ${unitKcal ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל</div>` : ''}
+   ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
    </div><div style="display:flex;flex-direction:column;gap:6px;min-width:76px">
    <button class="secondary" onclick="editProduct(${i})">✏️ ערוך</button>
    <button class="secondary" onclick="deleteProduct(${i})">🗑️ מחק</button>
@@ -454,7 +459,7 @@ async function searchBarcode(code){
         updated:new Date().toLocaleDateString('he-IL')
       };
       
-      let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(window.foundProduct.kcal * unitG / 100)} קק״ל` : '';
+      let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(window.foundProduct.kcal * unitG / 100)} קק״ל (💪 ${round1((window.foundProduct.protein||0) * unitG / 100)}ג׳ · 🍞 ${round1((window.foundProduct.carbs||0) * unitG / 100)}ג׳ · 🥑 ${round1((window.foundProduct.fat||0) * unitG / 100)}ג׳)` : '';
       
       barcodeResult.innerHTML=`<b>${window.foundProduct.name}</b><br>קלוריות ל-100ג׳: ${window.foundProduct.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
     }else{barcodeResult.innerHTML='המוצר לא נמצא ב-OpenFoodFacts';}
