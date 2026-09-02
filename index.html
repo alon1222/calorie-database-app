@@ -27,7 +27,6 @@ textarea{resize:vertical;min-height:50px}
 .ai-box{background:#f0f3ff;border:1px solid #c7d2fe;border-radius:14px;padding:12px;margin-bottom:12px}
 .badge-barcode{background:#e0e7ff;color:#3730a3;font-size:11px;padding:2px 6px;border-radius:6px;font-weight:600}
 .duplicate-warning{background:#fff5f5;border:1px solid #feb2b2;color:#c53030;border-radius:12px;padding:10px;font-size:13px;margin-bottom:10px;display:none}
-.unit-fix-box{background:#fffbea;border:1px solid #f6e05e;border-radius:12px;padding:10px;margin-bottom:10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -116,15 +115,8 @@ textarea{resize:vertical;min-height:50px}
 <input id="foodSearch" placeholder="שם מוצר / מזון" oninput="suggest()">
 <div id="suggestions"></div>
 
-<div class="ai-box" style="margin-top:8px">
-  <div style="font-weight:600;font-size:13px;margin-bottom:4px;color:#3730a3">✨ המרת כמות חופשית (AI)</div>
-  <input id="aiAmountText" placeholder="לדוגמה: צלחת מלאה / חצי קופסה / 2 פרוסות עבות..." style="margin-bottom:6px;font-size:13px">
-  <button type="button" class="ai-btn" style="padding:8px;font-size:13px" onclick="convertAmountWithAI()">✨ תרגם לגרמים ב-AI</button>
-  <div id="aiIntakeStatus" class="muted" style="font-size:12px;margin-top:4px;text-align:center"></div>
-</div>
-
 <div style="display:flex;gap:8px;margin-top:8px">
-  <select id="unitSelect" style="flex:1" onchange="updateIntakePreview()">
+  <select id="unitSelect" style="flex:1" onchange="handleUnitSelection()">
     <option value="unit">יחידה</option>
     <option value="g">גרם</option>
     <option value="ml">מ״ל</option>
@@ -135,11 +127,7 @@ textarea{resize:vertical;min-height:50px}
   <input id="grams" type="number" min="0" step="any" placeholder="כמות" value="1" style="flex:1" oninput="updateIntakePreview()">
 </div>
 
-<div id="unitFixBox" class="unit-fix-box" style="display:none">
-  <b>⚠️ למוצר זה לא מוגדר משקל יחידה במאגר.</b>
-  <div style="margin-top:6px">הזן משקל ליחידה אחת (בגרמים) כדי להמשיך:</div>
-  <input id="quickUnitG" type="number" min="1" placeholder="משקל יחידה בגרמים (למשל: 50)" style="margin-top:6px;margin-bottom:0" oninput="updateIntakePreview()">
-</div>
+<div id="aiUnitStatus" class="muted" style="font-size:12px;margin-top:6px;text-align:center;min-height:16px"></div>
 
 <div id="intakePreview" class="card" style="display:none;margin-top:4px"></div>
 <button class="primary" id="addIntakeBtn" onclick="addIntake()">הוסף לצריכה</button>
@@ -268,63 +256,61 @@ function saveApiKey(){
   closeModal();
 }
 
-async function convertAmountWithAI(){
-  const status = document.getElementById('aiIntakeStatus');
-  const amountDesc = document.getElementById('aiAmountText').value.trim();
-  const selectedName = foodSearch.value.trim();
-  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+// בדיקה והשלמה אוטומטית של משקל יחידה ב-AI במידה ולא קיים במאגר
+async function handleUnitSelection() {
+  const unit = unitSelect.value;
+  const status = document.getElementById('aiUnitStatus');
+  status.textContent = '';
 
-  if(!selectedName) {
-    status.textContent = '❌ נא לבחור מוצר קודם';
-    status.style.color = '#c53030';
-    return;
-  }
-  if(!amountDesc) {
-    status.textContent = '❌ נא להזין תיאור כמות בתיבה למעלה';
-    status.style.color = '#c53030';
-    return;
-  }
-  if(!apiKey) {
-    status.textContent = '❌ חסר API Key! להגדרה לחץ ⚙️ API במאגר';
-    status.style.color = '#c53030';
-    return;
-  }
-
-  status.textContent = '⚡ משרטט ומחשב כמות ב-AI...';
-  status.style.color = '#4f46e5';
-
-  const promptText = `Estimate the weight/volume in grams for this portion description: "${amountDesc}" of food item: "${selectedName}". Return ONLY a valid JSON object without code blocks: {"grams": number, "explanation": "string"}`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }]
-      })
-    });
-
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || 'API Error');
-
-    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    textResult = textResult.replace(/```json|```/g, '').trim();
-
-    const parsed = JSON.parse(textResult);
-    if(parsed.grams && parsed.grams > 0) {
-      unitSelect.value = 'g';
-      grams.value = parsed.grams;
-      status.textContent = `✅ כמות משוערת: ${parsed.grams}ג׳ (${parsed.explanation || ''})`;
-      status.style.color = '#2f855a';
+  if (unit === 'unit' && selected && !selected.unit_g) {
+    const apiKey = localStorage.getItem(API_KEY_STORAGE);
+    if (!apiKey) {
+      status.textContent = '⚠️ למוצר אין משקל יחידה במאגר. (הגדר API Key להשלמה אוטומטית ב-AI)';
+      status.style.color = '#c53030';
       updateIntakePreview();
-    } else {
-      throw new Error('לא התקבל משקל תקין');
+      return;
     }
-  } catch(e) {
-    console.error(e);
-    status.textContent = '❌ שגיאה בחישוב AI';
-    status.style.color = '#c53030';
+
+    status.textContent = '⚡ מברר משקל יחידה ממוצע ב-AI...';
+    status.style.color = '#4f46e5';
+
+    const promptText = `Provide standard single portion/unit weight in grams for food item: "${selected.name}". Return ONLY a valid JSON object without code blocks: {"unit_g": number}`;
+
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }]
+        })
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'API Error');
+
+      let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      textResult = textResult.replace(/```json|```/g, '').trim();
+
+      const parsed = JSON.parse(textResult);
+      if (parsed.unit_g && parsed.unit_g > 0) {
+        selected.unit_g = parsed.unit_g;
+        // עדכון המוצר במאגר הכללי כדי שיזכור לפעמים הבאות
+        const pIdx = db.products.findIndex(x => x.name === selected.name);
+        if (pIdx >= 0) db.products[pIdx].unit_g = parsed.unit_g;
+        save();
+
+        status.textContent = `✨ הוגדר משקל יחידה אוטומטי: ${parsed.unit_g}ג׳ (נשמר במאגר)`;
+        status.style.color = '#2f855a';
+      } else {
+        throw new Error('משקל לא תקין');
+      }
+    } catch (e) {
+      console.error(e);
+      status.textContent = '❌ לא ניתן להעריך משקל יחידה ב-AI. נא להשתמש בגרמים.';
+      status.style.color = '#c53030';
+    }
   }
+  updateIntakePreview();
 }
 
 function checkBarcodeProtection(){
@@ -536,10 +522,7 @@ function openAdd(){
   grams.value='1';
   unitSelect.value='unit';
   foodSearch.value='';
-  quickUnitG.value='';
-  document.getElementById('aiAmountText').value='';
-  document.getElementById('aiIntakeStatus').textContent='';
-  unitFixBox.style.display='none';
+  document.getElementById('aiUnitStatus').textContent='';
   intakePreview.style.display='none';
   suggest();
 }
@@ -573,13 +556,13 @@ function selectFood(i){
   foodSearch.value=selected.name;
   suggestions.innerHTML='<span class="muted">נבחר: '+selected.name+'</span>';
   grams.focus({preventScroll:true});
-  updateIntakePreview();
+  handleUnitSelection();
 }
 
 function calcIntake(p,unit,a){
   a=Number(a)||0;
   let mult = 0;
-  let unitG = p.unit_g || Number(quickUnitG.value) || 0;
+  let unitG = p.unit_g || 0;
 
   if(unit==='g' || unit==='ml') mult = a / 100;
   else if(unit==='unit' && unitG > 0) mult = (a * unitG) / 100;
@@ -601,20 +584,13 @@ function calcIntake(p,unit,a){
 function updateIntakePreview(){
  if(!selected||!(Number(grams.value)>0)){
    intakePreview.style.display='none';
-   unitFixBox.style.display='none';
    return;
  }
- 
- let unit = unitSelect.value;
- if(unit === 'unit' && !selected.unit_g) {
-   unitFixBox.style.display = 'block';
- } else {
-   unitFixBox.style.display = 'none';
- }
 
+ let unit = unitSelect.value;
  let r=calcIntake(selected,unit,grams.value);
  intakePreview.style.display='block';
- intakePreview.innerHTML=r.known?`<b>לפני הוספה</b><div style="margin-top:8px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b>אין משקל יחידה מוגדר</b><div class="muted">נא להזן את המשקל ליחידה אחת בשדה הצהוב למעלה.</div>`;
+ intakePreview.innerHTML=r.known?`<b>לפני הוספה</b><div style="margin-top:8px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b>אין משקל יחידה מוגדר</b><div class="muted">ממתין להערכת AI או בחר גרמים.</div>`;
 }
 
 function addIntake(){
@@ -623,15 +599,9 @@ function addIntake(){
  if(!selected||!a||a<=0)return alert('בחר מוצר והזן כמות');
  
  let unit=unitSelect.value||'unit';
- 
- if(unit === 'unit' && !selected.unit_g && Number(quickUnitG.value) > 0) {
-   selected.unit_g = Number(quickUnitG.value);
-   const pIdx = db.products.findIndex(x => x.name === selected.name);
-   if(pIdx >= 0) db.products[pIdx].unit_g = selected.unit_g;
- }
 
  let r=calcIntake(selected,unit,a);
- if(!r.known)return alert('למוצר זה לא הוגדר משקל יחידה. נא להזן משקל יחידה בשדה הצהוב או לבחור גרם.');
+ if(!r.known)return alert('למוצר זה לא הוגדר משקל יחידה במאגר. אנא השתמש בגרמים או ודא שיש API Key מוגדר להערכת AI.');
  
  let label=unitSelect.options[unitSelect.selectedIndex]?.text||'יחידה';
  let item={
@@ -646,7 +616,7 @@ function addIntake(){
  };
  if(window.editingIntakeIndex!==null&&window.editingIntakeIndex!==undefined)db.intake[todayKey()][window.editingIntakeIndex]=item;
  else(db.intake[todayKey()]??=[]).push(item);
- save();selected=null;grams.value='1';foodSearch.value='';quickUnitG.value='';unitFixBox.style.display='none';intakePreview.style.display='none';closeModal();renderToday();
+ save();selected=null;grams.value='1';foodSearch.value='';document.getElementById('aiUnitStatus').textContent='';intakePreview.style.display='none';closeModal();renderToday();
 }
 
 function editIntake(i){
