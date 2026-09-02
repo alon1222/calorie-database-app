@@ -154,7 +154,7 @@ textarea{resize:vertical;min-height:50px}
   </div>
   
   <div style="margin-bottom:10px">
-    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">📷 תמונת מוצר (רשות):</label>
+    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">📷 צלם או העלה תמונה אמיתית של המוצר:</label>
     <input type="file" id="pImageInput" accept="image/*" onchange="previewProductImage(event)" style="padding:8px">
     <div id="imgPreviewContainer" style="display:none;margin-top:6px;text-align:center">
       <img id="imgPreview" style="max-height:100px;border-radius:12px;border:1px solid #ddd">
@@ -175,10 +175,10 @@ textarea{resize:vertical;min-height:50px}
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
 </div></div>
 
-<!-- מודאל בחירת אופציות AI עם תמונות -->
+<!-- מודאל בחירת אופציות AI נקיות ללא תמונות שגויות -->
 <div class="modal" id="aiOptionsModal"><div class="sheet">
 <h2>✨ בחר את המוצר המדויק</h2>
-<div class="muted" style="font-size:13px;margin-bottom:10px">מצאנו כמה אופציות מתאימות ב-AI כולל תמונה זיהוי:</div>
+<div class="muted" style="font-size:13px;margin-bottom:10px">מצאנו כמה אופציות מתאימות ב-AI:</div>
 <div id="aiOptionsList"></div>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="document.getElementById('aiOptionsModal').classList.remove('open')">✕ ביטול</button>
 </div></div>
@@ -366,10 +366,10 @@ async function fetchProductWithAI(){
     return;
   }
 
-  aiStatus.textContent = '⚡ מחפש 3-4 אופציות כולל תמונות ב-AI...';
+  aiStatus.textContent = '⚡ מחפש 3-4 אופציות מתאימות ב-AI...';
   aiStatus.style.color = '#4f46e5';
   
-  const promptText = `For the food query: "${nameVal}", provide 3 to 4 common food variations in Hebrew with accurate nutrition per 100g, estimated unit weight in grams, and a representative direct image URL (from Wikimedia/Unsplash/public food image URL). Return ONLY a JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number, "image_url": "string"}]`;
+  const promptText = `For the food query: "${nameVal}", provide 3 to 4 common food variations in Hebrew with accurate nutrition per 100g and estimated portion weight in grams. Return ONLY a JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -404,14 +404,11 @@ async function fetchProductWithAI(){
 function showAiOptionsModal(options) {
   const container = document.getElementById('aiOptionsList');
   container.innerHTML = options.map((opt, idx) => `
-    <div class="ai-option-card" onclick="applyAiSelection(${idx})">
-      <img src="${opt.image_url || 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=100&q=80'}" class="product-img" onerror="this.src='https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=100&q=80'">
-      <div style="flex:1">
-        <b>${opt.name}</b>
-        <div class="muted" style="font-size:12px;margin-top:4px">
-          🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
-          ${opt.unit_g ? `<br>⚡ משקל יחידה: ${opt.unit_g}ג׳` : ''}
-        </div>
+    <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #c7d2fe" onclick="applyAiSelection(${idx})">
+      <b>${opt.name}</b>
+      <div class="muted" style="font-size:12px;margin-top:4px">
+        🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
+        ${opt.unit_g ? `<br>⚡ משקל יחידה: ${opt.unit_g}ג׳` : ''}
       </div>
     </div>
   `).join('');
@@ -430,12 +427,6 @@ function applyAiSelection(index) {
   pcarbs.value = opt.carbs || 0;
   pfat.value = opt.fat || 0;
   if(opt.unit_g) punitg.value = opt.unit_g;
-  
-  if(opt.image_url) {
-    currentImageData = opt.image_url;
-    document.getElementById('imgPreview').src = currentImageData;
-    document.getElementById('imgPreviewContainer').style.display = 'block';
-  }
   
   document.getElementById('aiOptionsModal').classList.remove('open');
   updateProductUnitCalc();
