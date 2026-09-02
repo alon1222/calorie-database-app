@@ -24,6 +24,10 @@ nav button{background:#fff;color:#606872}nav button.active{background:#18202a;co
 .sheet{background:#fff;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px 22px 0 0;position:relative;touch-action:pan-y}
 .spacer{height:75px}.hidden{display:none}
 textarea{resize:vertical;min-height:50px}
+.tab-btn{padding:8px 12px;font-size:13px;border-radius:8px;background:#eef0f3;color:#18202a}
+.tab-btn.active{background:#18202a;color:#fff}
+.search-res-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer;background:#fff;border-radius:8px;margin-bottom:6px}
+.search-res-item:hover{background:#f0f4f8}
 </style>
 </head>
 <body>
@@ -103,21 +107,37 @@ textarea{resize:vertical;min-height:50px}
 
 <div class="modal" id="productModal"><div class="sheet">
 <h2>הוספת מוצר למאגר</h2>
-<input id="pname" placeholder="שם המוצר (למשל: פסק זמן)">
-<div style="display:flex;gap:8px">
-<input id="pbrand" placeholder="מותג/יצרן (רשות)">
-<input id="pbarcode" placeholder="ברקוד (הקלד לחיפוש אוטומטי)" oninput="handleBarcodeTyping(this.value)">
+
+<div style="display:flex;gap:8px;margin-bottom:14px">
+  <button id="tabAutoBtn" class="tab-btn active" style="flex:1" onclick="switchAddMode('auto')">🔍 חיפוש אוטומטי (רשת)</button>
+  <button id="tabManualBtn" class="tab-btn" style="flex:1" onclick="switchAddMode('manual')">✏️ הזנה ידנית</button>
 </div>
-<div id="barcodeStatus" class="muted" style="margin-top:-6px;margin-bottom:10px;font-size:12px;display:none"></div>
-<input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
-<input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
-<div style="display:flex;gap:6px">
-<input id="pprotein" type="number" placeholder="חלבון ל-100ג׳" oninput="updateProductUnitCalc()">
-<input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
-<input id="pfat" type="number" placeholder="שומן ל-100ג׳" oninput="updateProductUnitCalc()">
+
+<!-- מסלול 1: חיפוש אוטומטי ברשת -->
+<div id="autoAddSection">
+  <input id="pNameSearch" placeholder="הקלד שם מוצר (למשל: חזה אווז, תפוח)..." oninput="searchOnlineProduct(this.value)">
+  <div id="onlineSearchResults" style="max-height:180px;overflow-y:auto;margin-bottom:10px"></div>
 </div>
-<div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:#eef2f7;font-size:14px"></div>
-<button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר</button>
+
+<!-- מסלול 2 / טופס פרטים -->
+<div id="productFormFields">
+  <input id="pname" placeholder="שם המוצר">
+  <div style="display:flex;gap:8px">
+    <input id="pbrand" placeholder="מותג/יצרן (רשות)">
+    <input id="pbarcode" placeholder="ברקוד (רשות)">
+  </div>
+  <div id="barcodeStatus" class="muted" style="margin-top:-6px;margin-bottom:10px;font-size:12px;display:none"></div>
+  <input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
+  <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
+  <div style="display:flex;gap:6px">
+    <input id="pprotein" type="number" placeholder="חלבון ל-100ג׳" oninput="updateProductUnitCalc()">
+    <input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
+    <input id="pfat" type="number" placeholder="שומן ל-100ג׳" oninput="updateProductUnitCalc()">
+  </div>
+  <div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:#eef2f7;font-size:14px"></div>
+</div>
+
+<button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר למאגר</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
 </div></div>
 
@@ -149,58 +169,82 @@ function todayKey(){return new Date().toISOString().slice(0,10)}
 function today(){return db.intake[todayKey()]||[]}
 function round1(v){return Math.round(Number(v||0)*10)/10}
 
-let barcodeTimeout = null;
+function cleanCode(str){
+  return String(str || '').replace(/\D/g, '').trim();
+}
 
-function handleBarcodeTyping(code){
-  code = code.trim();
-  const statusEl = document.getElementById('barcodeStatus');
-  if(code.length < 3) {
-    statusEl.style.display = 'none';
-    return;
-  }
+let searchTimeout = null;
 
-  // 1. בדיקה אם הברקוד כבר קיים במאגר המקומי
-  const localIndex = db.products.findIndex((x, i) => i !== window.editingProductIndex && x.barcode && String(x.barcode) === code);
-  if(localIndex >= 0) {
-    const existing = db.products[localIndex];
-    statusEl.style.display = 'block';
-    statusEl.style.color = '#c53030';
-    statusEl.innerHTML = `⚠️ מוצר עם ברקוד זה כבר קיים במאגר: <b>${existing.name}</b>. <a href="#" onclick="editProduct(${localIndex});return false;" style="color:#18202a;text-decoration:underline">לחץ כאן לעריכתו</a>`;
-    return;
+function switchAddMode(mode){
+  if(mode === 'auto'){
+    tabAutoBtn.classList.add('active');
+    tabManualBtn.classList.remove('active');
+    autoAddSection.style.display = 'block';
   } else {
-    statusEl.style.color = '#68707a';
+    tabManualBtn.classList.add('active');
+    tabAutoBtn.classList.remove('active');
+    autoAddSection.style.display = 'none';
+    onlineSearchResults.innerHTML = '';
   }
+}
 
-  // 2. חיפוש ברשת במידה ולא קיים במאגר
-  if(code.length >= 8) {
-    clearTimeout(barcodeTimeout);
-    barcodeTimeout = setTimeout(async () => {
-      statusEl.style.display = 'block';
-      statusEl.textContent = '🔍 מחפש מוצר ברשת לפי ברקוד...';
-      try {
-        const res = await fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code));
-        const data = await res.json();
-        if(data.status === 1 && data.product){
-          const p = data.product;
-          const n = p.nutriments || {};
-          if(!pname.value) pname.value = p.product_name || '';
-          if(!pbrand.value) pbrand.value = p.brands || '';
-          if(n['energy-kcal_100g']) pkcal.value = n['energy-kcal_100g'];
-          if(n['proteins_100g']) pprotein.value = n['proteins_100g'];
-          if(n['carbohydrates_100g']) pcarbs.value = n['carbohydrates_100g'];
-          if(n['fat_100g']) pfat.value = n['fat_100g'];
-          if(p.product_quantity && !punitg.value) punitg.value = p.product_quantity;
-          
-          statusEl.textContent = '✅ הנתונים הושלמו בהצלחה מ-OpenFoodFacts!';
-          updateProductUnitCalc();
-        } else {
-          statusEl.textContent = 'ℹ️ ברקוד חדש (לא נמצא במאגר העולמי). אנא הזן את פרטיו.';
-        }
-      } catch(e) {
-        statusEl.textContent = '⚠️ שגיאה בחיפוש הברקוד ברשת.';
-      }
-    }, 600);
+function searchOnlineProduct(query){
+  query = query.trim();
+  if(query.length < 2) {
+    onlineSearchResults.innerHTML = '';
+    return;
   }
+  
+  clearTimeout(searchTimeout);
+  onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">🔍 מחפש ברשת...</div>';
+  
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch('https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(query) + '&search_simple=1&action=process&json=1&page_size=6');
+      const data = await res.json();
+      
+      if(data.products && data.products.length > 0) {
+        onlineSearchResults.innerHTML = data.products.map((p, idx) => {
+          const n = p.nutriments || {};
+          const k = Math.round(n['energy-kcal_100g'] || 0);
+          const prot = round1(n['proteins_100g'] || 0);
+          const carb = round1(n['carbohydrates_100g'] || 0);
+          const fat = round1(n['fat_100g'] || 0);
+          const brand = p.brands || 'כללי';
+          
+          return `<div class="search-res-item" onclick="selectOnlineResult(${idx})">
+            <b>${p.product_name || query}</b> <small class="muted">(${brand})</small>
+            <div class="muted" style="font-size:12px;margin-top:2px">
+              🔥 ${k} קק״ל | 💪 ${prot}ג׳ | 🍞 ${carb}ג׳ | 🥑 ${fat}ג׳ ל-100ג׳
+            </div>
+          </div>`;
+        }).join('');
+        window._currentOnlineResults = data.products;
+      } else {
+        onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">לא נמצאו תוצאות ברשת. נסה ניסוח אחר או עלי ללשונית "הזנה ידנית".</div>';
+      }
+    } catch(e) {
+      onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">⚠️ שגיאה בחיפוש ברשת. כנס להזנה ידנית.</div>';
+    }
+  }, 500);
+}
+
+function selectOnlineResult(idx){
+  if(!window._currentOnlineResults || !window._currentOnlineResults[idx]) return;
+  const p = window._currentOnlineResults[idx];
+  const n = p.nutriments || {};
+  
+  pname.value = p.product_name || pNameSearch.value;
+  pbrand.value = p.brands || '';
+  pbarcode.value = p.code || '';
+  pkcal.value = Math.round(n['energy-kcal_100g'] || 0);
+  pprotein.value = round1(n['proteins_100g'] || 0);
+  pcarbs.value = round1(n['carbohydrates_100g'] || 0);
+  pfat.value = round1(n['fat_100g'] || 0);
+  if(p.product_quantity) punitg.value = p.product_quantity;
+  
+  onlineSearchResults.innerHTML = '<div class="muted" style="color:green;padding:6px">✅ הנתונים שואבו בהצלחה! בדוק אותם ולחץ "שמור מוצר למאגר".</div>';
+  updateProductUnitCalc();
 }
 
 function exportBackup(){
@@ -361,6 +405,8 @@ function openProduct(){
   document.querySelectorAll('#productModal input').forEach(x=>x.value='');
   document.getElementById('barcodeStatus').style.display='none';
   productUnitPreview.style.display='none';
+  onlineSearchResults.innerHTML = '';
+  switchAddMode('auto');
   lockPageScroll();
   productModal.classList.add('open');
 }
@@ -458,7 +504,7 @@ function saveProduct(){
  const editing=window.editingProductIndex;
  
  if(p.barcode){
-   const duplicate=db.products.findIndex((x,i)=>i!==editing && x.barcode && String(x.barcode)===String(p.barcode));
+   const duplicate=db.products.findIndex((x,i)=>i!==editing && x.barcode && cleanCode(x.barcode)===cleanCode(p.barcode));
    if(duplicate>=0){
      if(confirm(`מוצר עם ברקוד זה כבר קיים במאגר ("${db.products[duplicate].name}"). האם להחליף ולעדכן את הנתונים שלו?`)){
        db.products[duplicate]=Object.assign({}, db.products[duplicate], p);
@@ -476,6 +522,7 @@ function editProduct(i){
  window.editingProductIndex=i;
  document.querySelector('#productModal h2').textContent='עריכת מוצר';
  document.getElementById('barcodeStatus').style.display='none';
+ switchAddMode('manual');
  lockPageScroll();productModal.classList.add('open');
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
@@ -516,8 +563,7 @@ async function captureBarcode(){
 async function searchBarcode(code){
   barcodeResult.style.display='block';barcodeResult.innerHTML='מחפש...';
   
-  // בדיקה אם הברקוד שנסרק כבר קיים במאגר
-  const localIndex = db.products.findIndex(x => x.barcode && String(x.barcode) === String(code));
+  const localIndex = db.products.findIndex(x => x.barcode && cleanCode(x.barcode) === cleanCode(code));
   if(localIndex >= 0) {
     const p = db.products[localIndex];
     barcodeResult.innerHTML = `<b>⚠️ המוצר כבר קיים במאגר!</b><br>שם: ${p.name}<br>ברקוד: ${p.barcode}<br><button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${localIndex})">✏️ ערוך מוצר קיים</button>`;
@@ -525,7 +571,7 @@ async function searchBarcode(code){
   }
 
   try{
-    const res=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code));
+    const res=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(cleanCode(code)));
     const data=await res.json();
     if(data.status===1&&data.product){
       const p=data.product, n=p.nutriments||{};
@@ -548,7 +594,7 @@ async function searchBarcode(code){
 function addFoundProduct(){
   if(!window.foundProduct)return;
   const p=window.foundProduct;
-  const idx=db.products.findIndex(x=>x.barcode&&String(x.barcode)===String(p.barcode));
+  const idx=db.products.findIndex(x=>x.barcode&&cleanCode(x.barcode)===cleanCode(p.barcode));
   if(idx>=0) db.products[idx]=Object.assign({},db.products[idx],p);
   else db.products.push(p);
   save();closeScanner();show('products');
