@@ -68,7 +68,7 @@ textarea{resize:vertical;min-height:50px}
   <b>חיפוש וניהול מאגר</b>
   <input id="search" placeholder="חפש מוצר..." oninput="renderProducts()">
   <div style="display:flex;gap:8px">
-    <button class="primary" style="flex:1" onclick="openScanner()">📷 סרוק ברקוד / צלם מוצר</button>
+    <button class="primary" style="flex:1" onclick="openScanner()">📷 סרוק ברקוד</button>
     <button class="ai-btn" style="flex:1" onclick="openProduct()">＋ הוסף מוצר (AI)</button>
   </div>
 </div>
@@ -103,10 +103,10 @@ textarea{resize:vertical;min-height:50px}
 </div></div>
 
 <div class="modal" id="scannerModal"><div class="sheet">
-<h2>סריקה חכמה</h2>
+<h2>סריקת ברקוד</h2>
 <div id="scannerStatus" class="muted" style="margin-bottom:10px">מכין את המצלמה...</div>
 <video id="barcodeVideo" playsinline muted style="width:100%;border-radius:16px;background:#111;max-height:55vh;object-fit:cover"></video>
-<button id="captureBarcodeBtn" class="primary" style="width:100%;margin-top:12px" onclick="captureAndProcessSmart()">📸 צלם וזהה מוצר / ברקוד</button>
+<button id="captureBarcodeBtn" class="primary" style="width:100%;margin-top:12px" onclick="captureBarcode()">📸 צלם וחפש מוצר</button>
 <div id="barcodeResult" class="card" style="display:none;margin-top:12px"></div>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeScanner()">✕ ביטול / סגור</button>
 </div></div>
@@ -768,95 +768,20 @@ async function openScanner(){
     if(!navigator.mediaDevices?.getUserMedia) throw new Error('camera unavailable');
     scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
     barcodeVideo.srcObject=scannerStream;await barcodeVideo.play();
-    scannerStatus.textContent='כוון את הברקוד למרכז ולחץ על כפתור הצילום החכם.';
+    scannerStatus.textContent='כוון את הברקוד למרכז ולחץ על "צלם וחפש מוצר".';
   }catch(e){scannerStatus.textContent='לא ניתן לפתוח את המצלמה.';}
 }
 
-// כפתור אחיד חכם: מנסה ברקוד, אם נכשל מפעיל Vision AI על התמונה!
-async function captureAndProcessSmart(){
-  if(!barcodeVideo.videoWidth) return;
-  scannerStatus.textContent='סורק ברקוד...';
-  
-  let code = "";
-  if(window.ZXingBrowser){
-    try{
-      const canvas=document.createElement('canvas');canvas.width=barcodeVideo.videoWidth;canvas.height=barcodeVideo.videoHeight;
-      const ctx=canvas.getContext('2d');ctx.drawImage(barcodeVideo,0,0);
-      const reader=new ZXingBrowser.BrowserMultiFormatReader();
-      const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/jpeg'));
-      code = result.getText();
-    }catch(e){/* ברקוד לא זוהה פיזית, נמשיך ל-AI */}
-  }
-
-  if(code){
-    stopScanner();
-    await searchBarcode(code);
-  } else {
-    // ברקוד לא זוהה - נשלח את התמונה ל-Vision AI של Gemini
-    scannerStatus.textContent='⚡ ברקוד לא זוהה, מנתח את אריזת המוצר ב-AI...';
-    scannerStatus.style.color='#4f46e5';
-    
+async function captureBarcode(){
+  if(!window.ZXingBrowser||!barcodeVideo.videoWidth)return;
+  try{
     const canvas=document.createElement('canvas');canvas.width=barcodeVideo.videoWidth;canvas.height=barcodeVideo.videoHeight;
     const ctx=canvas.getContext('2d');ctx.drawImage(barcodeVideo,0,0);
-    const dataUrl = canvas.toDataURL('image/jpeg');
-    currentImageData = dataUrl;
-
-    const apiKey = localStorage.getItem(API_KEY_STORAGE);
-    if(!apiKey){
-      scannerStatus.textContent='❌ חסר API Key להפעלת זיהוי תמונה. הגדר בהגדרות ⚙️ API.';
-      scannerStatus.style.color='#c53030';
-      return;
-    }
-
-    const base64Data = dataUrl.split(',')[1];
-    const promptText = `Analyze this food product package image. Extract the product name, brand, and nutritional values per 100g (kcal, protein, carbs, fat) and unit weight in grams if available. Return ONLY a valid JSON object without markdown: {"name": "string", "brand": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}`;
-
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: promptText },
-              { inline_data: { mime_type: "image/jpeg", data: base64Data } }
-            ]
-          }]
-        })
-      });
-
-      const data = await res.json();
-      if(data.error) throw new Error(data.error.message);
-
-      let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      textResult = textResult.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(textResult);
-
-      stopScanner();
-      scannerModal.classList.remove('open');
-      unlockPageScroll();
-
-      // פותח את טופס הוספת המוצר עם הנתונים שזוהו מהתמונה
-      openProduct();
-      if(parsed.name) pname.value = parsed.name;
-      if(parsed.brand) pbrand.value = parsed.brand;
-      if(parsed.kcal) pkcal.value = parsed.kcal;
-      if(parsed.protein) pprotein.value = parsed.protein;
-      if(parsed.carbs) pcarbs.value = parsed.carbs;
-      if(parsed.fat) pfat.value = parsed.fat;
-      if(parsed.unit_g) punitg.value = parsed.unit_g;
-      
-      document.getElementById('imgPreview').src = currentImageData;
-      document.getElementById('imgPreviewContainer').style.display = 'block';
-      updateProductUnitCalc();
-      checkRealtimeDuplicate();
-
-    } catch(err) {
-      console.error(err);
-      scannerStatus.textContent='❌ שגיאה בזיהוי התמונה ב-AI. נסה שוב.';
-      scannerStatus.style.color='#c53030';
-    }
-  }
+    const reader=new ZXingBrowser.BrowserMultiFormatReader();
+    const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/jpeg'));
+    const code=result.getText();
+    stopScanner();await searchBarcode(code);
+  }catch(e){scannerStatus.textContent='לא זוהה ברקוד, נסה שוב.';}
 }
 
 async function searchBarcode(code){
@@ -886,10 +811,8 @@ async function searchBarcode(code){
       
       let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(window.foundProduct.kcal * unitG / 100)} קק״ל` : '';
       barcodeResult.innerHTML=`<b>${window.foundProduct.name}</b><br>קלוריות ל-100ג׳: ${window.foundProduct.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
-    }else{
-      barcodeResult.innerHTML='הברקוד לא נמצא במאגר החיצוני. פתח את המצלמה שוב וצלם ישירות את חזית האריזה לזיהוי חכם ב-AI!';
-    }
-  }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד';}
+    }else{barcodeResult.innerHTML='המוצר לא נמצא ב-OpenFoodFacts';}
+  }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש המוצר';}
 }
 
 function addFoundProduct(){
@@ -908,4 +831,3 @@ dateText();renderToday();
 </script>
 </body>
 </html>
-
