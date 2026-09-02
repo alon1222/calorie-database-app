@@ -192,12 +192,18 @@ function round1(v){return Math.round(Number(v||0)*10)/10}
 
 function cleanCode(str){ return String(str || '').replace(/\D/g, '').trim(); }
 
+// חישוב דמיון מילים/טקסט בצורה משופרת
 function getSimilarity(a, b) {
-  a = a.toLowerCase().trim();
-  b = b.toLowerCase().trim();
+  a = a.toLowerCase().replace(/[׳'"]/g, '').trim();
+  b = b.toLowerCase().replace(/[׳'"]/g, '').trim();
   if (a === b) return 1.0;
-  if (!a.length || !b.length) return 0.0;
+  if (!a || !b) return 0.0;
   
+  // בדיקת הכלה פשוטה
+  if (a.includes(b) || b.includes(a)) {
+    return Math.max(a.length, b.length) > 0 ? Math.min(a.length, b.length) / Math.max(a.length, b.length) : 0.8;
+  }
+
   let matrix = [];
   for (let i = 0; i <= b.length; i++) matrix[i] = [i];
   for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
@@ -233,9 +239,10 @@ function checkRealtimeDuplicate(){
   let highestSim = 0;
   
   db.products.forEach((x, i) => {
-    if(i !== editing) {
+    // בודק רק מול מוצרים אחרים
+    if(editing === null || editing === undefined || i !== editing) {
       let sim = getSimilarity(val, x.name);
-      if(sim >= 0.65 && sim > highestSim) { // זיהוי דמיון מ-65%
+      if(sim >= 0.5 && sim > highestSim) { // רגישות מורחבת (מ-50% דמיון)
         highestSim = sim;
         matchIndex = i;
       }
@@ -245,8 +252,8 @@ function checkRealtimeDuplicate(){
   if(matchIndex >= 0) {
     const matchedProduct = db.products[matchIndex];
     notice.style.display = 'block';
-    notice.innerHTML = `⚠️ <b>שים לב:</b> מצאנו מוצר דומה במאגר: <b>"${matchedProduct.name}"</b>.<br>` +
-      `<button type="button" class="secondary" style="padding:4px 8px;font-size:12px;margin-top:6px" onclick="editProduct(${matchIndex})">✏️ לעריכת המוצר הקיים לחץ כאן</button>`;
+    notice.innerHTML = `⚠️ <b>נמצא מוצר דומה במאגר:</b> "${matchedProduct.name}"<br>` +
+      `<button type="button" class="secondary" style="padding:6px 10px;font-size:12px;margin-top:6px;width:100%" onclick="editProduct(${matchIndex})">✏️ לעריכת המוצר הקיים לחץ כאן</button>`;
   } else {
     notice.style.display = 'none';
   }
@@ -598,9 +605,9 @@ function saveProduct(){
    let similarIndex = -1;
    let highestSim = 0;
    db.products.forEach((x, i) => {
-     if(i !== editing) {
+     if(editing === null || editing === undefined || i !== editing) {
        let sim = getSimilarity(p.name, x.name);
-       if(sim >= 0.75 && sim > highestSim) {
+       if(sim >= 0.5 && sim > highestSim) {
          highestSim = sim;
          similarIndex = i;
        }
