@@ -108,7 +108,7 @@ textarea{resize:vertical;min-height:50px}
 
 <!-- חיפוש אוטומטי מהרשת -->
 <div>
-  <input id="pNameSearch" placeholder="🔍 חפש ברשת למילוי אוטומטי (למשל: חזה אווז)..." oninput="searchOnlineProduct(this.value)">
+  <input id="pNameSearch" placeholder="🔍 חפש ברשת למילוי אוטומטי (למשל: חזה עוף)..." oninput="searchOnlineProduct(this.value)">
   <div id="onlineSearchResults" style="max-height:160px;overflow-y:auto;margin-bottom:10px"></div>
 </div>
 
@@ -170,19 +170,29 @@ function cleanCode(str){
 
 let searchTimeout = null;
 
-// מילון תרגום בסיסי לעברית במידה והחיפוש העברי ב-OFF מחזיר 0 תוצאות
+// מילון תרגום מורחב למזונות בסיסיים
 const dictHE2EN = {
-  'חזה אווז': 'duck breast',
   'חזה עוף': 'chicken breast',
+  'עוף': 'chicken',
+  'חזה אווז': 'duck breast',
   'אווז': 'goose',
   'בקר': 'beef',
+  'בשר טחון': 'minced meat',
   'סטייק': 'steak',
+  'פרגית': 'chicken thigh',
+  ' הודו': 'turkey',
   'ביצה': 'egg',
   'חלב': 'milk',
   'גבינה': 'cheese',
+  'קוטג': 'cottage cheese',
+  'יוגורט': 'yogurt',
   'לחם': 'bread',
   'אורז': 'rice',
-  'טונה': 'tuna'
+  'טונה': 'tuna',
+  'שיבולת שועל': 'oats',
+  'תפוח אדמה': 'potato',
+  'בטטה': 'sweet potato',
+  'שמן זית': 'olive oil'
 };
 
 function searchOnlineProduct(query){
@@ -197,27 +207,32 @@ function searchOnlineProduct(query){
   
   searchTimeout = setTimeout(async () => {
     try {
-      // ניסיון חיפוש ראשון דרך API חיפוש מותאם
-      let url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(query) + '&search_simple=1&action=process&json=1&page_size=6';
+      let products = [];
+      
+      // 1. ניסיון חיפוש ראשון ברשת במונח המקורי
+      let url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(query) + '&search_simple=1&action=process&json=1&page_size=8';
       let res = await fetch(url);
       let data = await res.json();
-      
-      let products = data.products || [];
+      products = data.products || [];
 
-      // אם לא נמצאו תוצאות והחיפוש בעברית - ניסיון חיפוש עם תרגום בסיסי
-      if(products.length === 0) {
-        let translated = dictHE2EN[query];
-        if(!translated) {
-          for(let key in dictHE2EN) {
-            if(query.includes(key)) { translated = dictHE2EN[key]; break; }
-          }
+      // 2. תרגום אוטומטי אם התקבלו מעט תוצאות או 0 תוצאות
+      let translated = dictHE2EN[query];
+      if(!translated) {
+        for(let key in dictHE2EN) {
+          if(query.includes(key)) { translated = dictHE2EN[key]; break; }
         }
-        if(translated) {
-          let url2 = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(translated) + '&search_simple=1&action=process&json=1&page_size=6';
-          let res2 = await fetch(url2);
-          let data2 = await res2.json();
-          products = data2.products || [];
-        }
+      }
+
+      if((products.length < 2) && translated) {
+        let url2 = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(translated) + '&search_simple=1&action=process&json=1&page_size=8';
+        let res2 = await fetch(url2);
+        let data2 = await res2.json();
+        let enProducts = data2.products || [];
+        // איחוד תוצאות ללא כפילויות
+        let existingCodes = new Set(products.map(p => p.code));
+        enProducts.forEach(p => {
+          if(!existingCodes.has(p.code)) products.push(p);
+        });
       }
       
       if(products.length > 0) {
@@ -228,9 +243,10 @@ function searchOnlineProduct(query){
           const carb = round1(n['carbohydrates_100g'] || n['carbohydrates'] || 0);
           const fat = round1(n['fat_100g'] || n['fat'] || 0);
           const brand = p.brands || 'כללי';
+          const pName = p.product_name || p.product_name_en || query;
           
           return `<div class="search-res-item" onclick="selectOnlineResult(${idx})">
-            <b>${p.product_name || query}</b> <small class="muted">(${brand})</small>
+            <b>${pName}</b> <small class="muted">(${brand})</small>
             <div class="muted" style="font-size:12px;margin-top:2px">
               🔥 ${k} קק״ל | 💪 ${prot}ג׳ | 🍞 ${carb}ג׳ | 🥑 ${fat}ג׳ ל-100ג׳
             </div>
@@ -244,7 +260,7 @@ function searchOnlineProduct(query){
       console.error(e);
       onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">⚠️ שגיאה בתקשורת. ניתן להזין את הנתונים ידנית.</div>';
     }
-  }, 400);
+  }, 350);
 }
 
 function selectOnlineResult(idx){
@@ -252,7 +268,7 @@ function selectOnlineResult(idx){
   const p = window._currentOnlineResults[idx];
   const n = p.nutriments || {};
   
-  pname.value = p.product_name || pNameSearch.value;
+  pname.value = p.product_name || p.product_name_en || pNameSearch.value;
   pbrand.value = p.brands || '';
   pbarcode.value = p.code || pbarcode.value || '';
   pkcal.value = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0);
