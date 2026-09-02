@@ -166,6 +166,8 @@ const API_KEY_STORAGE='gemini_api_key_v1';
 const DEFAULT_PRODUCTS = [
   { name: 'חזה עוף (לא מבושל)', brand: 'כללי', barcode: '', kcal: 110, protein: 23, carbs: 0, fat: 1.2, unit_g: 150, updated: 'מובנה' },
   { name: 'חזה עוף מבושל/צלי', brand: 'כללי', barcode: '', kcal: 165, protein: 31, carbs: 0, fat: 3.6, unit_g: 150, updated: 'מובנה' },
+  { name: 'גבינה צהובה 5%', brand: 'כללי', barcode: '', kcal: 168, protein: 32, carbs: 0.5, fat: 5, unit_g: 20, updated: 'מובנה' },
+  { name: 'קוטג׳ 5%', brand: 'כללי', barcode: '', kcal: 95, protein: 11, carbs: 1.5, fat: 5, unit_g: 250, updated: 'מובנה' },
   { name: 'חזה אווז', brand: 'כללי', barcode: '', kcal: 338, protein: 16, carbs: 0, fat: 30, unit_g: 200, updated: 'מובנה' },
   { name: 'ביצה L', brand: 'כללי', barcode: '', kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.5, unit_g: 60, updated: 'מובנה' },
   { name: 'אורז לבן מבושל', brand: 'כללי', barcode: '', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, unit_g: 150, updated: 'מובנה' },
@@ -176,8 +178,17 @@ const DEFAULT_PRODUCTS = [
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
   db = { products: DEFAULT_PRODUCTS, intake: {} };
-  localStorage.setItem(KEY, JSON.stringify(db));
+} else {
+  DEFAULT_PRODUCTS.forEach(defItem => {
+    const idx = db.products.findIndex(p => p.name === defItem.name);
+    if(idx === -1) {
+      db.products.push(defItem);
+    } else if(db.products[idx].updated === 'מובנה') {
+      db.products[idx] = defItem;
+    }
+  });
 }
+save();
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
@@ -215,7 +226,6 @@ function autoFetchAI() {
   }
   aiStatus.textContent = '⏳ ממתין לסיום הקלדה...';
   
-  // השהיה של 1.2 שניות מאז ההקלדה האחרונה
   aiSearchTimer = setTimeout(() => {
     fetchWithAI();
   }, 1200); 
