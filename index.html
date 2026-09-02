@@ -192,68 +192,45 @@ function round1(v){return Math.round(Number(v||0)*10)/10}
 
 function cleanCode(str){ return String(str || '').replace(/\D/g, '').trim(); }
 
-// חישוב דמיון מילים/טקסט בצורה משופרת
-function getSimilarity(a, b) {
-  a = a.toLowerCase().replace(/[׳'"]/g, '').trim();
-  b = b.toLowerCase().replace(/[׳'"]/g, '').trim();
-  if (a === b) return 1.0;
-  if (!a || !b) return 0.0;
-  
-  // בדיקת הכלה פשוטה
-  if (a.includes(b) || b.includes(a)) {
-    return Math.max(a.length, b.length) > 0 ? Math.min(a.length, b.length) / Math.max(a.length, b.length) : 0.8;
-  }
-
-  let matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
-      }
-    }
-  }
-  let maxLen = Math.max(a.length, b.length);
-  return 1 - matrix[b.length][a.length] / maxLen;
+// ניקוי טקסט בסיסי להשוואת תווים נקייה
+function normalizeStr(str) {
+  return String(str || '')
+    .toLowerCase()
+    .replace(/[׳'"]/g, '')
+    .trim();
 }
 
+// בדיקת כפילויות בזמן אמת לפי תווים ומילים
 function checkRealtimeDuplicate(){
-  const val = pname.value.trim();
+  const val = normalizeStr(pname.value);
   const editing = window.editingProductIndex;
   const notice = document.getElementById('duplicateNotice');
   
+  // אם הוקלדו פחות מ-2 תווים - הסתר אזהרה
   if(!val || val.length < 2) {
     notice.style.display = 'none';
     return;
   }
   
-  let matchIndex = -1;
-  let highestSim = 0;
+  let matchedIndex = -1;
   
-  db.products.forEach((x, i) => {
-    // בודק רק מול מוצרים אחרים
-    if(editing === null || editing === undefined || i !== editing) {
-      let sim = getSimilarity(val, x.name);
-      if(sim >= 0.5 && sim > highestSim) { // רגישות מורחבת (מ-50% דמיון)
-        highestSim = sim;
-        matchIndex = i;
-      }
+  for(let i = 0; i < db.products.length; i++) {
+    if(editing !== null && editing !== undefined && i === editing) continue;
+    
+    let target = normalizeStr(db.products[i].name);
+    
+    // בדיקה אם המחרוזת שהוקלדה מוכלת בשם המוצר במאגר או להפך
+    if(target.includes(val) || val.includes(target)) {
+      matchedIndex = i;
+      break;
     }
-  });
+  }
 
-  if(matchIndex >= 0) {
-    const matchedProduct = db.products[matchIndex];
+  if(matchedIndex >= 0) {
+    const matchedProduct = db.products[matchedIndex];
     notice.style.display = 'block';
-    notice.innerHTML = `⚠️ <b>נמצא מוצר דומה במאגר:</b> "${matchedProduct.name}"<br>` +
-      `<button type="button" class="secondary" style="padding:6px 10px;font-size:12px;margin-top:6px;width:100%" onclick="editProduct(${matchIndex})">✏️ לעריכת המוצר הקיים לחץ כאן</button>`;
+    notice.innerHTML = `⚠️ <b>מצאנו מוצר דומה במאגר:</b> "${matchedProduct.name}"<br>` +
+      `<button type="button" class="secondary" style="padding:6px 10px;font-size:12px;margin-top:6px;width:100%" onclick="editProduct(${matchedIndex})">✏️ לעריכת המוצר הקיים לחץ כאן</button>`;
   } else {
     notice.style.display = 'none';
   }
@@ -602,23 +579,22 @@ function saveProduct(){
      } else return;
    }
  } else {
-   let similarIndex = -1;
-   let highestSim = 0;
+   let val = normalizeStr(p.name);
+   let matchedIndex = -1;
    db.products.forEach((x, i) => {
      if(editing === null || editing === undefined || i !== editing) {
-       let sim = getSimilarity(p.name, x.name);
-       if(sim >= 0.5 && sim > highestSim) {
-         highestSim = sim;
-         similarIndex = i;
+       let target = normalizeStr(x.name);
+       if(target.includes(val) || val.includes(target)) {
+         matchedIndex = i;
        }
      }
    });
 
-   if(similarIndex >= 0) {
-     const similarName = db.products[similarIndex].name;
-     if(!confirm(`⚠️ נמצא מוצר בעל שם דומה במאגר: "${similarName}".\n\nהאם מדובר באותו מוצר? לחץ 'אישור' כדי לעדכן אותו, או 'ביטול' כדי לשמור כמוצר חדש.`)) {
+   if(matchedIndex >= 0) {
+     const similarName = db.products[matchedIndex].name;
+     if(!confirm(`⚠️ מצאנו מוצר דומה במאגר: "${similarName}".\n\nהאם מדובר באותו מוצר? לחץ 'אישור' כדי לעדכן אותו, או 'ביטול' כדי לשמור כמוצר חדש.`)) {
      } else {
-       db.products[similarIndex] = Object.assign({}, db.products[similarIndex], p);
+       db.products[matchedIndex] = Object.assign({}, db.products[matchedIndex], p);
        save();closeModal();renderProducts();return;
      }
    }
