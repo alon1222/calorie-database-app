@@ -243,8 +243,11 @@ function selectOnlineResult(idx){
   pfat.value = round1(n['fat_100g'] || 0);
   if(p.product_quantity) punitg.value = p.product_quantity;
   
-  onlineSearchResults.innerHTML = '<div class="muted" style="color:green;padding:6px">✅ הנתונים שואבו בהצלחה! בדוק אותם ולחץ "שמור מוצר למאגר".</div>';
+  switchAddMode('manual');
   updateProductUnitCalc();
+  
+  productUnitPreview.style.display = 'block';
+  productUnitPreview.innerHTML = `✅ <b>הנתונים שואבו בהצלחה מהרשת!</b><br>בדוק את הערכים ולחץ על "שמור מוצר למאגר".`;
 }
 
 function updateExistingProductOnline(i){
