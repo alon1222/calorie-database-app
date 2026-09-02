@@ -106,7 +106,7 @@ textarea{resize:vertical;min-height:50px}
 </div></div>
 
 <div class="modal" id="productModal"><div class="sheet">
-<h2>הוספת מוצר למאגר</h2>
+<h2 id="productModalTitle">הוספת מוצר למאגר</h2>
 
 <div style="display:flex;gap:8px;margin-bottom:14px">
   <button id="tabAutoBtn" class="tab-btn active" style="flex:1" onclick="switchAddMode('auto')">🔍 חיפוש אוטומטי (רשת)</button>
@@ -236,7 +236,7 @@ function selectOnlineResult(idx){
   
   pname.value = p.product_name || pNameSearch.value;
   pbrand.value = p.brands || '';
-  pbarcode.value = p.code || '';
+  pbarcode.value = p.code || pbarcode.value || '';
   pkcal.value = Math.round(n['energy-kcal_100g'] || 0);
   pprotein.value = round1(n['proteins_100g'] || 0);
   pcarbs.value = round1(n['carbohydrates_100g'] || 0);
@@ -245,6 +245,15 @@ function selectOnlineResult(idx){
   
   onlineSearchResults.innerHTML = '<div class="muted" style="color:green;padding:6px">✅ הנתונים שואבו בהצלחה! בדוק אותם ולחץ "שמור מוצר למאגר".</div>';
   updateProductUnitCalc();
+}
+
+function updateExistingProductOnline(i){
+  const p = db.products[i];
+  if(!p) return;
+  editProduct(i);
+  switchAddMode('auto');
+  pNameSearch.value = (p.name + ' ' + (p.brand||'')).trim();
+  searchOnlineProduct(pNameSearch.value);
 }
 
 function exportBackup(){
@@ -359,9 +368,10 @@ function renderProducts(){
    <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
    <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
    ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
-   </div><div style="display:flex;flex-direction:column;gap:6px;min-width:76px">
-   <button class="secondary" onclick="editProduct(${i})">✏️ ערוך</button>
-   <button class="secondary" onclick="deleteProduct(${i})">🗑️ מחק</button>
+   </div><div style="display:flex;flex-direction:column;gap:6px;min-width:110px">
+   <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="updateExistingProductOnline(${i})">🔍 עדכן מהרשת</button>
+   <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
+   <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
    </div></div>`
  }).join('')||'<div class="muted">לא נמצאו מוצרים.</div>';
 }
@@ -401,7 +411,7 @@ function openAdd(){
 
 function openProduct(){
   window.editingProductIndex=null;
-  document.querySelector('#productModal h2').textContent='הוספת מוצר למאגר';
+  productModalTitle.textContent='הוספת מוצר למאגר';
   document.querySelectorAll('#productModal input').forEach(x=>x.value='');
   document.getElementById('barcodeStatus').style.display='none';
   productUnitPreview.style.display='none';
@@ -520,7 +530,7 @@ function saveProduct(){
 function editProduct(i){
  const p=db.products[i];if(!p)return;
  window.editingProductIndex=i;
- document.querySelector('#productModal h2').textContent='עריכת מוצר';
+ productModalTitle.textContent='עריכת מוצר במאגר';
  document.getElementById('barcodeStatus').style.display='none';
  switchAddMode('manual');
  lockPageScroll();productModal.classList.add('open');
