@@ -103,8 +103,9 @@ textarea{resize:vertical;min-height:50px}
 <input id="pname" placeholder="שם המוצר (למשל: פסק זמן)">
 <div style="display:flex;gap:8px">
 <input id="pbrand" placeholder="מותג/יצרן (רשות)">
-<input id="pbarcode" placeholder="ברקוד (רשות)">
+<input id="pbarcode" placeholder="ברקוד (הקלד לחיפוש אוטומטי)" oninput="fetchBarcodeData(this.value)">
 </div>
+<div id="barcodeStatus" class="muted" style="margin-top:-6px;margin-bottom:10px;font-size:12px;display:none"></div>
 <input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
 <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
 <div style="display:flex;gap:6px">
@@ -144,6 +145,43 @@ function dateText(){document.getElementById('date').textContent=new Date().toLoc
 function todayKey(){return new Date().toISOString().slice(0,10)}
 function today(){return db.intake[todayKey()]||[]}
 function round1(v){return Math.round(Number(v||0)*10)/10}
+
+let barcodeTimeout = null;
+async function fetchBarcodeData(code){
+  code = code.trim();
+  const statusEl = document.getElementById('barcodeStatus');
+  if(code.length < 8) {
+    statusEl.style.display = 'none';
+    return;
+  }
+  clearTimeout(barcodeTimeout);
+  barcodeTimeout = setTimeout(async () => {
+    statusEl.style.display = 'block';
+    statusEl.textContent = '🔍 מחפש מוצר לפי ברקוד...';
+    try {
+      const res = await fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code));
+      const data = await res.json();
+      if(data.status === 1 && data.product){
+        const p = data.product;
+        const n = p.nutriments || {};
+        if(!pname.value) pname.value = p.product_name || '';
+        if(!pbrand.value) pbrand.value = p.brands || '';
+        if(n['energy-kcal_100g']) pkcal.value = n['energy-kcal_100g'];
+        if(n['proteins_100g']) pprotein.value = n['proteins_100g'];
+        if(n['carbohydrates_100g']) pcarbs.value = n['carbohydrates_100g'];
+        if(n['fat_100g']) pfat.value = n['fat_100g'];
+        if(p.product_quantity && !punitg.value) punitg.value = p.product_quantity;
+        
+        statusEl.textContent = '✅ הנתונים הושלמו בהצלחה מ-OpenFoodFacts!';
+        updateProductUnitCalc();
+      } else {
+        statusEl.textContent = '❌ מוצר לא נמצא במאגר העולמי. אנא הזן ידנית.';
+      }
+    } catch(e) {
+      statusEl.textContent = '⚠️ שגיאה בחיפוש הברקוד.';
+    }
+  }, 600);
+}
 
 function exportBackup(){
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
@@ -291,6 +329,7 @@ function openProduct(){
   window.editingProductIndex=null;
   document.querySelector('#productModal h2').textContent='הוספת מוצר למאגר';
   document.querySelectorAll('#productModal input').forEach(x=>x.value='');
+  document.getElementById('barcodeStatus').style.display='none';
   productUnitPreview.style.display='none';
   lockPageScroll();
   productModal.classList.add('open');
@@ -406,6 +445,7 @@ function editProduct(i){
  const p=db.products[i];if(!p)return;
  window.editingProductIndex=i;
  document.querySelector('#productModal h2').textContent='עריכת מוצר';
+ document.getElementById('barcodeStatus').style.display='none';
  lockPageScroll();productModal.classList.add('open');
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
