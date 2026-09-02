@@ -19,7 +19,6 @@ input,select,textarea{width:100%;padding:13px;border:1px solid #d7dbe0;border-ra
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:#fff;border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(3,1fr);padding:8px}
 nav button{background:#fff;color:#606872}nav button.active{background:#18202a;color:#fff}
 .item{display:flex;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #e8eaed}.item:last-child{border-bottom:0}
-.badge{font-size:12px;background:#e9edf1;padding:4px 8px;border-radius:20px;display:inline-block}
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end;overflow:hidden;touch-action:none}.modal.open{display:flex}
 .sheet{background:#fff;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px 22px 0 0;position:relative;touch-action:pan-y}
 .spacer{height:75px}.hidden{display:none}
@@ -106,7 +105,6 @@ textarea{resize:vertical;min-height:50px}
 <div class="modal" id="productModal"><div class="sheet">
 <h2 id="productModalTitle">מוצר במאגר</h2>
 
-<!-- חיפוש אוטומטי מהרשת -->
 <div>
   <input id="pNameSearch" placeholder="🔍 חפש ברשת למילוי אוטומטי (למשל: חזה עוף)..." oninput="searchOnlineProduct(this.value)">
   <div id="onlineSearchResults" style="max-height:160px;overflow-y:auto;margin-bottom:10px"></div>
@@ -114,7 +112,6 @@ textarea{resize:vertical;min-height:50px}
 
 <hr style="border:0;border-top:1px solid #eee;margin:10px 0 14px">
 
-<!-- שדות המוצר -->
 <div id="productFormFields">
   <input id="pname" placeholder="שם המוצר *">
   <div style="display:flex;gap:8px">
@@ -156,7 +153,28 @@ textarea{resize:vertical;min-height:50px}
 </script>
 <script>
 const KEY='calorie_db_v1';
-let db=JSON.parse(localStorage.getItem(KEY)||'null')||{products:[],intake:{}};
+
+// רשימת מוצרי יסוד מובנית כברירת מחדל
+const DEFAULT_PRODUCTS = [
+  { name: 'חזה עוף (לא מבושל)', brand: 'כללי', barcode: '', kcal: 110, protein: 23, carbs: 0, fat: 1.2, unit_g: 150, updated: 'מובנה' },
+  { name: 'חזה עוף מבושל/צלי', brand: 'כללי', barcode: '', kcal: 165, protein: 31, carbs: 0, fat: 3.6, unit_g: 150, updated: 'מובנה' },
+  { name: 'ביצה L', brand: 'כללי', barcode: '', kcal: 143, protein: 12.6, carbs: 0.7, fat: 9.5, unit_g: 60, updated: 'מובנה' },
+  { name: 'אורז לבן מבושל', brand: 'כללי', barcode: '', kcal: 130, protein: 2.7, carbs: 28, fat: 0.3, unit_g: 150, updated: 'מובנה' },
+  { name: 'שיבולת שועל', brand: 'כללי', barcode: '', kcal: 389, protein: 16.9, carbs: 66, fat: 6.9, unit_g: 40, updated: 'מובנה' },
+  { name: 'טונה בשמן (מסוננת)', brand: 'כללי', barcode: '', kcal: 198, protein: 29, carbs: 0, fat: 8.2, unit_g: 112, updated: 'מובנה' },
+  { name: 'טונה במים (מסוננת)', brand: 'כללי', barcode: '', kcal: 116, protein: 26, carbs: 0, fat: 1, unit_g: 112, updated: 'מובנה' },
+  { name: 'שמן זית', brand: 'כללי', barcode: '', kcal: 884, protein: 0, carbs: 0, fat: 100, unit_g: 14, updated: 'מובנה' },
+  { name: 'קוטג׳ 5%', brand: 'כללי', barcode: '', kcal: 95, protein: 11, carbs: 1.5, fat: 5, unit_g: 250, updated: 'מובנה' }
+];
+
+let db = JSON.parse(localStorage.getItem(KEY) || 'null');
+if(!db) {
+  db = { products: DEFAULT_PRODUCTS, intake: {} };
+  localStorage.setItem(KEY, JSON.stringify(db));
+} else if(!db.products || db.products.length === 0) {
+  db.products = DEFAULT_PRODUCTS;
+  localStorage.setItem(KEY, JSON.stringify(db));
+}
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
@@ -170,7 +188,6 @@ function cleanCode(str){
 
 let searchTimeout = null;
 
-// מילון תרגום מורחב למזונות בסיסיים
 const dictHE2EN = {
   'חזה עוף': 'chicken breast',
   'עוף': 'chicken',
@@ -180,7 +197,7 @@ const dictHE2EN = {
   'בשר טחון': 'minced meat',
   'סטייק': 'steak',
   'פרגית': 'chicken thigh',
-  ' הודו': 'turkey',
+  'הודו': 'turkey',
   'ביצה': 'egg',
   'חלב': 'milk',
   'גבינה': 'cheese',
@@ -209,13 +226,11 @@ function searchOnlineProduct(query){
     try {
       let products = [];
       
-      // 1. ניסיון חיפוש ראשון ברשת במונח המקורי
       let url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(query) + '&search_simple=1&action=process&json=1&page_size=8';
       let res = await fetch(url);
       let data = await res.json();
       products = data.products || [];
 
-      // 2. תרגום אוטומטי אם התקבלו מעט תוצאות או 0 תוצאות
       let translated = dictHE2EN[query];
       if(!translated) {
         for(let key in dictHE2EN) {
@@ -228,7 +243,6 @@ function searchOnlineProduct(query){
         let res2 = await fetch(url2);
         let data2 = await res2.json();
         let enProducts = data2.products || [];
-        // איחוד תוצאות ללא כפילויות
         let existingCodes = new Set(products.map(p => p.code));
         enProducts.forEach(p => {
           if(!existingCodes.has(p.code)) products.push(p);
@@ -283,14 +297,6 @@ function selectOnlineResult(idx){
   
   productUnitPreview.style.display = 'block';
   productUnitPreview.innerHTML = `✅ <b>הנתונים נשאבו בהצלחה!</b><br>לחץ/י על "שמור מוצר למאגר" למטה.`;
-}
-
-function updateExistingProductOnline(i){
-  const p = db.products[i];
-  if(!p) return;
-  editProduct(i);
-  pNameSearch.value = (p.name + ' ' + (p.brand||'')).trim();
-  searchOnlineProduct(pNameSearch.value);
 }
 
 function exportBackup(){
@@ -406,7 +412,6 @@ function renderProducts(){
    <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
    ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
    </div><div style="display:flex;flex-direction:column;gap:6px;min-width:110px">
-   <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="updateExistingProductOnline(${i})">🔍 עדכן מהרשת</button>
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
    </div></div>`
@@ -583,7 +588,6 @@ function deleteProduct(i){
  db.products.splice(i,1);save();renderProducts();
 }
 
-// Scanner logic
 let scannerStream=null;
 async function openScanner(){
   lockPageScroll();scannerModal.classList.add('open');scannerStatus.textContent='מכין את המצלמה...';barcodeResult.style.display='none';
