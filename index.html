@@ -24,8 +24,6 @@ nav button{background:#fff;color:#606872}nav button.active{background:#18202a;co
 .sheet{background:#fff;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px 22px 0 0;position:relative;touch-action:pan-y}
 .spacer{height:75px}.hidden{display:none}
 textarea{resize:vertical;min-height:50px}
-.tab-btn{padding:8px 12px;font-size:13px;border-radius:8px;background:#eef0f3;color:#18202a}
-.tab-btn.active{background:#18202a;color:#fff}
 .search-res-item{padding:10px;border-bottom:1px solid #eee;cursor:pointer;background:#fff;border-radius:8px;margin-bottom:6px}
 .search-res-item:hover{background:#f0f4f8}
 </style>
@@ -106,29 +104,26 @@ textarea{resize:vertical;min-height:50px}
 </div></div>
 
 <div class="modal" id="productModal"><div class="sheet">
-<h2 id="productModalTitle">הוספת מוצר למאגר</h2>
+<h2 id="productModalTitle">מוצר במאגר</h2>
 
-<div style="display:flex;gap:8px;margin-bottom:14px">
-  <button id="tabAutoBtn" class="tab-btn active" style="flex:1" onclick="switchAddMode('auto')">🔍 חיפוש אוטומטי (רשת)</button>
-  <button id="tabManualBtn" class="tab-btn" style="flex:1" onclick="switchAddMode('manual')">✏️ הזנה ידנית</button>
+<!-- חיפוש אוטומטי מהרשת (אופציונלי) -->
+<div>
+  <input id="pNameSearch" placeholder="🔍 חפש ברשת למילוי אוטומטי..." oninput="searchOnlineProduct(this.value)">
+  <div id="onlineSearchResults" style="max-height:160px;overflow-y:auto;margin-bottom:10px"></div>
 </div>
 
-<!-- מסלול 1: חיפוש אוטומטי ברשת -->
-<div id="autoAddSection">
-  <input id="pNameSearch" placeholder="הקלד שם מוצר (למשל: חזה אווז, תפוח)..." oninput="searchOnlineProduct(this.value)">
-  <div id="onlineSearchResults" style="max-height:180px;overflow-y:auto;margin-bottom:10px"></div>
-</div>
+<hr style="border:0;border-top:1px solid #eee;margin:10px 0 14px">
 
-<!-- מסלול 2 / טופס פרטים -->
+<!-- שדות המוצר -->
 <div id="productFormFields">
-  <input id="pname" placeholder="שם המוצר">
+  <input id="pname" placeholder="שם המוצר *">
   <div style="display:flex;gap:8px">
     <input id="pbrand" placeholder="מותג/יצרן (רשות)">
     <input id="pbarcode" placeholder="ברקוד (רשות)">
   </div>
   <div id="barcodeStatus" class="muted" style="margin-top:-6px;margin-bottom:10px;font-size:12px;display:none"></div>
   <input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
-  <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
+  <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל *" oninput="updateProductUnitCalc()">
   <div style="display:flex;gap:6px">
     <input id="pprotein" type="number" placeholder="חלבון ל-100ג׳" oninput="updateProductUnitCalc()">
     <input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
@@ -175,19 +170,6 @@ function cleanCode(str){
 
 let searchTimeout = null;
 
-function switchAddMode(mode){
-  if(mode === 'auto'){
-    tabAutoBtn.classList.add('active');
-    tabManualBtn.classList.remove('active');
-    autoAddSection.style.display = 'block';
-  } else {
-    tabManualBtn.classList.add('active');
-    tabAutoBtn.classList.remove('active');
-    autoAddSection.style.display = 'none';
-    onlineSearchResults.innerHTML = '';
-  }
-}
-
 function searchOnlineProduct(query){
   query = query.trim();
   if(query.length < 2) {
@@ -221,10 +203,10 @@ function searchOnlineProduct(query){
         }).join('');
         window._currentOnlineResults = data.products;
       } else {
-        onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">לא נמצאו תוצאות ברשת. נסה ניסוח אחר או עלי ללשונית "הזנה ידנית".</div>';
+        onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">לא נמצאו תוצאות ברשת. באפשרותך למלא ידנית.</div>';
       }
     } catch(e) {
-      onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">⚠️ שגיאה בחיפוש ברשת. כנס להזנה ידנית.</div>';
+      onlineSearchResults.innerHTML = '<div class="muted" style="padding:8px">⚠️ שגיאה בחיפוש ברשת. ניתן להזין ידנית.</div>';
     }
   }, 500);
 }
@@ -243,18 +225,18 @@ function selectOnlineResult(idx){
   pfat.value = round1(n['fat_100g'] || 0);
   if(p.product_quantity) punitg.value = p.product_quantity;
   
-  switchAddMode('manual');
+  onlineSearchResults.innerHTML = '';
+  pNameSearch.value = '';
   updateProductUnitCalc();
   
   productUnitPreview.style.display = 'block';
-  productUnitPreview.innerHTML = `✅ <b>הנתונים שואבו בהצלחה מהרשת!</b><br>בדוק את הערכים ולחץ על "שמור מוצר למאגר".`;
+  productUnitPreview.innerHTML = `✅ <b>הנתונים שואבו בהצלחה מהרשת!</b><br>ניתן לחצ/י "שמור מוצר למאגר".`;
 }
 
 function updateExistingProductOnline(i){
   const p = db.products[i];
   if(!p) return;
   editProduct(i);
-  switchAddMode('auto');
   pNameSearch.value = (p.name + ' ' + (p.brand||'')).trim();
   searchOnlineProduct(pNameSearch.value);
 }
@@ -419,7 +401,6 @@ function openProduct(){
   document.getElementById('barcodeStatus').style.display='none';
   productUnitPreview.style.display='none';
   onlineSearchResults.innerHTML = '';
-  switchAddMode('auto');
   lockPageScroll();
   productModal.classList.add('open');
 }
@@ -535,7 +516,8 @@ function editProduct(i){
  window.editingProductIndex=i;
  productModalTitle.textContent='עריכת מוצר במאגר';
  document.getElementById('barcodeStatus').style.display='none';
- switchAddMode('manual');
+ onlineSearchResults.innerHTML = '';
+ pNameSearch.value = '';
  lockPageScroll();productModal.classList.add('open');
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
