@@ -26,6 +26,7 @@ nav button{background:#fff;color:#606872}nav button.active{background:#18202a;co
 textarea{resize:vertical;min-height:50px}
 .ai-box{background:#f0f3ff;border:1px solid #c7d2fe;border-radius:14px;padding:12px;margin-bottom:12px}
 .badge-barcode{background:#e0e7ff;color:#3730a3;font-size:11px;padding:2px 6px;border-radius:6px;font-weight:600}
+.duplicate-warning{background:#fff5f5;border:1px solid #feb2b2;color:#c53030;border-radius:12px;padding:10px;font-size:13px;margin-bottom:10px;display:none}
 </style>
 </head>
 <body>
@@ -128,7 +129,8 @@ textarea{resize:vertical;min-height:50px}
 <div class="modal" id="productModal"><div class="sheet">
 <h2 id="productModalTitle">מוצר במאגר</h2>
 
-<input id="pname" placeholder="שם המוצר *" style="font-size:16px;font-weight:600">
+<input id="pname" placeholder="שם המוצר *" style="font-size:16px;font-weight:600" oninput="checkRealtimeDuplicate()">
+<div id="duplicateNotice" class="duplicate-warning"></div>
 
 <div class="ai-box">
   <button type="button" id="aiFillBtn" class="ai-btn" onclick="fetchProductWithAI()">🪄 מילוי/השלמת נתונים ב-AI</button>
@@ -176,7 +178,6 @@ textarea{resize:vertical;min-height:50px}
 const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 
-// נטען אך ורק את הנתונים השמורים ב-localStorage ללא הוספת מובנים אוטומטית
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
   db = { products: [], intake: {} };
@@ -191,7 +192,6 @@ function round1(v){return Math.round(Number(v||0)*10)/10}
 
 function cleanCode(str){ return String(str || '').replace(/\D/g, '').trim(); }
 
-// מנגנון חישוב דמיון מחרוזות (Levenshtein Distance)
 function getSimilarity(a, b) {
   a = a.toLowerCase().trim();
   b = b.toLowerCase().trim();
@@ -217,6 +217,39 @@ function getSimilarity(a, b) {
   }
   let maxLen = Math.max(a.length, b.length);
   return 1 - matrix[b.length][a.length] / maxLen;
+}
+
+function checkRealtimeDuplicate(){
+  const val = pname.value.trim();
+  const editing = window.editingProductIndex;
+  const notice = document.getElementById('duplicateNotice');
+  
+  if(!val || val.length < 2) {
+    notice.style.display = 'none';
+    return;
+  }
+  
+  let matchIndex = -1;
+  let highestSim = 0;
+  
+  db.products.forEach((x, i) => {
+    if(i !== editing) {
+      let sim = getSimilarity(val, x.name);
+      if(sim >= 0.65 && sim > highestSim) { // זיהוי דמיון מ-65%
+        highestSim = sim;
+        matchIndex = i;
+      }
+    }
+  });
+
+  if(matchIndex >= 0) {
+    const matchedProduct = db.products[matchIndex];
+    notice.style.display = 'block';
+    notice.innerHTML = `⚠️ <b>שים לב:</b> מצאנו מוצר דומה במאגר: <b>"${matchedProduct.name}"</b>.<br>` +
+      `<button type="button" class="secondary" style="padding:4px 8px;font-size:12px;margin-top:6px" onclick="editProduct(${matchIndex})">✏️ לעריכת המוצר הקיים לחץ כאן</button>`;
+  } else {
+    notice.style.display = 'none';
+  }
 }
 
 function openSettings(){
@@ -455,6 +488,7 @@ function openProduct(){
   productModalTitle.textContent='הוספת מוצר למאגר';
   document.querySelectorAll('#productModal input').forEach(x=>x.value='');
   aiStatus.textContent = '';
+  document.getElementById('duplicateNotice').style.display = 'none';
   productUnitPreview.style.display='none';
   lockPageScroll();
   productModal.classList.add('open');
@@ -552,7 +586,6 @@ function saveProduct(){
  if(!p.name||p.kcal<0)return alert('שם המוצר וקלוריות ל-100 גרם הם חובה');
  const editing=window.editingProductIndex;
  
- // 1. בדיקת כפילות ברקוד
  if(p.barcode){
    const duplicate=db.products.findIndex((x,i)=>i!==editing && x.barcode && cleanCode(x.barcode)===cleanCode(p.barcode));
    if(duplicate>=0){
@@ -562,13 +595,12 @@ function saveProduct(){
      } else return;
    }
  } else {
-   // 2. בדיקת דמיון שמות (כאשר אין ברקוד)
    let similarIndex = -1;
    let highestSim = 0;
    db.products.forEach((x, i) => {
      if(i !== editing) {
        let sim = getSimilarity(p.name, x.name);
-       if(sim > 0.75 && sim > highestSim) { // סף דמיון של 75%
+       if(sim >= 0.75 && sim > highestSim) {
          highestSim = sim;
          similarIndex = i;
        }
@@ -578,9 +610,7 @@ function saveProduct(){
    if(similarIndex >= 0) {
      const similarName = db.products[similarIndex].name;
      if(!confirm(`⚠️ נמצא מוצר בעל שם דומה במאגר: "${similarName}".\n\nהאם מדובר באותו מוצר? לחץ 'אישור' כדי לעדכן אותו, או 'ביטול' כדי לשמור כמוצר חדש.`)) {
-       // בחרו לשמור כמוצר חדש בכל זאת - ממשיכים
      } else {
-       // אישרו שמדובר במוצר הקיים - נעדכן אותו
        db.products[similarIndex] = Object.assign({}, db.products[similarIndex], p);
        save();closeModal();renderProducts();return;
      }
@@ -599,6 +629,7 @@ function editProduct(i){
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
  punitg.value=p.unit_g||'';
+ document.getElementById('duplicateNotice').style.display = 'none';
  checkBarcodeProtection();
  updateProductUnitCalc();
 }
