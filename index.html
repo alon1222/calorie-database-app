@@ -1,524 +1,314 @@
-<!doctype html>
-<html lang="he" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>מאגר קלוריות</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#18202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
-.app{max-width:560px;margin:auto;min-height:100vh;background:#fff}
-header{padding:20px 18px 14px;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff;z-index:5}
-h1{margin:0;font-size:25px}.date{color:#68707a;margin-top:5px;font-size:14px}
-main{padding:16px}.card{background:#f7f8fa;border:1px solid #e4e7eb;border-radius:18px;padding:16px;margin-bottom:14px}
-.kcal{font-size:40px;font-weight:800}.muted{color:#68707a}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.macro{background:#fff;border:1px solid #e2e5e9;border-radius:12px;padding:10px;text-align:center}.macro b{display:block;font-size:18px}
-.progress{height:9px;background:#e4e7eb;border-radius:20px;overflow:hidden;margin:10px 0}.progress span{display:block;height:100%;background:#18202a;width:0}
-button,input,select,textarea{font:inherit}button{border:0;border-radius:12px;padding:12px 14px;cursor:pointer}.primary{width:100%;background:#18202a;color:white;font-weight:700}.secondary{background:#eef0f3;color:#18202a}
-input,select,textarea{width:100%;padding:13px;border:1px solid #d7dbe0;border-radius:12px;margin-bottom:10px;background:#fff}
-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:#fff;border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(3,1fr);padding:8px}
-nav button{background:#fff;color:#606872}nav button.active{background:#18202a;color:#fff}
-.item{display:flex;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #e8eaed}.item:last-child{border-bottom:0}
-.badge{font-size:12px;background:#e9edf1;padding:4px 8px;border-radius:20px;display:inline-block}
-.modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end;overflow:auto}.modal.open{display:flex}.sheet{background:#fff;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px;position:relative}
-.spacer{height:75px}.hidden{display:none}
-textarea{resize:vertical;min-height:50px}
-</style>
-</head>
-<body>
-<div class="app">
-<header><h1>מאגר קלוריות</h1><div class="date" id="date"></div></header>
-<main>
-<section id="today">
-<div class="card"><div class="muted">נצרכו היום</div><div><span class="kcal" id="kcal">0</span> קלוריות</div><div class="progress"><span id="kbar"></span></div><div class="muted"><span id="kleft">2,000</span> קלוריות נותרו</div></div>
-<div class="grid">
-<div class="macro"><span>💪 חלבון</span><b id="protein">0</b><small>/ 150 ג׳</small></div>
-<div class="macro"><span>🍞 פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
-<div class="macro"><span>🥑 שומן</span><b id="fat">0</b><small>/ 67 ג׳</small></div>
-</div>
-<div class="card" style="margin-top:14px;display:flex;gap:8px">
-<button class="primary" style="flex:2" onclick="openAdd()">＋ הוסף צריכה</button>
-<button class="secondary" style="flex:1" onclick="showDailySummaryModal()">📋 סיכום יומי</button>
-</div>
-<div class="card"><b>צריכה היום</b><div id="intake"></div></div>
-</section>
+//@version=6
+strategy(
+     "MNQ Trading Lab - Baseline V1.0-E1",
+     overlay = true,
+     pyramiding = 0,
+     slippage = 1,
+     calc_on_order_fills = false,
+     calc_on_every_tick = false,
+     process_orders_on_close = false,
+     use_bar_magnifier = false
+)
 
-<section id="products" class="hidden">
-<div class="card" style="display:flex;justify-content:space-between;align-items:center">
-  <b>📦 <span id="productCount">0</span> מוצרים במאגר</b>
-  <div style="display:flex;gap:6px">
-    <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="exportBackup()">📤 גיבוי</button>
-    <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="importBackup()">📥 שחזור</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImportFile(event)">
-  </div>
-</div>
-<div class="card"><b>חיפוש במאגר</b><input id="search" placeholder="חפש מוצר..." oninput="renderProducts()"><button class="primary" onclick="openScanner()">📷 סרוק ברקוד</button><button class="secondary" style="width:100%;margin-top:8px" onclick="openProduct()">＋ הוסף מוצר</button></div>
-<div class="card" id="productList"></div>
-</section>
+//────────────────────────────────────
+// CONSTANTS
+//────────────────────────────────────
 
-<section id="month" class="hidden">
-<div class="card"><b>חודש</b><div class="muted" style="margin-top:6px">סיכום הצריכה לפי ימים</div><div id="monthList"></div></div>
-</section>
-<div class="spacer"></div>
-</main>
-<nav>
-<button id="n1" class="active" onclick="show('today')">היום</button>
-<button id="n2" onclick="show('products')">מאגר</button>
-<button id="n3" onclick="show('month')">חודש</button>
-</nav>
-</div>
+string TZ = "America/New_York"
 
-<div class="modal" id="summaryModal"><div class="sheet">
-<h2>📊 סיכום יומי</h2>
-<textarea id="summaryText" readonly style="width:100%;height:180px;font-family:monospace;font-size:15px;margin-top:10px"></textarea>
-<button class="primary" onclick="copySummaryText()">📋 העתק טקסט</button>
-<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
-</div></div>
+float TICK = syminfo.mintick
+float TICK_VALUE = 0.50
 
-<div class="modal" id="scannerModal"><div class="sheet">
-<h2>סריקת ברקוד</h2>
-<div id="scannerStatus" class="muted" style="margin-bottom:10px">מכין את המצלמה...</div>
-<video id="barcodeVideo" playsinline muted style="width:100%;border-radius:16px;background:#111;max-height:55vh;object-fit:cover"></video>
-<button id="captureBarcodeBtn" class="primary" style="width:100%;margin-top:12px" onclick="captureBarcode()">📸 צלם וחפש מוצר</button>
-<div id="barcodeResult" class="card" style="display:none;margin-top:12px"></div>
-<button class="secondary" style="width:100%;margin-top:8px" onclick="closeScanner()">✕ ביטול / סגור</button>
-</div></div>
+float MAX_RISK = 125.0
+float TARGET_R = 2.0
+float DAILY_LOSS_LIMIT = 250.0
 
-<div class="modal" id="addModal"><div class="sheet">
-<h2 id="addModalTitle">הוספת צריכה</h2><input id="foodSearch" placeholder="שם מוצר / מזון" oninput="suggest()"><div id="suggestions"></div>
-<select id="unitSelect" onchange="updateIntakePreview()">
-<option value="unit">יחידה</option>
-<option value="g">גרם</option>
-<option value="ml">מ״ל</option>
-<option value="tsp">כפית (5 ג׳)</option>
-<option value="tbsp">כף (15 ג׳)</option>
-<option value="cup">כוס (240 ג׳)</option>
-</select>
-<input id="grams" type="number" min="0" step="any" placeholder="כמות" value="1" oninput="updateIntakePreview()">
-<div id="intakePreview" class="card" style="display:none;margin-top:4px"></div>
-<button class="primary" id="addIntakeBtn" onclick="addIntake()">הוסף לצריכה</button>
-<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
-</div></div>
+int MAX_TRADES_PER_DAY = 3
+int MAX_CONTRACTS = 60
 
-<div class="modal" id="productModal"><div class="sheet">
-<h2>הוספת מוצר למאגר</h2>
-<input id="pname" placeholder="שם המוצר (למשל: פסק זמן)">
-<div style="display:flex;gap:8px">
-<input id="pbrand" placeholder="מותג/יצרן (רשות)">
-<input id="pbarcode" placeholder="ברקוד (הקלד לחיפוש אוטומטי)" oninput="fetchBarcodeData(this.value)">
-</div>
-<div id="barcodeStatus" class="muted" style="margin-top:-6px;margin-bottom:10px;font-size:12px;display:none"></div>
-<input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
-<input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל" oninput="updateProductUnitCalc()">
-<div style="display:flex;gap:6px">
-<input id="pprotein" type="number" placeholder="חלבון ל-100ג׳" oninput="updateProductUnitCalc()">
-<input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
-<input id="pfat" type="number" placeholder="שומן ל-100ג׳" oninput="updateProductUnitCalc()">
-</div>
-<div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:#eef2f7;font-size:14px"></div>
-<button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר</button>
-<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
-</div></div>
+//────────────────────────────────────
+// DAY STATE
+//────────────────────────────────────
 
-<script>
-(function(){
-  function load(src, fallback){
-    var s=document.createElement('script');s.src=src;
-    s.onload=function(){ window.__zxingLoaded=true; };
-    s.onerror=function(){
-      if(fallback){
-        var f=document.createElement('script');f.src=fallback;
-        f.onload=function(){ window.__zxingLoaded=true; };
-        document.head.appendChild(f);
-      }
-    };
-    document.head.appendChild(s);
-  }
-  load('https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
-       'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js');
-})();
-</script>
-<script>
-const KEY='calorie_db_v1';
-let db=JSON.parse(localStorage.getItem(KEY)||'null')||{products:[],intake:{}};
+int currentDay = year(time, TZ) * 10000 +
+     month(time, TZ) * 100 +
+     dayofmonth(time, TZ)
 
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
-function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
-function todayKey(){return new Date().toISOString().slice(0,10)}
-function today(){return db.intake[todayKey()]||[]}
-function round1(v){return Math.round(Number(v||0)*10)/10}
+int previousDay = year(time[1], TZ) * 10000 +
+     month(time[1], TZ) * 100 +
+     dayofmonth(time[1], TZ)
 
-let barcodeTimeout = null;
-async function fetchBarcodeData(code){
-  code = code.trim();
-  const statusEl = document.getElementById('barcodeStatus');
-  if(code.length < 8) {
-    statusEl.style.display = 'none';
-    return;
-  }
-  clearTimeout(barcodeTimeout);
-  barcodeTimeout = setTimeout(async () => {
-    statusEl.style.display = 'block';
-    statusEl.textContent = '🔍 מחפש מוצר לפי ברקוד...';
-    try {
-      const res = await fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code));
-      const data = await res.json();
-      if(data.status === 1 && data.product){
-        const p = data.product;
-        const n = p.nutriments || {};
-        if(!pname.value) pname.value = p.product_name || '';
-        if(!pbrand.value) pbrand.value = p.brands || '';
-        if(n['energy-kcal_100g']) pkcal.value = n['energy-kcal_100g'];
-        if(n['proteins_100g']) pprotein.value = n['proteins_100g'];
-        if(n['carbohydrates_100g']) pcarbs.value = n['carbohydrates_100g'];
-        if(n['fat_100g']) pfat.value = n['fat_100g'];
-        if(p.product_quantity && !punitg.value) punitg.value = p.product_quantity;
-        
-        statusEl.textContent = '✅ הנתונים הושלמו בהצלחה מ-OpenFoodFacts!';
-        updateProductUnitCalc();
-      } else {
-        statusEl.textContent = '❌ מוצר לא נמצא במאגר העולמי. אנא הזן ידנית.';
-      }
-    } catch(e) {
-      statusEl.textContent = '⚠️ שגיאה בחיפוש הברקוד.';
-    }
-  }, 600);
-}
+bool newDay = currentDay != previousDay
 
-function exportBackup(){
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
-  const dlAnchorElem = document.createElement('a');
-  dlAnchorElem.setAttribute("href", dataStr);
-  dlAnchorElem.setAttribute("download", `calorie_backup_${todayKey()}.json`);
-  document.body.appendChild(dlAnchorElem);
-  dlAnchorElem.click();
-  dlAnchorElem.remove();
-}
+var int tradesToday = 0
+var float dayStartNetProfit = 0.0
 
-function importBackup(){
-  document.getElementById('importFile').click();
-}
+if barstate.isfirst
+    dayStartNetProfit := strategy.netprofit
 
-function handleImportFile(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e){
-    try {
-      const imported = JSON.parse(e.target.result);
-      if(imported && typeof imported === 'object' && Array.isArray(imported.products)){
-        if(confirm('האם להחליף את הנתונים הקיימים בנתונים מקובץ הגיבוי?')){
-          db = imported;
-          save();
-          renderToday();
-          renderProducts();
-          alert('הגיבוי שוחזר בהצלחה!');
-        }
-      } else {
-        alert('קובץ לא תקין.');
-      }
-    } catch(err) {
-      alert('שגיאה בקריאת הקובץ.');
-    }
-  };
-  reader.readAsText(file);
-}
+if newDay
+    tradesToday := 0
+    dayStartNetProfit := strategy.netprofit
 
-function renderToday(){
- let a=today(), k=a.reduce((s,x)=>s+(x.kcal||0),0),p=a.reduce((s,x)=>s+(x.protein||0),0),c=a.reduce((s,x)=>s+(x.carbs||0),0),f=a.reduce((s,x)=>s+(x.fat||0),0);
- kcal.textContent=Math.round(k);protein.textContent=round1(p);carbs.textContent=round1(c);fat.textContent=round1(f);
- kleft.textContent=Math.max(0,Math.round(2000-k)).toLocaleString('he-IL');kbar.style.width=Math.min(100,k/2000*100)+'%';
- intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted">${x.amount} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted">💪 ${round1(x.protein)}ג׳ · 🍞 ${round1(x.carbs)}ג׳ · 🥑 ${round1(x.fat)}ג׳</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px">עדיין לא דווחה צריכה היום.</div>';
-}
+float dailyPnL = strategy.netprofit - dayStartNetProfit
 
-function showDailySummaryModal(){
-  const dateStr = new Date().toLocaleDateString('he-IL');
-  const a = today();
-  const k = a.reduce((s,x)=>s+(x.kcal||0), 0);
-  const p = a.reduce((s,x)=>s+(x.protein||0), 0);
-  const c = a.reduce((s,x)=>s+(x.carbs||0), 0);
-  const f = a.reduce((s,x)=>s+(x.fat||0), 0);
-  
-  let txt = `📊 סיכום יומי — ${dateStr}\n\n`;
-  txt += `🔥 נצרכו: ${Math.round(k)} קלוריות\n`;
-  txt += `🎯 יעד יומי: 2,000 קלוריות\n`;
-  
-  if(k <= 2000){
-    txt += `🟢 נשארו: ${Math.round(2000 - k)} קלוריות\n`;
-  } else {
-    txt += `🔴 חריגה מהיעד: ${Math.round(k - 2000)} קלוריות\n`;
-  }
-  
-  txt += `\n💪 חלבון: ${round1(p)} / 150 גרם\n`;
-  txt += `🍞 פחמימות: ${round1(c)} / 200 גרם\n`;
-  txt += `🥑 שומן: ${round1(f)} / 67 גרם`;
-  
-  document.getElementById('summaryText').value = txt;
-  lockPageScroll();
-  document.getElementById('summaryModal').classList.add('open');
-}
+bool dailyLossHit = dailyPnL <= -DAILY_LOSS_LIMIT
+bool tradeLimitHit = tradesToday >= MAX_TRADES_PER_DAY
 
-function copySummaryText(){
-  const txt = document.getElementById('summaryText');
-  txt.select();
-  navigator.clipboard.writeText(txt.value);
-  alert('הסיכום היומי הועתק ללוח!');
-}
+//────────────────────────────────────
+// OPENING RANGE
+// 09:30–09:45 ET
+//────────────────────────────────────
 
-function updateProductUnitCalc(){
-  const unitG = Number(punitg.value)||0;
-  const k = Number(pkcal.value)||0;
-  const prot = Number(pprotein.value)||0;
-  const carb = Number(pcarbs.value)||0;
-  const fatVal = Number(pfat.value)||0;
-  
-  if(unitG > 0 && (k > 0 || prot > 0 || carb > 0 || fatVal > 0)){
-    productUnitPreview.style.display = 'block';
-    const mult = unitG / 100;
-    productUnitPreview.innerHTML = `<b>✨ חישוב אוטומטי ליחידה אחת (${unitG}ג׳):</b><br>` +
-      `🔥 <b>${round1(k * mult)}</b> קק״ל | 💪 <b>${round1(prot * mult)}</b>ג׳ חלבון | 🍞 <b>${round1(carb * mult)}</b>ג׳ פחמימות | 🥑 <b>${round1(fatVal * mult)}</b>ג׳ שומן`;
-  } else {
-    productUnitPreview.style.display = 'none';
-  }
-}
+bool inOR = not na(time(timeframe.period, "0930-0945", TZ))
+bool afterOR = not na(time(timeframe.period, "0945-1655", TZ))
 
-function renderProducts(){
- productCount.textContent=db.products.length;
- let q=(search.value||'').toLowerCase(),arr=db.products.filter(x=>(x.name+' '+(x.brand||'')+' '+(x.barcode||'')).toLowerCase().includes(q));
- productList.innerHTML=arr.map(x=>{
-   const i=db.products.indexOf(x);
-   const mult = x.unit_g ? x.unit_g / 100 : 0;
-   const unitKcal = mult ? round1(x.kcal * mult) : null;
-   const unitProt = mult ? round1((x.protein||0) * mult) : 0;
-   const unitCarb = mult ? round1((x.carbs||0) * mult) : 0;
-   const unitFat = mult ? round1((x.fat||0) * mult) : 0;
+var float orHigh = na
+var float orLow = na
+var bool orLocked = false
 
-   return `<div class="item"><div style="flex:1"><b>${x.name}</b>
-   <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
-   <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
-   ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
-   </div><div style="display:flex;flex-direction:column;gap:6px;min-width:76px">
-   <button class="secondary" onclick="editProduct(${i})">✏️ ערוך</button>
-   <button class="secondary" onclick="deleteProduct(${i})">🗑️ מחק</button>
-   </div></div>`
- }).join('')||'<div class="muted">לא נמצאו מוצרים.</div>';
-}
+if newDay
+    orHigh := na
+    orLow := na
+    orLocked := false
 
-function renderMonth(){
- let keys=Object.keys(db.intake).sort().reverse(), sums=keys.map(d=>{let a=db.intake[d];return [d,a.reduce((s,x)=>s+(x.kcal||0),0),a.reduce((s,x)=>s+(x.protein||0),0),a.reduce((s,x)=>s+(x.carbs||0),0),a.reduce((s,x)=>s+(x.fat||0),0)]});
- monthList.innerHTML=sums.length?sums.map(x=>`<div class="item"><div><b>${new Date(x[0]+'T12:00:00').toLocaleDateString('he-IL')}</b><div class="muted">🔥 ${Math.round(x[1])} · 💪 ${round1(x[2])} · 🍞 ${round1(x[3])} · 🥑 ${round1(x[4])}</div></div></div>`).join(''):'<div class="muted" style="padding-top:12px">אין עדיין נתונים.</div>';
-}
+if inOR
+    orHigh := na(orHigh) ? high : math.max(orHigh, high)
+    orLow := na(orLow) ? low : math.min(orLow, low)
 
-function show(id){['today','products','month'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));['n1','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','products','month'][i]===id));if(id==='today')renderToday();if(id==='products')renderProducts();if(id==='month')renderMonth()}
-function lockPageScroll(){document.body.style.overflow='hidden';}
-function unlockPageScroll(){document.body.style.overflow='';}
+if afterOR and not orLocked and not na(orHigh) and not na(orLow)
+    orLocked := true
 
-function openAdd(){
-  window.editingIntakeIndex=null;
-  addModalTitle.textContent='הוספת צריכה';
-  addIntakeBtn.textContent='הוסף לצריכה';
-  lockPageScroll();
-  addModal.classList.add('open');
-  selected=null;
-  grams.value='1';
-  unitSelect.value='unit';
-  foodSearch.value='';
-  intakePreview.style.display='none';
-  suggest();
-}
+//────────────────────────────────────
+// STATE
+// 0 = FLAT
+// 1 = PENDING LONG
+// -1 = PENDING SHORT
+//────────────────────────────────────
 
-function openProduct(){
-  window.editingProductIndex=null;
-  document.querySelector('#productModal h2').textContent='הוספת מוצר למאגר';
-  document.querySelectorAll('#productModal input').forEach(x=>x.value='');
-  document.getElementById('barcodeStatus').style.display='none';
-  productUnitPreview.style.display='none';
-  lockPageScroll();
-  productModal.classList.add('open');
-}
+var int state = 0
 
-function closeModal(){
- document.querySelectorAll('.modal').forEach(x=>x.classList.remove('open'));
- unlockPageScroll();
- window.editingIntakeIndex=null;
-}
+var float setupHigh = na
+var float setupLow = na
+var float entryPrice = na
+var float stopPrice = na
+var float targetPrice = na
+var float riskPerContract = na
+var int plannedContracts = 0
 
-function suggest(){
-  let q=(foodSearch.value||'').toLowerCase();
-  let a=db.products.filter(x=>(x.name+' '+(x.brand||'')).toLowerCase().includes(q)).slice(0,5);
-  suggestions.innerHTML=a.map(x=>`<button class="secondary" style="margin:3px" onclick="selectFood(${db.products.indexOf(x)})">${x.name}</button>`).join('');
-}
+//────────────────────────────────────
+// END OF DAY — EXECUTION FIX E1
+//────────────────────────────────────
 
-let selected=null;
-function selectFood(i){
-  selected=db.products[i];
-  foodSearch.value=selected.name;
-  suggestions.innerHTML='<span class="muted">נבחר: '+selected.name+'</span>';
-  grams.focus({preventScroll:true});
-  updateIntakePreview();
-}
+bool eod = not na(time(timeframe.period, "1655-1700", TZ))
 
-function calcIntake(p,unit,a){
-  a=Number(a)||0;
-  let mult = 0;
-  if(unit==='g' || unit==='ml') mult = a / 100;
-  else if(unit==='unit' && p.unit_g) mult = (a * p.unit_g) / 100;
-  else if(unit==='tsp') mult = (a * 5) / 100;
-  else if(unit==='tbsp') mult = (a * 15) / 100;
-  else if(unit==='cup') mult = (a * 240) / 100;
-  
-  if(mult<=0 && unit==='unit') return {known:false,kcal:0,protein:0,carbs:0,fat:0};
-  
-  return {
-    known:true,
-    kcal: (p.kcal||0)*mult,
-    protein: (p.protein||0)*mult,
-    carbs: (p.carbs||0)*mult,
-    fat: (p.fat||0)*mult
-  };
-}
+if eod
+    // Cancel pending entries
+    strategy.cancel("Long Entry")
+    strategy.cancel("Short Entry")
 
-function updateIntakePreview(){
- if(!selected||!(Number(grams.value)>0)){intakePreview.style.display='none';return}
- let r=calcIntake(selected,unitSelect.value,grams.value);
- intakePreview.style.display='block';
- intakePreview.innerHTML=r.known?`<b>לפני הוספה</b><div style="margin-top:8px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b>אין משקל יחידה מוגדר</b><div class="muted">למוצר זה לא הוגדר משקל יחידה במאגר. עדכן את המוצר במאגר או השתמש בגרמים.</div>`;
-}
+    // Force close any open position
+    if strategy.position_size != 0
+        strategy.close_all(comment = "EOD")
 
-function addIntake(){
- let a=Number(grams.value);
- if(!selected)selected=db.products.find(x=>x.name===foodSearch.value.trim());
- if(!selected||!a||a<=0)return alert('בחר מוצר והזן כמות');
- let unit=unitSelect.value||'unit',r=calcIntake(selected,unit,a);
- if(!r.known)return alert('למוצר זה לא הוגדר משקל יחידה במאגר. אנא בחר גרם או עדכן את משקל היחידה במאגר.');
- let label=unitSelect.options[unitSelect.selectedIndex]?.text||'יחידה';
- let item={
-   name:selected.name,
-   amount:a,
-   unit:unit,
-   unitLabel:label,
-   kcal:r.kcal,
-   protein:r.protein,
-   carbs:r.carbs,
-   fat:r.fat
- };
- if(window.editingIntakeIndex!==null&&window.editingIntakeIndex!==undefined)db.intake[todayKey()][window.editingIntakeIndex]=item;
- else(db.intake[todayKey()]??=[]).push(item);
- save();selected=null;grams.value='1';foodSearch.value='';intakePreview.style.display='none';closeModal();renderToday();
-}
+    // Reset pending/setup state
+    state := 0
+    setupHigh := na
+    setupLow := na
+    entryPrice := na
+    stopPrice := na
+    targetPrice := na
+    riskPerContract := na
+    plannedContracts := 0
 
-function editIntake(i){
- let x=today()[i],idx=db.products.findIndex(p=>p.name===x.name);if(!x||idx<0)return alert('המוצר לא נמצא במאגר.');
- window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'unit';grams.value=x.amount||'1';updateIntakePreview();
-}
+//────────────────────────────────────
+// BREAKOUT CONDITIONS
+// Only after OR is locked.
+//────────────────────────────────────
 
-function removeIntake(i){if(!today()[i])return;if(!confirm('למחוק את הצריכה הזו?'))return;today().splice(i,1);save();renderToday()}
+bool flat = strategy.position_size == 0
 
-function saveProduct(){
- let p={
-  name:pname.value.trim(),
-  brand:pbrand.value.trim(),
-  barcode:pbarcode.value.trim(),
-  kcal:Number(pkcal.value)||0,
-  protein:Number(pprotein.value)||0,
-  carbs:Number(pcarbs.value)||0,
-  fat:Number(pfat.value)||0,
-  unit_g:Number(punitg.value)||0,
-  updated:new Date().toLocaleDateString('he-IL')
- };
- if(!p.name||p.kcal<0)return alert('שם המוצר וקלוריות ל-100 גרם הם חובה');
- const editing=window.editingProductIndex;
- 
- if(p.barcode){
-   const duplicate=db.products.findIndex((x,i)=>i!==editing && x.barcode && String(x.barcode)===String(p.barcode));
-   if(duplicate>=0){
-     if(confirm('מוצר עם ברקוד זה כבר קיים במאגר. האם תרצה לעדכן את נתוני המוצר הקיים?')){
-       db.products[duplicate]=Object.assign({}, db.products[duplicate], p);
-       save();closeModal();renderProducts();return;
-     } else return;
-   }
- }
- 
- if(editing!==null&&editing!==undefined)db.products[editing]=p;else db.products.push(p);
- save();closeModal();renderProducts();
-}
+bool longBreakout =
+     barstate.isconfirmed and
+     orLocked and
+     afterOR and
+     close > orHigh
 
-function editProduct(i){
- const p=db.products[i];if(!p)return;
- window.editingProductIndex=i;
- document.querySelector('#productModal h2').textContent='עריכת מוצר';
- document.getElementById('barcodeStatus').style.display='none';
- lockPageScroll();productModal.classList.add('open');
- pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
- pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
- punitg.value=p.unit_g||'';
- updateProductUnitCalc();
-}
+bool shortBreakout =
+     barstate.isconfirmed and
+     orLocked and
+     afterOR and
+     close < orLow
 
-function deleteProduct(i){
- const p=db.products[i];if(!p)return;
- if(!confirm('למחוק את המוצר "'+p.name+'" מהמאגר?'))return;
- db.products.splice(i,1);save();renderProducts();
-}
+//────────────────────────────────────
+// CREATE LONG SETUP
+//────────────────────────────────────
 
-// Scanner logic
-let scannerStream=null;
-async function openScanner(){
-  lockPageScroll();scannerModal.classList.add('open');scannerStatus.textContent='מכין את המצלמה...';barcodeResult.style.display='none';
-  try{
-    if(!navigator.mediaDevices?.getUserMedia) throw new Error('camera unavailable');
-    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-    barcodeVideo.srcObject=scannerStream;await barcodeVideo.play();
-    scannerStatus.textContent='כוון את הברקוד למרכז ולחץ על "צלם וחפש מוצר".';
-  }catch(e){scannerStatus.textContent='לא ניתן לפתוח את המצלמה.';}
-}
+bool canCreateSetup =
+     flat and
+     state == 0 and
+     not dailyLossHit and
+     not tradeLimitHit and
+     not eod
 
-async function captureBarcode(){
-  if(!window.ZXingBrowser||!barcodeVideo.videoWidth)return;
-  try{
-    const canvas=document.createElement('canvas');canvas.width=barcodeVideo.videoWidth;canvas.height=barcodeVideo.videoHeight;
-    const ctx=canvas.getContext('2d');ctx.drawImage(barcodeVideo,0,0);
-    const reader=new ZXingBrowser.BrowserMultiFormatReader();
-    const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/jpeg'));
-    const code=result.getText();
-    stopScanner();await searchBarcode(code);
-  }catch(e){scannerStatus.textContent='לא זוהה ברקוד, נסה שוב.';}
-}
+if canCreateSetup and longBreakout
 
-async function searchBarcode(code){
-  barcodeResult.style.display='block';barcodeResult.innerHTML='מחפש...';
-  try{
-    const res=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code));
-    const data=await res.json();
-    if(data.status===1&&data.product){
-      const p=data.product, n=p.nutriments||{};
-      let unitG = Number(p.product_quantity) || 0;
-      
-      window.foundProduct={
-        name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
-        unit_g:unitG,
-        kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
-        updated:new Date().toLocaleDateString('he-IL')
-      };
-      
-      let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(window.foundProduct.kcal * unitG / 100)} קק״ל (💪 ${round1((window.foundProduct.protein||0) * unitG / 100)}ג׳ · 🍞 ${round1((window.foundProduct.carbs||0) * unitG / 100)}ג׳ · 🥑 ${round1((window.foundProduct.fat||0) * unitG / 100)}ג׳)` : '';
-      
-      barcodeResult.innerHTML=`<b>${window.foundProduct.name}</b><br>קלוריות ל-100ג׳: ${window.foundProduct.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
-    }else{barcodeResult.innerHTML='המוצר לא נמצא ב-OpenFoodFacts';}
-  }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש המוצר';}
-}
+    setupHigh := high
+    setupLow := low
 
-function addFoundProduct(){
-  if(!window.foundProduct)return;
-  const p=window.foundProduct;
-  const idx=db.products.findIndex(x=>x.barcode&&String(x.barcode)===String(p.barcode));
-  if(idx>=0) db.products[idx]=Object.assign({},db.products[idx],p);
-  else db.products.push(p);
-  save();closeScanner();show('products');
-}
+    entryPrice := setupHigh + TICK
+    stopPrice := setupLow - TICK
 
-function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}}
-function closeScanner(){stopScanner();scannerModal.classList.remove('open');unlockPageScroll();}
+    float stopDistance = entryPrice - stopPrice
+    float stopTicks = stopDistance / TICK
 
-dateText();renderToday();
-</script>
-</body>
-</html>
+    riskPerContract := stopTicks * TICK_VALUE
+
+    plannedContracts :=
+         riskPerContract > 0
+         ? math.floor(MAX_RISK / riskPerContract)
+         : 0
+
+    plannedContracts :=
+         math.min(plannedContracts, MAX_CONTRACTS)
+
+    targetPrice :=
+         entryPrice + stopDistance * TARGET_R
+
+    if plannedContracts >= 1
+        state := 1
+
+        strategy.entry(
+             "Long Entry",
+             strategy.long,
+             qty = plannedContracts,
+             stop = entryPrice
+        )
+
+//────────────────────────────────────
+// CREATE SHORT SETUP
+//────────────────────────────────────
+
+if canCreateSetup and shortBreakout
+
+    setupHigh := high
+    setupLow := low
+
+    entryPrice := setupLow - TICK
+    stopPrice := setupHigh + TICK
+
+    float stopDistance = stopPrice - entryPrice
+    float stopTicks = stopDistance / TICK
+
+    riskPerContract := stopTicks * TICK_VALUE
+
+    plannedContracts :=
+         riskPerContract > 0
+         ? math.floor(MAX_RISK / riskPerContract)
+         : 0
+
+    plannedContracts :=
+         math.min(plannedContracts, MAX_CONTRACTS)
+
+    targetPrice :=
+         entryPrice - stopDistance * TARGET_R
+
+    if plannedContracts >= 1
+        state := -1
+
+        strategy.entry(
+             "Short Entry",
+             strategy.short,
+             qty = plannedContracts,
+             stop = entryPrice
+        )
+
+//────────────────────────────────────
+// OPPOSITE BREAKOUT CANCELS PENDING
+//────────────────────────────────────
+
+if state == 1 and shortBreakout
+    strategy.cancel("Long Entry")
+    state := 0
+
+if state == -1 and longBreakout
+    strategy.cancel("Short Entry")
+    state := 0
+
+//────────────────────────────────────
+// DETECT ACTUAL ENTRY FILL
+//────────────────────────────────────
+
+bool longFilled =
+     strategy.position_size > 0 and
+     strategy.position_size[1] <= 0
+
+bool shortFilled =
+     strategy.position_size < 0 and
+     strategy.position_size[1] >= 0
+
+if longFilled or shortFilled
+
+    tradesToday += 1
+
+    state := 0
+
+//────────────────────────────────────
+// EXIT ORDERS — ONLY WHILE IN POSITION
+//────────────────────────────────────
+
+if strategy.position_size > 0
+    strategy.exit(
+         "Long Exit",
+         from_entry = "Long Entry",
+         stop = stopPrice,
+         limit = targetPrice
+    )
+
+if strategy.position_size < 0
+    strategy.exit(
+         "Short Exit",
+         from_entry = "Short Entry",
+         stop = stopPrice,
+         limit = targetPrice
+    )
+
+//────────────────────────────────────
+// CANCEL ALL NEW ENTRIES AFTER LIMIT
+//────────────────────────────────────
+
+if dailyLossHit or tradeLimitHit
+
+    strategy.cancel("Long Entry")
+    strategy.cancel("Short Entry")
+
+    if strategy.position_size == 0
+        state := 0
+
+//────────────────────────────────────
+// VISUALS
+//────────────────────────────────────
+
+plot(orHigh, "OR High", color = color.green)
+plot(orLow, "OR Low", color = color.red)
+
+plot(
+     state != 0 ? entryPrice : na,
+     "Pending Entry",
+     color = color.blue,
+     style = plot.style_linebr
+)
+
+plot(
+     strategy.position_size != 0 ? stopPrice : na,
+     "Stop",
+     color = color.red,
+     style = plot.style_linebr
+)
+
+plot(
+     strategy.position_size != 0 ? targetPrice : na,
+     "Target",
+     color = color.green,
+     style = plot.style_linebr
+)
