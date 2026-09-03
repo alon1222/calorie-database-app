@@ -3,31 +3,76 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>מאגר קלוריות AI - פאנל ניהול</title>
+<title>מאגר קלוריות AI — ניהול תזונה חכם</title>
 <style>
+:root {
+  --primary: #10b981;
+  --primary-dark: #059669;
+  --primary-light: #ecfdf5;
+  --accent: #6366f1;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+}
+
 *{box-sizing:border-box}
-body{margin:0;background:#f5f6f8;color:#18202a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body{margin:0;background:var(--bg-app);color:var(--text-main);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
 body.modal-open{overflow:hidden;position:fixed;width:100%;height:100%}
-.app{max-width:560px;margin:auto;min-height:100vh;background:#fff}
-header{padding:20px 18px 14px;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff;z-index:5;display:flex;justify-content:space-between;align-items:center}
-h1{margin:0;font-size:24px}.date{color:#68707a;margin-top:2px;font-size:13px}
-.admin-badge{background:#18202a;color:#fff;font-size:11px;padding:4px 8px;border-radius:20px;font-weight:700}
-main{padding:16px}.card{background:#f7f8fa;border:1px solid #e4e7eb;border-radius:18px;padding:16px;margin-bottom:14px}
-.kcal{font-size:40px;font-weight:800}.muted{color:#68707a}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.macro{background:#fff;border:1px solid #e2e5e9;border-radius:12px;padding:10px;text-align:center}.macro b{display:block;font-size:18px}
-.progress{height:9px;background:#e4e7eb;border-radius:20px;overflow:hidden;margin:10px 0}.progress span{display:block;height:100%;background:#18202a;width:0}
-button,input,select,textarea{font:inherit}button{border:0;border-radius:12px;padding:12px 14px;cursor:pointer}.primary{width:100%;background:#18202a;color:white;font-weight:700}.secondary{background:#eef0f3;color:#18202a}.ai-btn{background:linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);color:white;font-weight:700;width:100%}
-input,select,textarea{width:100%;padding:13px;border:1px solid #d7dbe0;border-radius:12px;margin-bottom:10px;background:#fff}
-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:#fff;border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(6,1fr);padding:6px}
-nav button{background:#fff;color:#606872;font-size:11px;padding:6px 1px}nav button.active{background:#18202a;color:#fff}
-.item{display:flex;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #e8eaed}.item:last-child{border-bottom:0}
-.modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end;overflow:hidden;touch-action:none}.modal.open{display:flex}
-.sheet{background:#fff;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px 22px 0 0;position:relative;touch-action:pan-y}
-.spacer{height:75px}.hidden{display:none}
-textarea{resize:vertical;min-height:70px}
-.ai-box{background:#f0f3ff;border:1px solid #c7d2fe;border-radius:14px;padding:12px;margin-bottom:12px}
-.badge-barcode{background:#e0e7ff;color:#3730a3;font-size:11px;padding:2px 6px;border-radius:6px;font-weight:600}
-.duplicate-warning{background:#fff5f5;border:1px solid #feb2b2;color:#c53030;border-radius:12px;padding:10px;font-size:13px;margin-bottom:10px;display:none}
-.product-img{width:48px;height:48px;border-radius:8px;object-fit:cover;margin-left:10px;border:1px solid #ddd}
+
+.app{max-width:560px;margin:auto;min-height:100vh;background:var(--bg-card);box-shadow:0 0 25px rgba(0,0,0,0.04)}
+
+header{padding:22px 20px 16px;border-bottom:1px solid var(--border-color);position:sticky;top:0;background:rgba(255,255,255,0.92);backdrop-filter:blur(10px);z-index:5;display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#0f172a}
+.date{color:var(--text-muted);margin-top:3px;font-size:12px;font-weight:500}
+.admin-badge{background:var(--primary-light);color:var(--primary-dark);font-size:11px;padding:5px 10px;border-radius:20px;font-weight:700;border:1px solid #d1fae5}
+
+main{padding:18px}
+.card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)}
+
+.kcal-card{background:linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);border:1px solid #a7f3d0}
+.kcal{font-size:38px;font-weight:800;color:#065f46;letter-spacing:-1px}
+.muted{color:var(--text-muted)}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.macro{background:#f8fafc;border:1px solid var(--border-color);border-radius:14px;padding:12px;text-align:center}
+.macro span{font-size:12px;color:var(--text-muted);font-weight:600}
+.macro b{display:block;font-size:18px;margin-top:4px;color:#0f172a}
+.macro small{font-size:11px;color:var(--text-muted)}
+
+.progress{height:10px;background:#e2e8f0;border-radius:20px;overflow:hidden;margin:12px 0}
+.progress span{display:block;height:100%;background:var(--primary);width:0;border-radius:20px;transition:width 0.4s ease}
+
+button,input,select,textarea{font:inherit}
+button{border:0;border-radius:14px;padding:13px 16px;cursor:pointer;font-weight:700;transition:all 0.2s ease}
+button:active{transform:scale(0.98)}
+.primary{width:100%;background:#0f172a;color:white;box-shadow:0 4px 12px rgba(15,23,42,0.15)}
+.secondary{background:#f1f5f9;color:var(--text-main);border:1px solid var(--border-color)}
+.ai-btn{background:linear-gradient(135deg, #10b981 0%, #059669 100%);color:white;width:100%;box-shadow:0 4px 12px rgba(16,185,129,0.25)}
+
+input,select,textarea{width:100%;padding:13px 14px;border:1px solid var(--border-color);border-radius:14px;margin-bottom:10px;background:#f8fafc;color:var(--text-main);outline:none;transition:border-color 0.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);background:#fff}
+
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);border-top:1px solid var(--border-color);display:grid;grid-template-columns:repeat(6,1fr);padding:8px;z-index:5}
+nav button{background:transparent;color:var(--text-muted);font-size:11px;padding:6px 2px;border-radius:10px;font-weight:600}
+nav button.active{background:var(--primary-light);color:var(--primary-dark);font-weight:700}
+
+.item{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #f1f5f9;align-items:center}
+.item:last-child{border-bottom:0}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:10;align-items:flex-end;overflow:hidden;touch-action:none}
+.modal.open{display:flex}
+.sheet{background:#fff;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:22px;border-radius:24px 24px 0 0;position:relative;touch-action:pan-y;box-shadow:0 -10px 25px rgba(0,0,0,0.1)}
+
+.spacer{height:85px}
+.hidden{display:none}
+textarea{resize:vertical;min-height:80px}
+
+.ai-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:16px;padding:14px;margin-bottom:14px}
+.badge-barcode{background:#e0e7ff;color:#3730a3;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600}
+.duplicate-warning{background:#fff5f5;border:1px solid #feb2b2;color:#c53030;border-radius:12px;padding:12px;font-size:13px;margin-bottom:10px;display:none}
+.product-img{width:52px;height:52px;border-radius:12px;object-fit:cover;margin-left:12px;border:1px solid var(--border-color)}
 </style>
 </head>
 <body>
@@ -37,77 +82,77 @@ textarea{resize:vertical;min-height:70px}
     <h1>מאגר קלוריות</h1>
     <div class="date" id="date"></div>
   </div>
-  <span class="admin-badge">מנהל (Admin)</span>
+  <span class="admin-badge">מנהל מערכת</span>
 </header>
 <main>
 <section id="today">
-<div class="card">
-  <div class="muted">נצרכו היום</div>
-  <div><span class="kcal" id="kcal">0</span> קלוריות</div>
+<div class="card kcal-card">
+  <div class="muted" style="font-weight:600;font-size:13px">נצרכו היום</div>
+  <div><span class="kcal" id="kcal">0</span> <span style="font-size:16px;color:#065f46;font-weight:700">קלוריות</span></div>
   <div class="progress"><span id="kbar"></span></div>
-  <div class="muted" id="kleftContainer"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div>
+  <div class="muted" id="kleftContainer" style="font-size:13px"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div>
 </div>
 <div class="grid">
 <div class="macro"><span>💪 חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
 <div class="macro"><span>🍞 פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
 <div class="macro"><span>🥑 שומן</span><b id="fat">0</b><small>/ 67 ג׳</small></div>
 </div>
-<div class="card" style="margin-top:14px;display:flex;gap:8px">
-<button class="primary" style="flex:2" onclick="openAdd()">＋ הוסף צריכה</button>
+<div class="card" style="margin-top:14px;display:flex;gap:10px;background:#fff;border:none;padding:0">
+<button class="primary" style="flex:2;background:var(--primary);color:#fff" onclick="openAdd()">＋ הוסף צריכה</button>
 <button class="secondary" style="flex:1" onclick="openScanner()">📷 סרוק</button>
 <button class="secondary" style="flex:1" onclick="showDailySummaryModal()">📋 סיכום</button>
 </div>
-<div class="card"><b>צריכה היום</b><div id="intake"></div></div>
+<div class="card" style="margin-top:14px"><b style="font-size:15px">צריכה היום</b><div id="intake"></div></div>
 </section>
 
 <!-- לשונית עוזר אישי AI עם פידבק, ניתוחים ושיח אינטראקטיבי -->
 <section id="aiAssistant" class="hidden">
-<div class="card" style="background:#eef2f7;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center">
+<div class="card" style="background:#f8fafc;border:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">
   <div>
-    <div style="font-size:12px;color:#68707a">יתרה קלורית נוכחית להיום:</div>
-    <div style="font-size:20px;font-weight:800" id="aiAssistantKcalLeft">2,000 קק״ל</div>
+    <div style="font-size:12px;color:var(--text-muted);font-weight:600">יתרה קלוריות נוכחית להיום:</div>
+    <div style="font-size:20px;font-weight:800;color:var(--primary-dark)" id="aiAssistantKcalLeft">2,000 קק״ל</div>
   </div>
-  <div style="text-align:left;font-size:12px;color:#68707a">
+  <div style="text-align:left;font-size:12px;color:var(--text-muted)">
     יעד יומי: <span id="aiAssistantTarget">2000</span><br>נצרך: <span id="aiAssistantConsumed">0</span>
   </div>
 </div>
 
-<div class="card" style="background:linear-gradient(135deg, #f0f3ff 0%, #ede9fe 100%);border:1px solid #c7d2fe">
-  <b>🌟 חוות דעת חכמה ומוטיבציה להיום</b>
-  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:10px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור:</div>
+<div class="card" style="background:linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);border:1px solid #a7f3d0">
+  <b style="color:#065f46">🌟 חוות דעת חכמה ומוטיבציה להיום</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור:</div>
   <button class="ai-btn" onclick="getAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי להיום</button>
-  <div id="coachFeedbackResult" style="margin-top:10px;font-size:14px"></div>
+  <div id="coachFeedbackResult" style="margin-top:12px;font-size:14px"></div>
 </div>
 
-<div class="card" style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border:1px solid #bbf7d0">
-  <b>📈 ניתוח מצטבר וסקירת תקופה מהמאמן</b>
-  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:10px">קבל חוות דעת כוללת על ההתנהלות התזונתית שלך לאורך הימים האחרונים ומגמות ההתקדמות:</div>
-  <button class="ai-btn" style="background:linear-gradient(135deg, #16a34a 0%, #15803d 100%)" onclick="getAiCumulativeCoachFeedback()">📊 בקש ניתוח כולל עד כה</button>
-  <div id="cumulativeFeedbackResult" style="margin-top:10px;font-size:14px"></div>
+<div class="card" style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border:1px solid #86efac">
+  <b style="color:#166534">📈 ניתוח מצטבר וסקירת תקופה מהמאמן</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל חוות דעת כוללת על ההתנהלות התזונתית שלך לאורך הימים האחרונים ומגמות ההתקדמות:</div>
+  <button class="ai-btn" style="background:linear-gradient(135deg, #059669 0%, #047857 100%)" onclick="getAiCumulativeCoachFeedback()">📊 בקש ניתוח כולל עד כה</button>
+  <div id="cumulativeFeedbackResult" style="margin-top:12px;font-size:14px"></div>
 </div>
 
 <div class="card">
-  <b>🤖 עוזר תזונה חכם (AI)</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">נתח מתכונים, שמור למאגר ושבץ במאזן היומי בקלות:</div>
+  <b style="font-size:15px">🤖 עוזר תזונה חכם (AI)</b>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">נתח מתכונים, שמור למאגר ושבץ במאזן היומי בקלות:</div>
 
   <div class="ai-box">
     <b>🍲 ניתוח מתכון מורכב ורכיביו (עם אפשרות הוספה למאגר)</b>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">הקלד את שם המנה והרכיבים:</div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px;margin-top:4px">הקלד את שם המנה והרכיבים:</div>
     <input id="recipeNameInput" placeholder="שם המנה (לדוגמה: מוקפץ עוף ביתי)" style="margin-bottom:6px">
     <textarea id="recipeInput" placeholder="לדוגמה: 500 גרם עוף, גמבה אדומה אחת, בצל אחד, 2 כפות סילאן, 2 כפות צ׳ילי מתוק"></textarea>
     <button class="ai-btn" onclick="analyzeRecipeWithAI()">🔍 חשב קלוריות ומאקרו ל-100 גרם</button>
-    <div id="recipeResult" style="margin-top:10px;font-size:14px"></div>
+    <div id="recipeResult" style="margin-top:12px;font-size:14px"></div>
   </div>
 
-  <div class="ai-box" style="background:#f7fcf5;border-color:#c6f6d5">
-    <b>🎯 תכנון ארוחה חכם ושיחה אינטראקטיבית עם המאמן</b>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">שאל את המאמן על שילוב מאכלים מול היתרה, והמשך את השיח ככל שתחפוץ:</div>
+  <div class="ai-box" style="background:#f8fafc;border-color:var(--border-color)">
+    <b style="color:var(--text-main)">🎯 תכנון ארוחה חכם ושיחה אינטראקטיבית עם המאמן</b>
+    <div class="muted" style="font-size:12px;margin-bottom:8px;margin-top:4px">שאל את המאמן על שילוב מאכלים מול היתרה, והמשך את השיח ככל שתחפוץ:</div>
     
-    <div id="mealChatHistory" style="max-height:180px;overflow-y:auto;margin-bottom:8px;font-size:13px"></div>
+    <div id="mealChatHistory" style="max-height:200px;overflow-y:auto;margin-bottom:10px;font-size:13px"></div>
 
     <textarea id="mealPlanInput" placeholder="כתוב כאן את השאלה או התגובה שלך למאמן (לדוגמה: ״האם אני יכול להוסיף לזה גם פרוסת לחם?״)..."></textarea>
     <div style="display:flex;gap:6px">
-      <button class="primary" style="background:#2f855a;flex:2" onclick="continueMealChatWithAI()">💬 שלח הודעה למאמן</button>
+      <button class="primary" style="background:var(--primary);flex:2" onclick="continueMealChatWithAI()">💬 שלח הודעה למאמן</button>
       <button class="secondary" style="flex:1" onclick="resetMealChat()">🗑️ איפוס שיחה</button>
     </div>
   </div>
@@ -116,41 +161,41 @@ textarea{resize:vertical;min-height:70px}
 
 <section id="profile" class="hidden">
 <div class="card">
-  <b>👤 פרופיל אישי וחישוב יעדים קלוריים</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו:</div>
+  <b style="font-size:15px">👤 פרופיל אישי וחישוב יעדים קלוריים</b>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו:</div>
   
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:10px">
     <div style="flex:1">
-      <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">משקל נוכחי (ק״ג):</label>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל נוכחי (ק״ג):</label>
       <input id="pWeight" type="number" step="0.1" placeholder="לדוגמה: 104">
     </div>
     <div style="flex:1">
-      <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">יעד משקל (ק״ג):</label>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">יעד משקל (ק״ג):</label>
       <input id="pTargetWeight" type="number" step="0.1" placeholder="לדוגמה: 90">
     </div>
   </div>
 
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:10px">
     <div style="flex:1">
-      <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">גובה (ס״מ):</label>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">גובה (ס״מ):</label>
       <input id="pHeight" type="number" placeholder="לדוגמה: 178">
     </div>
     <div style="flex:1">
-      <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">גיל (שנים):</label>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">גיל (שנים):</label>
       <input id="pAge" type="number" placeholder="לדוגמה: 30">
     </div>
   </div>
 
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:10px">
     <div style="flex:1">
-      <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">מין:</label>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">מין:</label>
       <select id="pGender">
         <option value="male">זכר</option>
         <option value="female">נקבה</option>
       </select>
     </div>
     <div style="flex:1">
-      <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">מטרה:</label>
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">מטרה:</label>
       <select id="pGoal">
         <option value="cut">חיטוב (גירעון קלורי 500-)</option>
         <option value="bulk">מסה (עודף קלורי 300+)</option>
@@ -159,63 +204,63 @@ textarea{resize:vertical;min-height:70px}
     </div>
   </div>
 
-  <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">רמת פעילות גופנית:</label>
-  <select id="pActivity" style="margin-bottom:12px">
+  <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">רמת פעילות גופנית:</label>
+  <select id="pActivity" style="margin-bottom:14px">
     <option value="1.2">יושבני (ללא פעילות מיוחדת)</option>
     <option value="1.375">פעילות קלה (1-3 אימונים בשבוע)</option>
     <option value="1.55">פעילות בינונית (3-5 אימונים בשבוע)</option>
     <option value="1.725">פעילות גבוהה (6-7 אימונים בשבוע)</option>
   </select>
 
-  <button class="primary" onclick="previewProfileCalculation()">חשב והצג יעדים להתאמה</button>
+  <button class="primary" style="background:var(--primary)" onclick="previewProfileCalculation()">חשב והצג יעדים להתאמה</button>
 </div>
 </section>
 
 <section id="weight" class="hidden">
 <div class="card">
-  <b>⚖️ ניהול מעקב משקל ויעדים</b>
-  <div id="weightSummaryCard" style="margin:10px 0;padding:12px;background:#eef2f7;border-radius:12px;font-size:14px"></div>
+  <b style="font-size:15px">⚖️ ניהול מעקב משקל ויעדים</b>
+  <div id="weightSummaryCard" style="margin:12px 0;padding:14px;background:#f0fdf4;border-radius:14px;font-size:14px;border:1px solid #bbf7d0"></div>
   
-  <div style="margin-bottom:12px">
-    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">משקל התחלתי (ק״ג):</label>
+  <div style="margin-bottom:14px">
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל התחלתי (ק״ג):</label>
     <div style="display:flex;gap:8px">
       <input id="startWeightInput" type="number" step="0.1" placeholder="לדוגמה: 108" style="margin:0;flex:1">
       <button class="secondary" style="width:auto" onclick="saveStartWeight()">שמור התחלתי</button>
     </div>
   </div>
 
-  <hr style="border:0;border-top:1px solid #e4e7eb;margin:16px 0">
+  <hr style="border:0;border-top:1px solid var(--border-color);margin:16px 0">
 
   <div style="margin-bottom:8px">
-    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">בחר תאריך לעדכון:</label>
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר תאריך לעדכון:</label>
     <input id="weightDateInput" type="date" style="margin-bottom:8px">
-    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">משקל ביום זה (ק״ג):</label>
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל ביום זה (ק״ג):</label>
     <div style="display:flex;gap:8px">
       <input id="weightValueInput" type="number" step="0.1" placeholder="לדוגמה: 104.5" style="margin:0;flex:1">
-      <button class="primary" style="width:auto" onclick="saveWeightLog()">שמור מדידה</button>
+      <button class="primary" style="width:auto;background:var(--primary)" onclick="saveWeightLog()">שמור מדידה</button>
     </div>
   </div>
 </div>
 
 <div class="card">
-  <b>📊 היסטוריית התקדמות והפרשים</b>
-  <div id="weightHistoryList" style="margin-top:10px"></div>
+  <b style="font-size:15px">📊 היסטוריית התקדמות והפרשים</b>
+  <div id="weightHistoryList" style="margin-top:12px"></div>
 </div>
 </section>
 
 <section id="products" class="hidden">
 <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-  <b>📦 <span id="productCount">0</span> מוצרים במאגר</b>
+  <b style="font-size:15px">📦 <span id="productCount">0</span> מוצרים במאגר</b>
   <div style="display:flex;gap:6px">
-    <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="openSettings()">⚙️ API</button>
-    <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="exportBackup()">📤 גיבוי</button>
-    <button class="secondary" style="padding:6px 10px;font-size:13px" onclick="importBackup()">📥 שחזור</button>
+    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="openSettings()">⚙️ API</button>
+    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="exportBackup()">📤 גיבוי</button>
+    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="importBackup()">📥 שחזור</button>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImportFile(event)">
   </div>
 </div>
 <div class="card">
-  <b>חיפוש וניהול מאגר</b>
-  <input id="search" placeholder="חפש מוצר..." oninput="debouncedRenderProducts()">
+  <b style="font-size:14px">חיפוש וניהול מאגר</b>
+  <input id="search" placeholder="חפש מוצר..." oninput="debouncedRenderProducts()" style="margin-top:8px">
   <div style="display:flex;gap:8px">
     <button class="primary" style="flex:1" onclick="openScanner()">📷 סרוק ברקוד</button>
     <button class="ai-btn" style="flex:1" onclick="openProduct()">＋ הוסף מוצר (AI)</button>
@@ -226,8 +271,8 @@ textarea{resize:vertical;min-height:70px}
 
 <section id="month" class="hidden">
 <div class="card">
-  <b>📅 ארכיון חודשים וצריכה יומית</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">צפה בצריכה היומית מול היעד בכל חודש:</div>
+  <b style="font-size:15px">📅 ארכיון חודשים וצריכה יומית</b>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">צפה בצריכה היומית מול היעד בכל חודש:</div>
   <div id="monthList"></div>
 </div>
 </section>
@@ -245,23 +290,23 @@ textarea{resize:vertical;min-height:70px}
 
 <div class="modal" id="profileModal"><div class="sheet">
 <h2>🎯 עריכה והתאמת יעדים קלוריים</h2>
-<div id="profilePreviewContent" class="card" style="background:#f0f3ff;border:1px solid #c7d2fe;margin-bottom:12px"></div>
-<button class="primary" onclick="confirmAndSaveProfile()">✅ שמור והחל יעדים מעודכנים</button>
+<div id="profilePreviewContent" class="card" style="background:#f0fdf4;border:1px solid #bbf7d0;margin-bottom:14px"></div>
+<button class="primary" style="background:var(--primary)" onclick="confirmAndSaveProfile()">✅ שמור והחל יעדים מעודכנים</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">✕ ביטול</button>
 </div></div>
 
 <div class="modal" id="settingsModal"><div class="sheet">
 <h2>⚙️ הגדרת Gemini API Key</h2>
-<div class="muted" style="font-size:13px;margin-bottom:10px">מפתח ה-API משמש למילוי אוטומטי והמרות AI:</div>
+<div class="muted" style="font-size:13px;margin-bottom:12px">מפתח ה-API משמש למילוי אוטומטי והמרות AI:</div>
 <input id="apiKeyInput" type="password" placeholder="הדבק API Key כאן (AIzaSy...)">
-<button class="primary" onclick="saveApiKey()">שמור מפתח</button>
+<button class="primary" style="background:var(--primary)" onclick="saveApiKey()">שמור מפתח</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
 </div></div>
 
 <div class="modal" id="summaryModal"><div class="sheet">
 <h2>📊 סיכום יומי</h2>
-<textarea id="summaryText" readonly style="width:100%;height:180px;font-family:monospace;font-size:15px;margin-top:10px"></textarea>
-<button class="primary" onclick="copySummaryText()">📋 העתק טקסט</button>
+<textarea id="summaryText" readonly style="width:100%;height:180px;font-family:monospace;font-size:14px;margin-top:10px"></textarea>
+<button class="primary" style="background:var(--primary)" onclick="copySummaryText()">📋 העתק טקסט</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
 </div></div>
 
@@ -270,7 +315,7 @@ textarea{resize:vertical;min-height:70px}
 <div id="scannerStatus" class="muted" style="margin-bottom:10px">מכוון מצלמה לזיהוי ברקוד אוטומטי...</div>
 <div style="position:relative;width:100%;background:#111;border-radius:16px;overflow:hidden">
   <video id="barcodeVideo" playsinline muted style="width:100%;max-height:50vh;object-fit:cover;display:block"></video>
-  <div style="position:absolute;inset:15%;border:2px dashed #4f46e5;border-radius:12px;pointer-events:none;box-shadow:0 0 0 1000px rgba(0,0,0,0.4)"></div>
+  <div style="position:absolute;inset:15%;border:2px dashed var(--primary);border-radius:12px;pointer-events:none;box-shadow:0 0 0 1000px rgba(0,0,0,0.5)"></div>
 </div>
 <div id="barcodeResult" class="card" style="display:none;margin-top:12px"></div>
 <button class="secondary" style="width:100%;margin-top:12px" onclick="closeScanner()">✕ סגור מצלמה</button>
@@ -279,11 +324,11 @@ textarea{resize:vertical;min-height:70px}
 <div class="modal" id="addModal"><div class="sheet">
 <h2 id="addModalTitle">הוספת צריכה</h2>
 <input id="foodSearch" placeholder="חפש מוצר קיים או הקלד מוצר חדש..." oninput="debouncedSuggestIntake()">
-<div id="suggestions" style="margin-bottom:8px"></div>
+<div id="suggestions" style="margin-bottom:10px"></div>
 
-<div id="newProductQuickFields" class="card" style="display:none;background:#f0f3ff;border:1px solid #c7d2fe;padding:12px">
+<div id="newProductQuickFields" class="card" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;padding:14px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <span style="font-size:13px;color:#4f46e5;font-weight:700">✨ מוצר חדש!</span>
+    <span style="font-size:13px;color:var(--primary-dark);font-weight:700">✨ מוצר חדש!</span>
     <button type="button" class="ai-btn" style="padding:6px 10px;font-size:12px;width:auto" onclick="quickFillWithAI()">🪄 השלם נתונים ב-AI</button>
   </div>
   <div id="quickAiStatus" class="muted" style="font-size:11px;margin-bottom:6px;min-height:14px"></div>
@@ -298,7 +343,7 @@ textarea{resize:vertical;min-height:70px}
   </div>
 </div>
 
-<div style="display:flex;gap:8px;margin-top:8px">
+<div style="display:flex;gap:8px;margin-top:10px">
   <select id="unitSelect" style="flex:1" onchange="handleUnitSelection()">
     <option value="unit">יחידה</option>
     <option value="g">גרם</option>
@@ -312,8 +357,8 @@ textarea{resize:vertical;min-height:70px}
 
 <div id="aiUnitStatus" class="muted" style="font-size:12px;margin-top:6px;text-align:center;min-height:16px"></div>
 
-<div id="intakePreview" class="card" style="display:none;margin-top:4px"></div>
-<button class="primary" id="addIntakeBtn" onclick="addIntake()">הוסף לצריכה</button>
+<div id="intakePreview" class="card" style="display:none;margin-top:6px;background:#f8fafc"></div>
+<button class="primary" id="addIntakeBtn" style="background:var(--primary);margin-top:8px" onclick="addIntake()">הוסף לצריכה</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
 </div></div>
 
@@ -334,11 +379,11 @@ textarea{resize:vertical;min-height:70px}
     <input id="pbarcode" placeholder="ברקוד (רשות)" oninput="checkBarcodeProtection()">
   </div>
   
-  <div style="margin-bottom:10px">
-    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">📷 צלם או העלה תמונה אמיתית של המוצר:</label>
+  <div style="margin-bottom:12px">
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">📷 צלם או העלה תמונה אמיתית של המוצר:</label>
     <input type="file" id="pImageInput" accept="image/*" onchange="previewProductImage(event)" style="padding:8px">
     <div id="imgPreviewContainer" style="display:none;margin-top:6px;text-align:center">
-      <img id="imgPreview" style="max-height:100px;border-radius:12px;border:1px solid #ddd;display:block;margin:auto">
+      <img id="imgPreview" style="max-height:100px;border-radius:12px;border:1px solid var(--border-color);display:block;margin:auto">
       <button type="button" class="secondary" style="font-size:12px;padding:6px 12px;margin-top:8px;width:auto" onclick="clearProductImage()">🔄 צלם/החלף תמונה מחדש</button>
     </div>
   </div>
@@ -350,16 +395,16 @@ textarea{resize:vertical;min-height:70px}
     <input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
     <input id="pfat" type="number" placeholder="שומן ל-100ג׳" oninput="updateProductUnitCalc()">
   </div>
-  <div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:#eef2f7;font-size:14px"></div>
+  <div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:#f0fdf4;font-size:14px;border-color:#bbf7d0"></div>
 </div>
 
-<button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר למאגר</button>
+<button class="primary" id="saveProductBtn" style="background:var(--primary)" onclick="saveProduct()">שמור מוצר למאגר</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
 </div></div>
 
 <div class="modal" id="aiOptionsModal"><div class="sheet">
 <h2>✨ בחר את המוצר המדויק</h2>
-<div class="muted" style="font-size:13px;margin-bottom:10px">מצאנו כמה אופציות מתאימות:</div>
+<div class="muted" style="font-size:13px;margin-bottom:12px">מצאנו כמה אופציות מתאימות:</div>
 <div id="aiOptionsList"></div>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="document.getElementById('aiOptionsModal').classList.remove('open')">✕ ביטול</button>
 </div></div>
@@ -465,7 +510,7 @@ Keep it engaging, warm, and concise.`;
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API Error');
     let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:6px;font-size:13px;white-space:pre-line">${textResult}</div>`;
+    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:8px;font-size:13px;white-space:pre-line;border-color:#bbf7d0">${textResult}</div>`;
   } catch(e) {
     resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בקבלת הפידבק: ${e.message}</span>`;
   }
@@ -518,7 +563,7 @@ Keep it structured, warm, and professional.`;
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API Error');
     let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:6px;font-size:13px;white-space:pre-line">${textResult}</div>`;
+    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:8px;font-size:13px;white-space:pre-line;border-color:#86efac">${textResult}</div>`;
   } catch(e) {
     resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בקבלת הניתוח המצטבר: ${e.message}</span>`;
   }
@@ -566,24 +611,24 @@ Return ONLY a valid JSON object without code blocks:
     analyzedIngredientsList = parsed.ingredients || [];
 
     let ingredientsHtml = analyzedIngredientsList.map((ing, idx) => `
-      <div style="background:#f7f8fa;padding:8px;border-radius:8px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;border:1px solid #e2e5e9">
+      <div style="background:#f8fafc;padding:10px;border-radius:12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border-color)">
         <div>
           <b>${ing.name}</b><br>
           <span class="muted" style="font-size:12px">🔥 ${ing.kcal} קק״ל | 💪 ${ing.protein}ג׳ חלבון | 🍞 ${ing.carbs}ג׳ פחמימות | 🥑 ${ing.fat}ג׳ שומן (ל-100ג׳)</span>
         </div>
-        <button class="primary" style="background:#2f855a;font-size:11px;padding:6px 10px;width:auto" onclick="saveSpecificIngredientToDB(${idx})">📦 הוסף למאגר</button>
+        <button class="primary" style="background:var(--primary);font-size:11px;padding:7px 12px;width:auto" onclick="saveSpecificIngredientToDB(${idx})">📦 הוסף למאגר</button>
       </div>
     `).join('');
 
     resultDiv.innerHTML = `
-      <div class="card" style="background:#fff;margin-top:6px;font-size:13px">
+      <div class="card" style="background:#fff;margin-top:8px;font-size:13px;border-color:var(--border-color)">
         <b>✅ תוצאות ניתוח מנה מלאה ("${parsed.name}"):</b><br>
         🔥 קלוריות ל-100ג׳: <b>${parsed.kcal}</b><br>
         💪 חלבון: ${parsed.protein}ג׳ | 🍞 פחמימות: ${parsed.carbs}ג׳ | 🥑 שומן: ${parsed.fat}ג׳<br>
-        <div style="margin-top:10px;display:flex;gap:6px">
-          <button class="primary" style="background:#2f855a" onclick="saveFullRecipeAsProduct('${parsed.name}', ${parsed.kcal}, ${parsed.protein}, ${parsed.carbs}, ${parsed.fat})">📦 שמור את המנה כולה למאגר</button>
+        <div style="margin-top:10px">
+          <button class="primary" style="background:var(--primary)" onclick="saveFullRecipeAsProduct('${parsed.name}', ${parsed.kcal}, ${parsed.protein}, ${parsed.carbs}, ${parsed.fat})">📦 שמור את המנה כולה למאגר</button>
         </div>
-        <hr style="border:0;border-top:1px solid #eee;margin:10px 0">
+        <hr style="border:0;border-top:1px solid var(--border-color);margin:12px 0">
         <b>🥗 פירוט רכיבי המאכל (לחץ להוספה פרטנית למאגר):</b>
         ${ingredientsHtml}
       </div>
@@ -650,7 +695,7 @@ async function continueMealChatWithAI() {
 
   chatSessionMemory.push({ role: "user", parts: [{ text: query }] });
 
-  historyDiv.innerHTML += `<div style="background:#fff;padding:8px;border-radius:8px;margin-bottom:6px;border:1px solid #d1fae5"><b>אתה:</b> ${query}</div>`;
+  historyDiv.innerHTML += `<div style="background:#fff;padding:10px;border-radius:12px;margin-bottom:8px;border:1px solid var(--border-color)"><b>אתה:</b> ${query}</div>`;
   document.getElementById('mealPlanInput').value = '';
   historyDiv.innerHTML += `<div id="aiTypingIndicator" class="muted" style="font-size:12px;padding:4px">⚡ המאמן מקליד תגובה...</div>`;
   historyDiv.scrollTop = historyDiv.scrollHeight;
@@ -681,7 +726,7 @@ Keep responses conversational, warm, and practical in Hebrew, allowing the user 
 
     chatSessionMemory.push({ role: "model", parts: [{ text: textResult }] });
 
-    historyDiv.innerHTML += `<div style="background:#f0fdf4;padding:8px;border-radius:8px;margin-bottom:6px;border:1px solid #bbf7d0"><b>מאמן AI:</b><div style="white-space:pre-line;margin-top:4px">${textResult}</div></div>`;
+    historyDiv.innerHTML += `<div style="background:#ecfdf5;padding:10px;border-radius:12px;margin-bottom:8px;border:1px solid #a7f3d0"><b>מאמן AI:</b><div style="white-space:pre-line;margin-top:4px">${textResult}</div></div>`;
     historyDiv.scrollTop = historyDiv.scrollHeight;
 
   } catch(e) {
@@ -749,9 +794,9 @@ function previewProfileCalculation() {
     <b>📋 נתונים נבחרים:</b><br>
     • רמת פעילות: ${activityText}<br>
     • מטרה: ${goalText}<br>
-    <hr style="border:0;border-top:1px solid #c7d2fe;margin:8px 0">
+    <hr style="border:0;border-top:1px solid #bbf7d0;margin:10px 0">
     <b>🔥 יעד קלוריות מחושב (ניתן לעריכה חופשית):</b><br>
-    <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
       <input id="modalEditableKcal" type="number" value="${targets.kcal}" style="margin:0;font-weight:bold;font-size:16px;text-align:center">
       <span style="font-size:13px">קק״ל</span>
     </div>
@@ -862,10 +907,10 @@ function renderWeightScreen(){
             <div class="muted">⚖️ ${w} ק״ג</div>
           </div>
           <div style="text-align:left">
-            ${diffPrev !== null ? `<div style="font-size:12px;color:${diffPrev<=0?'#2f855a':'#c53030'}">הפרש מאתמול: ${diffPrev>0?'+':''}${diffPrev}ק״ג</div>` : ''}
-            <div style="font-size:12px;color:${diffStart<=0?'#2f855a':'#c53030'}">הפרש מהתחלה: ${diffStart>0?'+':''}${diffStart}ק״ג</div>
-            ${diffTarget !== null ? `<div style="font-size:12px;font-weight:600;color:${diffTarget<=0?'#2f855a':'#c53030'}">הפרש מהיעד: ${diffTarget>0?'+':''}${diffTarget}ק״ג</div>` : ''}
-            <button class="secondary" style="font-size:11px;padding:2px 6px;margin-top:4px" onclick="deleteWeight('${d}')">🗑️ מחק</button>
+            ${diffPrev !== null ? `<div style="font-size:12px;color:${diffPrev<=0?'#059669':'#c53030'}">הפרש מאתמול: ${diffPrev>0?'+':''}${diffPrev}ק״ג</div>` : ''}
+            <div style="font-size:12px;color:${diffStart<=0?'#059669':'#c53030'}">הפרש מהתחלה: ${diffStart>0?'+':''}${diffStart}ק״ג</div>
+            ${diffTarget !== null ? `<div style="font-size:12px;font-weight:600;color:${diffTarget<=0?'#059669':'#c53030'}">הפרש מהיעד: ${diffTarget>0?'+':''}${diffTarget}ק״ג</div>` : ''}
+            <button class="secondary" style="font-size:11px;padding:3px 8px;margin-top:6px" onclick="deleteWeight('${d}')">🗑️ מחק</button>
           </div>
         </div>
       `);
@@ -946,7 +991,7 @@ async function handleUnitSelection() {
     }
 
     status.textContent = '⚡ מברר משקל יחידה ממוצע ב-AI...';
-    status.style.color = '#4f46e5';
+    status.style.color = 'var(--primary)';
 
     const promptText = `Provide standard single portion/unit weight in grams for food item: "${selected.name}". Return ONLY a valid JSON object without code blocks: {"unit_g": number}`;
 
@@ -971,7 +1016,7 @@ async function handleUnitSelection() {
         save();
 
         status.textContent = `✨ הוגדר משקל יחידה אוטומטי: ${parsed.unit_g}ג׳ (נשמר במאגר)`;
-        status.style.color = '#2f855a';
+        status.style.color = 'var(--primary-dark)';
       } else {
         throw new Error('משקל לא תקין');
       }
@@ -991,7 +1036,7 @@ function checkBarcodeProtection(){
     aiStatus.style.color = '#c53030';
   } else {
     aiStatus.textContent = '';
-    aiStatus.style.color = '#68707a';
+    aiStatus.style.color = 'var(--text-muted)';
   }
 }
 
@@ -1020,7 +1065,7 @@ async function fetchProductWithAI(){
   }
 
   aiStatus.textContent = '⚡ מחפש 3-4 אופציות מתאימות ב-AI...';
-  aiStatus.style.color = '#4f46e5';
+  aiStatus.style.color = 'var(--primary)';
   
   const promptText = `For the food query: "${nameVal}", provide 3 to 4 common food variations in Hebrew with accurate nutrition per 100g and estimated portion weight in grams. Return ONLY a JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
 
@@ -1041,7 +1086,7 @@ async function fetchProductWithAI(){
     if (Array.isArray(options) && options.length > 0) {
       showAiOptionsModal(options);
       aiStatus.textContent = '✅ בחר את המוצר המדויק מהרשימה!';
-      aiStatus.style.color = '#2f855a';
+      aiStatus.style.color = 'var(--primary-dark)';
     } else {
       throw new Error('לא התקבלו אופציות לבחירה');
     }
@@ -1069,7 +1114,7 @@ async function quickFillWithAI(){
   }
 
   status.textContent = '⚡ מחפש אופציות מתאימות ב-AI...';
-  status.style.color = '#4f46e5';
+  status.style.color = 'var(--primary)';
 
   const promptText = `Provide 3 to 4 common food variations in Hebrew with accurate nutritional values per 100g and estimated portion unit weight in grams for food query: "${nameVal}". Return ONLY a valid JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
 
@@ -1090,7 +1135,7 @@ async function quickFillWithAI(){
     if (Array.isArray(options) && options.length > 0) {
       showQuickAiOptionsModal(options);
       status.textContent = '✅ בחר את המוצר המדויק!';
-      status.style.color = '#2f855a';
+      status.style.color = 'var(--primary-dark)';
     } else {
       throw new Error('לא התקבלו תוצאות');
     }
@@ -1104,7 +1149,7 @@ async function quickFillWithAI(){
 function showQuickAiOptionsModal(options) {
   const container = document.getElementById('aiOptionsList');
   container.innerHTML = options.map((opt, idx) => `
-    <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #c7d2fe" onclick="applyQuickAiSelection(${idx})">
+    <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #bbf7d0;background:#f0fdf4" onclick="applyQuickAiSelection(${idx})">
       <b>${opt.name}</b>
       <div class="muted" style="font-size:12px;margin-top:4px">
         🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
@@ -1130,14 +1175,14 @@ function applyQuickAiSelection(index) {
   
   document.getElementById('aiOptionsModal').classList.remove('open');
   document.getElementById('quickAiStatus').textContent = '✨ נבחר בהצלחה מ-AI!';
-  document.getElementById('quickAiStatus').style.color = '#2f855a';
+  document.getElementById('quickAiStatus').style.color = 'var(--primary-dark)';
   updateIntakePreview();
 }
 
 function showAiOptionsModal(options) {
   const container = document.getElementById('aiOptionsList');
   container.innerHTML = options.map((opt, idx) => `
-    <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #c7d2fe" onclick="applyAiSelection(${idx})">
+    <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #bbf7d0;background:#f0fdf4" onclick="applyAiSelection(${idx})">
       <b>${opt.name}</b>
       <div class="muted" style="font-size:12px;margin-top:4px">
         🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
@@ -1244,12 +1289,12 @@ function renderToday(){
   if(leftKcal >= 0) {
     if(kleftEl) kleftEl.textContent = Math.round(leftKcal).toLocaleString('he-IL');
     if(kleftContainer) {
-      kleftContainer.style.color = '#68707a';
+      kleftContainer.style.color = 'var(--text-muted)';
       kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
     }
     if(aiAssistantKcalLeft) {
       aiAssistantKcalLeft.textContent = `${Math.round(leftKcal).toLocaleString('he-IL')} קק״ל`;
-      aiAssistantKcalLeft.style.color = '#18202a';
+      aiAssistantKcalLeft.style.color = 'var(--primary-dark)';
     }
   } else {
     let overload = Math.abs(Math.round(leftKcal));
@@ -1265,7 +1310,7 @@ function renderToday(){
 
   kbar.style.width=Math.min(100,k/targets.kcal*100)+'%';
   
-  intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted">${x.amount} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted">💪 ${round1(x.protein)}ג׳ · 🍞 ${round1(x.carbs)}ג׳ · 🥑 ${round1(x.fat)}ג׳</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px">עדיין לא דווחה צריכה היום.</div>';
+  intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted" style="font-size:12px">${x.amount} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted" style="font-size:12px">💪 ${round1(x.protein)}ג׳ · 🍞 ${round1(x.carbs)}ג׳ · 🥑 ${round1(x.fat)}ג׳</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px;font-size:13px">עדיין לא דווחה צריכה היום.</div>';
 }
 
 function showDailySummaryModal(){
@@ -1329,14 +1374,14 @@ function renderProducts(){
    return `<div class="item" style="align-items:center">
    ${x.image ? `<img src="${x.image}" class="product-img">` : ''}
    <div style="flex:1"><b>${x.name}</b> ${hasBarcode ? '<span class="badge-barcode">🏷️ ברקוד</span>' : ''}
-   <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
-   <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
-   ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
+   <div class="muted" style="font-size:12px">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
+   <div class="muted" style="font-size:12px">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
+   ${unitKcal !== null ? `<div class="muted" style="color:var(--primary-dark);font-weight:600;font-size:12px">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
    </div><div style="display:flex;flex-direction:column;gap:6px;min-width:90px">
-   <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
-   <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
+   <button class="secondary" style="font-size:11px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
+   <button class="secondary" style="font-size:11px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
    </div></div>`
- }).join('')||'<div class="muted">לא נמצאו מוצרים.</div>';
+ }).join('')||'<div class="muted" style="font-size:13px">לא נמצאו מוצרים.</div>';
 }
 
 function renderMonth(){
@@ -1345,7 +1390,7 @@ function renderMonth(){
   const dailyTargetKcal = targets.kcal;
 
   if(intakeKeys.length === 0) {
-    document.getElementById('monthList').innerHTML = '<div class="muted" style="padding-top:6px">אין עדיין נתונים בארכיון.</div>';
+    document.getElementById('monthList').innerHTML = '<div class="muted" style="padding-top:6px;font-size:13px">אין עדיין נתונים בארכיון.</div>';
     return;
   }
 
@@ -1375,12 +1420,12 @@ function renderMonth(){
     const monthTargetKcal = days.length * dailyTargetKcal;
 
     html += `
-      <details class="card" style="margin-bottom:10px;background:#fff;border:1px solid #cbd5e1">
-        <summary style="cursor:pointer;font-weight:700;font-size:16px;outline:none;display:flex;justify-content:space-between;align-items:center">
+      <details class="card" style="margin-bottom:10px;background:#fff;border:1px solid var(--border-color)">
+        <summary style="cursor:pointer;font-weight:700;font-size:15px;outline:none;display:flex;justify-content:space-between;align-items:center">
           <span>📁 ${monthName}</span>
-          <span class="muted" style="font-size:13px">🔥 נצרך ${Math.round(mKcal)} מתוך יעד ${monthTargetKcal} קק״ל</span>
+          <span class="muted" style="font-size:12px">🔥 נצרך ${Math.round(mKcal)} מתוך יעד ${monthTargetKcal} קק״ל</span>
         </summary>
-        <div style="margin-top:12px;border-top:1px solid #e4e7eb;padding-top:8px">
+        <div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:8px">
     `;
 
     days.forEach(d => {
@@ -1392,17 +1437,17 @@ function renderMonth(){
       const formattedDate = new Date(d+'T12:00:00').toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
       html += `
-        <details style="margin:8px 0;background:#f7f8fa;padding:10px;border-radius:12px;border:1px solid #e2e5e9">
-          <summary style="cursor:pointer;font-weight:600;font-size:14px;outline:none;display:flex;justify-content:space-between;align-items:center">
+        <details style="margin:8px 0;background:#f8fafc;padding:10px;border-radius:12px;border:1px solid var(--border-color)">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px;outline:none;display:flex;justify-content:space-between;align-items:center">
             <span>📅 ${formattedDate}</span>
-            <span class="muted" style="font-size:12px">🔥 נצרך ${Math.round(dKcal)} / ${dailyTargetKcal} קל׳ | 💪 ${round1(dProt)}ג׳ · 🍞 ${round1(dCarbs)}ג׳ · 🥑 ${round1(dFat)}ג׳</span>
+            <span class="muted" style="font-size:11px">🔥 נצרך ${Math.round(dKcal)} / ${dailyTargetKcal} קל׳ | 💪 ${round1(dProt)}ג׳ · 🍞 ${round1(dCarbs)}ג׳ · 🥑 ${round1(dFat)}ג׳</span>
           </summary>
-          <div style="margin-top:8px;border-top:1px dashed #d7dbe0;padding-top:6px">
+          <div style="margin-top:8px;border-top:1px dashed var(--border-color);padding-top:6px">
       `;
 
       dayItems.forEach(item => {
         html += `
-          <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #eee">
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid #f1f5f9">
             <div>
               <b>${item.name}</b>
               <div class="muted" style="font-size:11px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
@@ -1488,7 +1533,7 @@ function suggestIntake(){
     let allProducts = db.products.slice(0, 10);
     if(allProducts.length > 0) {
       suggestions.innerHTML = '<div class="muted" style="font-size:12px;margin-bottom:4px">מוצרים נפוצים במאגר:</div>' + 
-        allProducts.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:13px;padding:8px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
+        allProducts.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:12px;padding:7px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
     } else {
       suggestions.innerHTML = '';
     }
@@ -1502,9 +1547,9 @@ function suggestIntake(){
   const exactMatch = db.products.find(x => x.name.toLowerCase() === q.toLowerCase());
   
   if(matches.length > 0) {
-    suggestions.innerHTML = matches.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:13px;padding:8px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
+    suggestions.innerHTML = matches.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:12px;padding:7px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
   } else {
-    suggestions.innerHTML = '<span class="muted" style="font-size:13px">המוצר לא נמצא במאגר. השתמש בכפתור ה-AI למילוי מהיר או הזן ידנית:</span>';
+    suggestions.innerHTML = '<span class="muted" style="font-size:12px">המוצר לא נמצא במאגר. השתמש בכפתור ה-AI למילוי מהיר או הזן ידנית:</span>';
   }
 
   if(!exactMatch && q.length >= 2) {
@@ -1520,7 +1565,7 @@ let selected=null;
 function selectFood(i){
   selected=db.products[i];
   foodSearch.value=selected.name;
-  suggestions.innerHTML='<span class="muted" style="color:#2f855a;font-weight:600">✓ נבחר מהמאגר: '+selected.name+'</span>';
+  suggestions.innerHTML='<span class="muted" style="color:var(--primary-dark);font-weight:600;font-size:12px">✓ נבחר מהמאגר: '+selected.name+'</span>';
   document.getElementById('newProductQuickFields').style.display='none';
   grams.focus({preventScroll:true});
   handleUnitSelection();
@@ -1572,7 +1617,7 @@ function updateIntakePreview(){
  let unit = unitSelect.value;
  let r=calcIntake(activeProduct, unit, grams.value);
  intakePreview.style.display='block';
- intakePreview.innerHTML=r.known?`<b>לפני הוספה</b><div style="margin-top:8px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b>אין משקל יחידה מוגדר</b><div class="muted">הזן משקל יחידה או בחר גרמים.</div>`;
+ intakePreview.innerHTML=r.known?`<b style="font-size:13px">לפני הוספה</b><div style="margin-top:6px;font-size:13px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted" style="font-size:12px">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b style="font-size:13px">אין משקל יחידה מוגדר</b><div class="muted" style="font-size:12px">הזן משקל יחידה או בחר גרמים.</div>`;
 }
 
 function addIntake(){
@@ -1762,7 +1807,7 @@ async function searchBarcode(code){
     if(localMatches.length === 1) {
       const p = localMatches[0];
       const pIdx = db.products.indexOf(p);
-      barcodeResult.innerHTML = `<b>⚠️ המוצר קיים במאגר:</b><br>${p.name} (${p.kcal} קק״ל/100ג׳)<br><button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>`;
+      barcodeResult.innerHTML = `<b>⚠️ המוצר קיים במאגר:</b><br>${p.name} (${p.kcal} קק״ל/100ג׳)<br><button class="primary" style="margin-top:8px;background:var(--primary)" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>`;
     } else {
       showBarcodeOptionsModal(localMatches, code);
     }
@@ -1786,9 +1831,9 @@ async function searchBarcode(code){
       
       window.foundProduct = found;
       let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(found.kcal * unitG / 100)} קק״ל` : '';
-      barcodeResult.innerHTML=`<b>${found.name}</b><br>קלוריות ל-100ג׳: ${found.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
+      barcodeResult.innerHTML=`<b>${found.name}</b><br>קלוריות ל-100ג׳: ${found.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px;background:var(--primary)" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
     } else {
-      barcodeResult.innerHTML=`הברקוד ${code} לא נמצא. <button class="primary" style="margin-top:8px" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש עם ברקוד זה</button>`;
+      barcodeResult.innerHTML=`הברקוד ${code} לא נמצא. <button class="primary" style="margin-top:8px;background:var(--primary)" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש עם ברקוד זה</button>`;
     }
   }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד';}
 }
@@ -1798,7 +1843,7 @@ function showBarcodeOptionsModal(matches, code) {
   container.innerHTML = matches.map((m) => {
     const idx = db.products.indexOf(m);
     return `
-      <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #c7d2fe" onclick="closeScanner();editProduct(${idx})">
+      <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #bbf7d0;background:#f0fdf4" onclick="closeScanner();editProduct(${idx})">
         <b>${m.name}</b>
         <div class="muted" style="font-size:12px;margin-top:4px">
           🔥 ${m.kcal} קק״ל ל-100ג׳ | מותג: ${m.brand||'כללי'}
