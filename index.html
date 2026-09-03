@@ -60,24 +60,28 @@ textarea{resize:vertical;min-height:70px}
 <div class="card"><b>צריכה היום</b><div id="intake"></div></div>
 </section>
 
-<!-- לשונית עוזר אישי AI חדשה -->
+<!-- לשונית עוזר אישי AI משודרגת -->
 <section id="aiAssistant" class="hidden">
 <div class="card">
   <b>🤖 עוזר תזונה חכם (AI)</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">העזר בבינה מלאכותית לניתוח מתכונים ותכנון ארוחות חכם מותאם אישית:</div>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">נתח מתכונים, שמור למאגר ושבץ במאזן היומי בקלות:</div>
 
   <div class="ai-box">
-    <b>🍲 ניתוח מתכון מורכב (למשל: מוקפץ, מרק, פשטידה)</b>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">הקלד את הרכיבים והכמויות שהשתמשת בהם להכנת הסיר/תבשיל:</div>
+    <b>🍲 ניתוח מתכון מורכב (למשל: מוקפץ עוף ביתי)</b>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">הקלד את שם המנה והרכיבים:</div>
+    <input id="recipeNameInput" placeholder="שם המנה (לדוגמה: מוקפץ עוף ביתי)" style="margin-bottom:6px">
     <textarea id="recipeInput" placeholder="לדוגמה: 500 גרם עוף, גמבה אדומה אחת, בצל אחד, 2 כפות סילאן, 2 כפות צ׳ילי מתוק"></textarea>
-    <button class="ai-btn" onclick="analyzeRecipeWithAI()">🔍 חשב קלוריות ומאקרו ל-100 גרם מוקפץ</button>
+    <button class="ai-btn" onclick="analyzeRecipeWithAI()">🔍 חשב קלוריות ומאקרו ל-100 גרם</button>
     <div id="recipeResult" style="margin-top:10px;font-size:14px"></div>
+    <div id="saveRecipeContainer" style="display:none;margin-top:10px">
+      <button class="primary" style="background:#2f855a" onclick="saveAnalyzedRecipeToDB()">📦 שמור את המנה הזו למאגר המוצרים</button>
+    </div>
   </div>
 
   <div class="ai-box" style="background:#f7fcf5;border-color:#c6f6d5">
-    <b>🎯 תכנון ארוחה לפי יתרה קלורית</b>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">מה בא לך לאכול וכמה קלוריות נשארו לך להיום?</div>
-    <textarea id="mealPlanInput" placeholder="לדוגמה: אני רוצה לאכול מוקפץ עם אורז ונשארו לי 600 קלוריות ביומן. כמה גרם מכל דבר לקחת?"></textarea>
+    <b>🎯 תכנון ארוחה לפי יתרה ושיבוץ למאזן</b>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">איזה מתכון מנותח או אוכל תרצה לשלב מול היתרה שנשארה ביומן?</div>
+    <textarea id="mealPlanInput" placeholder="לדוגמה: אני רוצה לאכול מהמוקפץ שהכנתי יחד עם אורז. כמה גרם לקחת מכל דבר לפי הקלוריות שנשארו לי היום?"></textarea>
     <button class="primary" style="background:#2f855a" onclick="planMealWithAI()">💡 קבל המלצת כמויות מדויקת</button>
     <div id="mealPlanResult" style="margin-top:10px;font-size:14px"></div>
   </div>
@@ -87,7 +91,7 @@ textarea{resize:vertical;min-height:70px}
 <section id="profile" class="hidden">
 <div class="card">
   <b>👤 פרופיל אישי וחישוב יעדים קלוריים</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו (ניתן לערוך חופשי בהמשך):</div>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו:</div>
   
   <div style="display:flex;gap:8px">
     <div style="flex:1">
@@ -357,6 +361,7 @@ const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 
 let currentImageData = "";
+let lastAnalyzedRecipeData = null; // שומר את ניתוח המתכון האחרון לשם שמירה או שיבוץ
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
@@ -388,18 +393,21 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-// --- פונקציות עוזר AI חדשות ---
+// --- פונקציות עוזר AI משודרגות ---
 async function analyzeRecipeWithAI() {
+  const name = document.getElementById('recipeNameInput').value.trim() || 'מוקפץ ביתי';
   const recipe = document.getElementById('recipeInput').value.trim();
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
   const resultDiv = document.getElementById('recipeResult');
+  const saveBtnContainer = document.getElementById('saveRecipeContainer');
 
   if(!recipe) return alert('נא להזין את רכיבי המתכון בשדה למעלה.');
   if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
 
   resultDiv.innerHTML = '<span class="muted">⚡ מנתח מרכיבים ומחשב ערכים תזונתיים ב-AI...</span>';
+  saveBtnContainer.style.display = 'none';
 
-  const promptText = `Analyze the following recipe ingredients: "${recipe}". Calculate the total weight of the cooked dish (or sum of ingredients), total calories, protein, carbs, and fat, and then provide the exact nutritional values per 100 grams of the final dish, plus the total weight. Return the answer in clear Hebrew formatting with bullet points.`;
+  const promptText = `Analyze the following recipe ingredients for "${name}": "${recipe}". Calculate total weight, and per 100g of the final cooked dish: kcal, protein, carbs, fat. Return ONLY a valid JSON object without code blocks: {"name": "${name}", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": 100, "description": "string"}`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -410,10 +418,49 @@ async function analyzeRecipeWithAI() {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API Error');
     let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:6px;font-size:13px;white-space:pre-line">${textResult}</div>`;
+    textResult = textResult.replace(/```json|```/g, '').trim();
+    
+    const parsed = JSON.parse(textResult);
+    lastAnalyzedRecipeData = parsed;
+
+    resultDiv.innerHTML = `
+      <div class="card" style="background:#fff;margin-top:6px;font-size:13px">
+        <b>✅ תוצאות ניתוח עבור "${parsed.name}":</b><br>
+        🔥 קלוריות ל-100ג׳: <b>${parsed.kcal}</b><br>
+        💪 חלבון: ${parsed.protein}ג׳ | 🍞 פחמימות: ${parsed.carbs}ג׳ | 🥑 שומן: ${parsed.fat}ג׳<br>
+        <i class="muted">${parsed.description || ''}</i>
+      </div>
+    `;
+    saveBtnContainer.style.display = 'block';
+
+    // מעדכן אוטומטית גם את שדה התכנון למטה כדי ליצור קשר בין המסכים
+    document.getElementById('mealPlanInput').value = `אני רוצה לאכול מהמנה "${parsed.name}" (${parsed.kcal} קק״ל ל-100ג׳). כמה גרם לקחת ממנה?`;
+
   } catch(e) {
     resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בניתוח: ${e.message}</span>`;
   }
+}
+
+// שמירת המנה המנותחת למאגר המוצרים
+function saveAnalyzedRecipeToDB() {
+  if(!lastAnalyzedRecipeData) return alert('אין נתוני מנה שמורים לשימור.');
+  
+  const newItem = {
+    name: lastAnalyzedRecipeData.name,
+    brand: 'מתכון ביתי',
+    barcode: '',
+    kcal: Number(lastAnalyzedRecipeData.kcal) || 0,
+    protein: Number(lastAnalyzedRecipeData.protein) || 0,
+    carbs: Number(lastAnalyzedRecipeData.carbs) || 0,
+    fat: Number(lastAnalyzedRecipeData.fat) || 0,
+    unit_g: 100,
+    image: '',
+    updated: new Date().toLocaleDateString('he-IL')
+  };
+
+  db.products.push(newItem);
+  save();
+  alert(`המתכון "${newItem.name}" נשמר בהצלחה למאגר המוצרים שלך! תוכל לבחור אותו מעתה בלשונית היום ובמאגר.`);
 }
 
 async function planMealWithAI() {
@@ -424,15 +471,15 @@ async function planMealWithAI() {
   if(!query) return alert('נא לכתוב מה תרצה לאכול וכמה קלוריות נותרו.');
   if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
 
-  resultDiv.innerHTML = '<span class="muted">⚡ חושב המלצת כמויות מותאמת אישית...</span>';
+  resultDiv.innerHTML = '<span class="muted">⚡ משלב את הנתונים ומחשב המלצת כמויות מותאמת אישית...</span>';
 
-  // חישוב קלוריות שנותרות להיום באופן אוטומטי
   const targets = calculateTargets();
   const a = today();
   const consumed = a.reduce((s,x)=>s+(x.kcal||0),0);
   const remaining = Math.max(0, Math.round(targets.kcal - consumed));
 
-  const promptText = `User query: "${query}". The user has exactly ${remaining} calories remaining for today out of a daily goal of ${targets.kcal}. Give practical portion recommendations in grams (e.g., how many grams of stir-fry and how many grams of rice) to fit this meal perfectly into their remaining calories. Respond in clear, helpful Hebrew.`;
+  let recipeContext = lastAnalyzedRecipeData ? `The user recently analyzed this recipe: ${JSON.stringify(lastAnalyzedRecipeData)}. ` : '';
+  const promptText = `${recipeContext}User query: "${query}". The user has exactly ${remaining} calories remaining for today out of a daily goal of ${targets.kcal}. Give practical portion recommendations in grams to fit this meal perfectly into their remaining calories. Respond in clear, helpful Hebrew.`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -506,7 +553,6 @@ function previewProfileCalculation() {
       <input id="modalEditableKcal" type="number" value="${targets.kcal}" style="margin:0;font-weight:bold;font-size:16px;text-align:center">
       <span style="font-size:13px">קק״ל</span>
     </div>
-    <div class="muted" style="font-size:11px;margin-top:4px">*רוצה למשל גירעון של 300 במקום 500? שנה כאן את המספר כרצונך.</div>
   `;
 
   document.getElementById('profilePreviewContent').innerHTML = content;
