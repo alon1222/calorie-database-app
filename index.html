@@ -60,7 +60,7 @@ textarea{resize:vertical;min-height:70px}
 <div class="card"><b>צריכה היום</b><div id="intake"></div></div>
 </section>
 
-<!-- לשונית עוזר אישי AI עם פידבק יומי ופידבק כולל -->
+<!-- לשונית עוזר אישי AI עם פידבק, ניתוחים ושיח אינטראקטיבי -->
 <section id="aiAssistant" class="hidden">
 <div class="card" style="background:#eef2f7;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center">
   <div>
@@ -91,23 +91,25 @@ textarea{resize:vertical;min-height:70px}
   <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">נתח מתכונים, שמור למאגר ושבץ במאזן היומי בקלות:</div>
 
   <div class="ai-box">
-    <b>🍲 ניתוח מתכון מורכב (למשל: מוקפץ עוף ביתי)</b>
+    <b>🍲 ניתוח מתכון מורכב ורכיביו (עם אפשרות הוספה למאגר)</b>
     <div class="muted" style="font-size:12px;margin-bottom:8px">הקלד את שם המנה והרכיבים:</div>
     <input id="recipeNameInput" placeholder="שם המנה (לדוגמה: מוקפץ עוף ביתי)" style="margin-bottom:6px">
     <textarea id="recipeInput" placeholder="לדוגמה: 500 גרם עוף, גמבה אדומה אחת, בצל אחד, 2 כפות סילאן, 2 כפות צ׳ילי מתוק"></textarea>
     <button class="ai-btn" onclick="analyzeRecipeWithAI()">🔍 חשב קלוריות ומאקרו ל-100 גרם</button>
     <div id="recipeResult" style="margin-top:10px;font-size:14px"></div>
-    <div id="saveRecipeContainer" style="display:none;margin-top:10px">
-      <button class="primary" style="background:#2f855a" onclick="saveAnalyzedRecipeToDB()">📦 שמור את המנה הזו למאגר המוצרים</button>
-    </div>
   </div>
 
   <div class="ai-box" style="background:#f7fcf5;border-color:#c6f6d5">
-    <b>🎯 תכנון ארוחה לפי יתרה ושיבוץ למאזן</b>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">איזה מתכון מנותח או אוכל תרצה לשלב מול היתרה שנשארה ביומן?</div>
-    <textarea id="mealPlanInput" placeholder="לדוגמה: אני רוצה לאכול מהמוקפץ שהכנתי יחד עם אורז. כמה גרם לקחת ממנה?"></textarea>
-    <button class="primary" style="background:#2f855a" onclick="planMealWithAI()">💡 קבל המלצת כמויות מדויקת</button>
-    <div id="mealPlanResult" style="margin-top:10px;font-size:14px"></div>
+    <b>🎯 תכנון ארוחה חכם ושיחה אינטראקטיבית עם המאמן</b>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">שאל את המאמן על שילוב מאכלים מול היתרה, והמשך את השיח ככל שתחפוץ:</div>
+    
+    <div id="mealChatHistory" style="max-height:180px;overflow-y:auto;margin-bottom:8px;font-size:13px"></div>
+
+    <textarea id="mealPlanInput" placeholder="כתוב כאן את השאלה או התגובה שלך למאמן (לדוגמה: ״האם אני יכול להוסיף לזה גם פרוסת לחם?״)..."></textarea>
+    <div style="display:flex;gap:6px">
+      <button class="primary" style="background:#2f855a;flex:2" onclick="continueMealChatWithAI()">💬 שלח הודעה למאמן</button>
+      <button class="secondary" style="flex:1" onclick="resetMealChat()">🗑️ איפוס שיחה</button>
+    </div>
   </div>
 </div>
 </section>
@@ -385,7 +387,8 @@ const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 
 let currentImageData = "";
-let lastAnalyzedRecipeData = null;
+let analyzedIngredientsList = [];
+let chatSessionMemory = [];
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
@@ -468,7 +471,6 @@ Keep it engaging, warm, and concise.`;
   }
 }
 
-// פונקציית פידבק מצטבר וכולל עד כה מהמאמן
 async function getAiCumulativeCoachFeedback() {
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
   const resultDiv = document.getElementById('cumulativeFeedbackResult');
@@ -478,7 +480,7 @@ async function getAiCumulativeCoachFeedback() {
   resultDiv.innerHTML = '<span class="muted">⚡ מאמן ה-AI מנתח את ההיסטוריה והמגמות שלך לאורך התקופה...</span>';
 
   const targets = calculateTargets();
-  const intakeKeys = Object.keys(db.intake).sort().reverse().slice(0, 7); // 7 הימים האחרונים
+  const intakeKeys = Object.keys(db.intake).sort().reverse().slice(0, 7);
   
   if (intakeKeys.length === 0) {
     resultDiv.innerHTML = '<span class="muted">אין עדיין מספיק נתונים מצטברים להצגה. הוסף רשומות בימים האחרונים.</span>';
@@ -527,15 +529,27 @@ async function analyzeRecipeWithAI() {
   const recipe = document.getElementById('recipeInput').value.trim();
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
   const resultDiv = document.getElementById('recipeResult');
-  const saveBtnContainer = document.getElementById('saveRecipeContainer');
 
   if(!recipe) return alert('נא להזין את רכיבי המתכון בשדה למעלה.');
   if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
 
-  resultDiv.innerHTML = '<span class="muted">⚡ מנתח מרכיבים ומחשב ערכים תזונתיים ב-AI...</span>';
-  saveBtnContainer.style.display = 'none';
+  resultDiv.innerHTML = '<span class="muted">⚡ מנתח מרכיבים ומחשב ערכים תזונתיים ומאקרו לכל רכיב ב-AI...</span>';
 
-  const promptText = `Analyze the following recipe ingredients for "${name}": "${recipe}". Calculate total weight, and per 100g of the final cooked dish: kcal, protein, carbs, fat. Return ONLY a valid JSON object without code blocks: {"name": "${name}", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": 100, "description": "string"}`;
+  const promptText = `Analyze the following recipe ingredients for "${name}": "${recipe}". 
+Calculate per 100g for the final dish, AND also break down the individual ingredients/components with their nutritional values per 100g (name, kcal, protein, carbs, fat).
+Return ONLY a valid JSON object without code blocks: 
+{
+  "name": "${name}",
+  "kcal": number,
+  "protein": number,
+  "carbs": number,
+  "fat": number,
+  "unit_g": 100,
+  "description": "string",
+  "ingredients": [
+    {"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": 100}
+  ]
+}`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -549,17 +563,31 @@ async function analyzeRecipeWithAI() {
     textResult = textResult.replace(/```json|```/g, '').trim();
     
     const parsed = JSON.parse(textResult);
-    lastAnalyzedRecipeData = parsed;
+    analyzedIngredientsList = parsed.ingredients || [];
+
+    let ingredientsHtml = analyzedIngredientsList.map((ing, idx) => `
+      <div style="background:#f7f8fa;padding:8px;border-radius:8px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;border:1px solid #e2e5e9">
+        <div>
+          <b>${ing.name}</b><br>
+          <span class="muted" style="font-size:12px">🔥 ${ing.kcal} קק״ל | 💪 ${ing.protein}ג׳ חלבון | 🍞 ${ing.carbs}ג׳ פחמימות | 🥑 ${ing.fat}ג׳ שומן (ל-100ג׳)</span>
+        </div>
+        <button class="primary" style="background:#2f855a;font-size:11px;padding:6px 10px;width:auto" onclick="saveSpecificIngredientToDB(${idx})">📦 הוסף למאגר</button>
+      </div>
+    `).join('');
 
     resultDiv.innerHTML = `
       <div class="card" style="background:#fff;margin-top:6px;font-size:13px">
-        <b>✅ תוצאות ניתוח עבור "${parsed.name}":</b><br>
+        <b>✅ תוצאות ניתוח מנה מלאה ("${parsed.name}"):</b><br>
         🔥 קלוריות ל-100ג׳: <b>${parsed.kcal}</b><br>
         💪 חלבון: ${parsed.protein}ג׳ | 🍞 פחמימות: ${parsed.carbs}ג׳ | 🥑 שומן: ${parsed.fat}ג׳<br>
-        <i class="muted">${parsed.description || ''}</i>
+        <div style="margin-top:10px;display:flex;gap:6px">
+          <button class="primary" style="background:#2f855a" onclick="saveFullRecipeAsProduct('${parsed.name}', ${parsed.kcal}, ${parsed.protein}, ${parsed.carbs}, ${parsed.fat})">📦 שמור את המנה כולה למאגר</button>
+        </div>
+        <hr style="border:0;border-top:1px solid #eee;margin:10px 0">
+        <b>🥗 פירוט רכיבי המאכל (לחץ להוספה פרטנית למאגר):</b>
+        ${ingredientsHtml}
       </div>
     `;
-    saveBtnContainer.style.display = 'block';
     document.getElementById('mealPlanInput').value = `אני רוצה לאכול מהמנה "${parsed.name}" (${parsed.kcal} קק״ל ל-100ג׳). כמה גרם לקחת ממנה?`;
 
   } catch(e) {
@@ -567,58 +595,107 @@ async function analyzeRecipeWithAI() {
   }
 }
 
-function saveAnalyzedRecipeToDB() {
-  if(!lastAnalyzedRecipeData) return alert('אין נתוני מנה שמורים לשימור.');
-  
+function saveFullRecipeAsProduct(name, kcal, protein, carbs, fat) {
   const newItem = {
-    name: lastAnalyzedRecipeData.name,
+    name: name,
     brand: 'מתכון ביתי',
     barcode: '',
-    kcal: Number(lastAnalyzedRecipeData.kcal) || 0,
-    protein: Number(lastAnalyzedRecipeData.protein) || 0,
-    carbs: Number(lastAnalyzedRecipeData.carbs) || 0,
-    fat: Number(lastAnalyzedRecipeData.fat) || 0,
+    kcal: Number(kcal) || 0,
+    protein: Number(protein) || 0,
+    carbs: Number(carbs) || 0,
+    fat: Number(fat) || 0,
     unit_g: 100,
+    image: '',
+    updated: new Date().toLocaleDateString('he-IL')
+  };
+  db.products.push(newItem);
+  save();
+  alert(`המתכון "${newItem.name}" נשמר בהצלחה למאגר המוצרים שלך!`);
+}
+
+function saveSpecificIngredientToDB(index) {
+  const ing = analyzedIngredientsList[index];
+  if(!ing) return alert('רכיב לא נמצא.');
+
+  const newItem = {
+    name: ing.name,
+    brand: 'רכיב מנותח',
+    barcode: '',
+    kcal: Number(ing.kcal) || 0,
+    protein: Number(ing.protein) || 0,
+    carbs: Number(ing.carbs) || 0,
+    fat: Number(ing.fat) || 0,
+    unit_g: Number(ing.unit_g) || 100,
     image: '',
     updated: new Date().toLocaleDateString('he-IL')
   };
 
   db.products.push(newItem);
   save();
-  alert(`המתכון "${newItem.name}" נשמר בהצלחה למאגר המוצרים שלך!`);
+  alert(`הרכיב "${newItem.name}" נוסף בהצלחה למאגר המוצרים שלך!`);
 }
 
-async function planMealWithAI() {
+async function continueMealChatWithAI() {
   const query = document.getElementById('mealPlanInput').value.trim();
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
-  const resultDiv = document.getElementById('mealPlanResult');
+  const historyDiv = document.getElementById('mealChatHistory');
 
-  if(!query) return alert('נא לכתוב מה תרצה לאכול וכמה קלוריות נותרו.');
+  if(!query) return alert('נא להזין הודעה או שאלה למאמן.');
   if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
-
-  resultDiv.innerHTML = '<span class="muted">⚡ משלב את הנתונים ומחשב המלצת כמויות מותאמת אישית...</span>';
 
   const targets = calculateTargets();
   const a = today();
   const consumed = a.reduce((s,x)=>s+(x.kcal||0),0);
   const remaining = Math.max(0, Math.round(targets.kcal - consumed));
 
-  let recipeContext = lastAnalyzedRecipeData ? `The user recently analyzed this recipe: ${JSON.stringify(lastAnalyzedRecipeData)}. ` : '';
-  const promptText = `${recipeContext}User query: "${query}". The user has exactly ${remaining} calories remaining for today out of a daily goal of ${targets.kcal}. Give practical portion recommendations in grams to fit this meal perfectly into their remaining calories. Respond in clear, helpful Hebrew.`;
+  chatSessionMemory.push({ role: "user", parts: [{ text: query }] });
+
+  historyDiv.innerHTML += `<div style="background:#fff;padding:8px;border-radius:8px;margin-bottom:6px;border:1px solid #d1fae5"><b>אתה:</b> ${query}</div>`;
+  document.getElementById('mealPlanInput').value = '';
+  historyDiv.innerHTML += `<div id="aiTypingIndicator" class="muted" style="font-size:12px;padding:4px">⚡ המאמן מקליד תגובה...</div>`;
+  historyDiv.scrollTop = historyDiv.scrollHeight;
+
+  const systemContext = `You are a professional, encouraging personal fitness and nutrition coach engaged in a continuous chat with the user about meal planning. 
+- User's daily calorie goal: ${targets.kcal} kcal
+- Calories remaining today: ${remaining} kcal
+Keep responses conversational, warm, and practical in Hebrew, allowing the user to reply and adjust continuously.`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+      body: JSON.stringify({
+        contents: [
+          { role: "user", parts: [{ text: systemContext }] },
+          ...chatSessionMemory
+        ]
+      })
     });
+    
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API Error');
     let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:6px;font-size:13px;white-space:pre-line">${textResult}</div>`;
+
+    const typingEl = document.getElementById('aiTypingIndicator');
+    if(typingEl) typingEl.remove();
+
+    chatSessionMemory.push({ role: "model", parts: [{ text: textResult }] });
+
+    historyDiv.innerHTML += `<div style="background:#f0fdf4;padding:8px;border-radius:8px;margin-bottom:6px;border:1px solid #bbf7d0"><b>מאמן AI:</b><div style="white-space:pre-line;margin-top:4px">${textResult}</div></div>`;
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+
   } catch(e) {
-    resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בתכנון: ${e.message}</span>`;
+    const typingEl = document.getElementById('aiTypingIndicator');
+    if(typingEl) typingEl.remove();
+    historyDiv.innerHTML += `<div style="color:#c53030;font-size:12px">שגיאה בתקשורת עם המאמן: ${e.message}</div>`;
   }
+}
+
+function resetMealChat() {
+  chatSessionMemory = [];
+  document.getElementById('mealChatHistory').innerHTML = '';
+  document.getElementById('mealPlanInput').value = '';
+  alert('השיחה אופסה בהצלחה. תוכל להתחיל תכנון ארוחה חדש!');
 }
 
 function calculateTargetsForProfile(prof) {
