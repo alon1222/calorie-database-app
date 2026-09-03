@@ -135,7 +135,10 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <div class="card" style="margin-top:14px">
-  <b style="font-size:15px;display:block;margin-bottom:12px">🍽️ חלוקת ארוחות להיום</b>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <b style="font-size:15px">🍽️ חלוקת ארוחות והמלצות אוטומטיות</b>
+    <button class="secondary" style="font-size:11px;padding:6px 10px" onclick="loadAllAutomaticRecommendations()">🔄 רענן המלצות AI</button>
+  </div>
   <div id="intake"></div>
 </div>
 </section>
@@ -478,6 +481,7 @@ const API_KEY_STORAGE='gemini_api_key_v1';
 let currentImageData = "";
 let analyzedIngredientsList = [];
 let chatSessionMemory = [];
+let automaticRecommendationsCache = {};
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
@@ -1397,13 +1401,12 @@ function renderToday(){
           <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${originalIndex})">🗑️ מחק</button>
         </div>
       </div>
-    `).join('') : `<div class="muted" style="font-size:12px;padding:6px 0">אין עדיין פריטים בארוחה זו.</div>`;
+    `).join('') : `<div class="muted" style="font-size:12px;padding:4px 0">אין עדיין פריטים בארוחה זו.</div>`;
 
-    // המלצה אוטומטית מובנית לכל ארוחה לפי היתרה
+    let cachedRec = automaticRecommendationsCache[cat];
     let recommendationBox = `
-      <div id="ai-rec-${cat}" style="margin-top:8px;padding:8px 12px;background:var(--bg-card);border-radius:10px;font-size:12px;border:1px dashed var(--border-color)">
-        <span class="muted">💡 טיפ/המלצה אוטומטית: לחץ על ״הצג המלצה חכמה״ לקבלת הצעה מותאמת אישית מ-AI.</span>
-        <button class="secondary" style="font-size:11px;padding:4px 8px;margin-top:6px;width:auto;display:block" onclick="fetchInlineMealRecommendation('${cat}')">✨ קבל המלצה חכמה לארוחה זו</button>
+      <div id="ai-rec-box-${cat}" style="margin-top:10px;padding:10px 12px;background:var(--bg-card);border-radius:12px;font-size:12px;border:1px dashed var(--border-color)">
+        ${cachedRec ? renderRecommendationContent(cat, cachedRec) : `<span class="muted">⏳ טוען המלצת ארוחה חכמה אוטומטית מטעם המערכת...</span>`}
       </div>
     `;
 
@@ -1420,31 +1423,56 @@ function renderToday(){
   });
 
   intake.innerHTML = htmlParts.join('');
+
+  // טעינה אוטומטית של המלצות שטרם נטענו ברקע
+  ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(cat => {
+    if(!automaticRecommendationsCache[cat]) {
+      fetchAutomaticMealRecommendation(cat);
+    }
+  });
 }
 
-async function fetchInlineMealRecommendation(cat) {
-  const apiKey = localStorage.getItem(API_KEY_STORAGE);
-  const recContainer = document.getElementById(`ai-rec-${cat}`);
+function renderRecommendationContent(cat, rec) {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div>
+        <b style="color:var(--primary-dark)">✨ המלצת ארוחה חכמה:</b><br>
+        <span><b>${rec.name}</b> (${rec.amount} ${rec.unitLabel}) — 🔥 ${Math.round(rec.kcal)} קק״ל</span><br>
+        <span class="muted" style="font-size:11px">💪 ${round1(rec.protein)}ג׳ חלבון · 🍞 ${round1(rec.carbs)}ג׳ פחמימות · 🥑 ${round1(rec.fat)}ג׳ שומן</span>
+      </div>
+      <button class="primary" style="font-size:11px;padding:6px 10px;width:auto;flex-shrink:0" onclick="acceptAutomaticRecommendation('${cat}')">＋ הוסף לצריכה</button>
+    </div>
+  `;
+}
 
+async function fetchAutomaticMealRecommendation(cat) {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
   if(!apiKey) {
-    recContainer.innerHTML = `<span style="color:#c53030;font-size:12px">⚠️ נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API במאגר.</span>`;
+    const box = document.getElementById(`ai-rec-box-${cat}`);
+    if(box) box.innerHTML = `<span class="muted" style="font-size:11px">⚠️ הגדר מפתח API להמלצות אוטומטיות.</span>`;
     return;
   }
-
-  recContainer.innerHTML = `<span class="muted" style="font-size:12px">⚡ מאמן ה-AI מכין המלצה מותאמת אישית לפי יתרת הקלוריות שלך...</span>`;
 
   const targets = calculateTargets();
   const a = today();
   const consumedKcal = a.reduce((s,x)=>s+(x.kcal||0),0);
-  const consumedProtein = a.reduce((s,x)=>s+(x.protein||0),0);
   const remainingKcal = Math.max(0, targets.kcal - consumedKcal);
-  const remainingProtein = Math.max(0, targets.protein - consumedProtein);
 
-  const promptText = `You are a professional, encouraging personal fitness and nutrition coach. 
-Give a short, practical meal recommendation for "${mealLabels[cat]}" in clear Hebrew.
-- User daily target: ${targets.kcal} kcal (Protein: ${targets.protein}g)
-- Remaining today: ~${remainingKcal} kcal and ~${remainingProtein}g protein.
-Provide a concise, appetizing suggestion with approximate calories and macros.`;
+  const mealNamesMap = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snacks: 'נשנושים וביניים' };
+
+  const promptText = `Provide a single recommended food item/meal for "${mealNamesMap[cat]}" in Hebrew that fits within a remaining target of ~${Math.round(remainingKcal / 4)} kcal. 
+Return ONLY a valid JSON object without code blocks:
+{
+  "name": "שם המאכל",
+  "amount": number (e.g. 1 or 150),
+  "unitLabel": "יחידה או גרם",
+  "unit": "unit או g",
+  "unit_g": number (weight of 1 unit in grams if unit, or 100 if grams),
+  "kcal": number,
+  "protein": number,
+  "carbs": number,
+  "fat": number
+}`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -1455,10 +1483,67 @@ Provide a concise, appetizing suggestion with approximate calories and macros.`;
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || 'API Error');
     let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    recContainer.innerHTML = `<div style="font-size:12px;white-space:pre-line;color:var(--text-main)"><b>✨ המלצת מאמן:</b><br>${textResult}</div>`;
+    textResult = textResult.replace(/```json|```/g, '').trim();
+
+    const parsed = JSON.parse(textResult);
+    if(parsed && parsed.name) {
+      automaticRecommendationsCache[cat] = parsed;
+      const box = document.getElementById(`ai-rec-box-${cat}`);
+      if(box) box.innerHTML = renderRecommendationContent(cat, parsed);
+    }
   } catch(e) {
-    recContainer.innerHTML = `<span style="color:#c53030;font-size:12px">שגיאה בקבלת ההמלצה: ${e.message}</span>`;
+    const box = document.getElementById(`ai-rec-box-${cat}`);
+    if(box) box.innerHTML = `<span class="muted" style="font-size:11px">שגיאה בטעינת המלצת AI.</span>`;
   }
+}
+
+function loadAllAutomaticRecommendations() {
+  automaticRecommendationsCache = {};
+  renderToday();
+}
+
+function acceptAutomaticRecommendation(cat) {
+  const rec = automaticRecommendationsCache[cat];
+  if(!rec) return alert('ההמלצה טרם נטענה.');
+
+  // בדיקה האם המוצר קיים במאגר, ואם לא - הוספה אוטומטית למאגר
+  let existingProduct = db.products.find(p => normalizeStr(p.name) === normalizeStr(rec.name));
+  if(!existingProduct) {
+    const newProduct = {
+      name: rec.name,
+      brand: 'המלצת AI',
+      barcode: '',
+      kcal: rec.unit === 'g' ? (rec.kcal / rec.amount) * 100 : (rec.kcal / (rec.amount * (rec.unit_g || 100))) * 100,
+      protein: rec.protein ? (rec.protein / rec.amount) * 100 : 0,
+      carbs: rec.carbs ? (rec.carbs / rec.amount) * 100 : 0,
+      fat: rec.fat ? (rec.fat / rec.amount) * 100 : 0,
+      unit_g: rec.unit_g || 100,
+      image: '',
+      updated: new Date().toLocaleDateString('he-IL')
+    };
+    db.products.push(newProduct);
+  }
+
+  // הוספה לצריכה היומית
+  const intakeItem = {
+    name: rec.name,
+    amount: rec.amount,
+    unit: rec.unit || 'unit',
+    unitLabel: rec.unitLabel || 'יחידה',
+    meal: cat,
+    kcal: rec.kcal,
+    protein: rec.protein || 0,
+    carbs: rec.carbs || 0,
+    fat: rec.fat || 0
+  };
+
+  (db.intake[todayKey()] ??= []).push(intakeItem);
+  save();
+
+  // רענון המלצה חדשה לאותה ארוחה
+  delete automaticRecommendationsCache[cat];
+  renderToday();
+  alert(`ההמלצה "${rec.name}" נוספה בהצלחה לארוחה ולמאגר!`);
 }
 
 function showDailySummaryModal(){
