@@ -41,7 +41,12 @@ textarea{resize:vertical;min-height:50px}
 </header>
 <main>
 <section id="today">
-<div class="card"><div class="muted">נצרכו היום</div><div><span class="kcal" id="kcal">0</span> קלוריות</div><div class="progress"><span id="kbar"></span></div><div class="muted"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div></div>
+<div class="card">
+  <div class="muted">נצרכו היום</div>
+  <div><span class="kcal" id="kcal">0</span> קלוריות</div>
+  <div class="progress"><span id="kbar"></span></div>
+  <div class="muted" id="kleftContainer"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div>
+</div>
 <div class="grid">
 <div class="macro"><span>💪 חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
 <div class="macro"><span>🍞 פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
@@ -58,7 +63,7 @@ textarea{resize:vertical;min-height:50px}
 <!-- לשונית פרופיל ויעדים -->
 <section id="profile" class="hidden">
 <div class="card">
-  <b>⚙️ פרופיל אישי וחישוב יעדים קלוריים</b>
+  <b>👤 פרופיל אישי וחישוב יעדים קלוריים</b>
   <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו:</div>
   
   <div style="display:flex;gap:8px">
@@ -109,15 +114,15 @@ textarea{resize:vertical;min-height:50px}
     <option value="1.725">פעילות גבוהה (6-7 אימונים בשבוע)</option>
   </select>
 
-  <button class="primary" onclick="saveProfileAndCalculate()">חשב ושמור יעדים אוטומטית</button>
+  <button class="primary" onclick="previewProfileCalculation()">חשב והצג יעדים</button>
 </div>
 </section>
 
-<!-- לשונית מעקב משקל -->
+<!-- לשונית מעקב משקל מעודכנת -->
 <section id="weight" class="hidden">
 <div class="card">
-  <b>⚖️ ניהול מעקב משקל</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הגדר משקל התחלתי ועדכן משקל לכל תאריך:</div>
+  <b>⚖️ ניהול מעקב משקל ויעדים</b>
+  <div id="weightSummaryCard" style="margin:10px 0;padding:12px;background:#eef2f7;border-radius:12px;font-size:14px"></div>
   
   <div style="margin-bottom:12px">
     <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">משקל התחלתי (ק״ג):</label>
@@ -141,7 +146,7 @@ textarea{resize:vertical;min-height:50px}
 </div>
 
 <div class="card">
-  <b>📊 היסטוריית התקדמות</b>
+  <b>📊 היסטוריית התקדמות והפרשים</b>
   <div id="weightHistoryList" style="margin-top:10px"></div>
 </div>
 </section>
@@ -170,7 +175,7 @@ textarea{resize:vertical;min-height:50px}
 <section id="month" class="hidden">
 <div class="card">
   <b>📅 ארכיון חודשים וצריכה יומית</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">לחץ על חודש כדי לצפות בימים, ולחיצה על יום תפתח את פירוט האוכל:</div>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">צפה בצריכה היומית מול היעד בכל חודש:</div>
   <div id="monthList"></div>
 </div>
 </section>
@@ -184,6 +189,14 @@ textarea{resize:vertical;min-height:50px}
 <button id="n3" onclick="show('month')">חודש</button>
 </nav>
 </div>
+
+<!-- חלונית אישור יעדים חדשה -->
+<div class="modal" id="profileModal"><div class="sheet">
+<h2>🎯 תוצאות חישוב יעדים אישיים</h2>
+<div id="profilePreviewContent" class="card" style="background:#f0f3ff;border:1px solid #c7d2fe;margin-bottom:12px"></div>
+<button class="primary" onclick="confirmAndSaveProfile()">✅ אישור והחל יעדים</button>
+<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">✕ ביטול</button>
+</div></div>
 
 <div class="modal" id="settingsModal"><div class="sheet">
 <h2>⚙️ הגדרת Gemini API Key</h2>
@@ -200,7 +213,6 @@ textarea{resize:vertical;min-height:50px}
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
 </div></div>
 
-<!-- חלון סריקת ברקוד חיה (Live QR Style) -->
 <div class="modal" id="scannerModal"><div class="sheet">
 <h2>📷 סריקת ברקוד אוטומטית</h2>
 <div id="scannerStatus" class="muted" style="margin-bottom:10px">מכוון מצלמה לזיהוי ברקוד אוטומטי...</div>
@@ -340,13 +352,7 @@ function today(){return db.intake[todayKey()]||[]}
 function round1(v){return Math.round(Number(v||0)*10)/10}
 
 function cleanCode(str){ return String(str || '').replace(/\D/g, '').trim(); }
-
-function normalizeStr(str) {
-  return String(str || '')
-    .toLowerCase()
-    .replace(/[׳'"]/g, '')
-    .trim();
-}
+function normalizeStr(str) { return String(str || '').toLowerCase().replace(/[׳'"]/g, '').trim(); }
 
 function debounce(func, wait) {
   let timeout;
@@ -361,29 +367,32 @@ const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
 // חישוב יעדים קלוריים אוטומטי לפי נוסחת Mifflin-St Jeor
-function calculateTargets() {
-  const p = db.profile;
-  let bmr = (10 * Number(p.weight)) + (6.25 * Number(p.height)) - (5 * Number(p.age));
-  bmr += (p.gender === 'female' ? -161 : 5);
+function calculateTargetsForProfile(prof) {
+  let bmr = (10 * Number(prof.weight)) + (6.25 * Number(prof.height)) - (5 * Number(prof.age));
+  bmr += (prof.gender === 'female' ? -161 : 5);
 
-  let tdee = bmr * Number(p.activity);
+  let tdee = bmr * Number(prof.activity);
   let targetKcal = Math.round(tdee);
 
-  if (p.goal === 'cut') targetKcal -= 500;
-  else if (p.goal === 'bulk') targetKcal += 300;
+  if (prof.goal === 'cut') targetKcal -= 500;
+  else if (prof.goal === 'bulk') targetKcal += 300;
 
-  if (targetKcal < 1200) targetKcal = 1200; // מינימום בטיחותי
+  if (targetKcal < 1200) targetKcal = 1200;
 
-  // חלוקת מאקרו מומלצת
-  const targetProtein = Math.round(Number(p.weight) * 2); // 2 גרם חלבון לקילו משקל גוף
-  const targetFat = Math.round((targetKcal * 0.25) / 9); // 25% שומן
+  const targetProtein = Math.round(Number(prof.weight) * 2);
+  const targetFat = Math.round((targetKcal * 0.25) / 9);
   const targetCarbs = Math.round((targetKcal - (targetProtein * 4) - (targetFat * 9)) / 4);
 
   return { kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
 }
 
-function saveProfileAndCalculate(){
-  db.profile = {
+function calculateTargets() {
+  return calculateTargetsForProfile(db.profile);
+}
+
+// שלב 1: הצגת חלונית החישוב (Modal) לבחירה והשוואה לפני שמירה סופית
+function previewProfileCalculation() {
+  const tempProfile = {
     weight: Number(pWeight.value) || 104,
     targetWeight: Number(pTargetWeight.value) || 90,
     height: Number(pHeight.value) || 178,
@@ -393,15 +402,40 @@ function saveProfileAndCalculate(){
     activity: pActivity.value
   };
 
-  // עדכון משקל התחלתי אוטומטי אם הוזן
+  const targets = calculateTargetsForProfile(tempProfile);
+  const activityText = pActivity.options[pActivity.selectedIndex].text;
+  const goalText = pGoal.options[pGoal.selectedIndex].text;
+
+  const content = `
+    <b>📋 נתונים נבחרים:</b><br>
+    • רמת פעילות: ${activityText}<br>
+    • מטרה: ${goalText}<br>
+    <hr style="border:0;border-top:1px solid #c7d2fe;margin:8px 0">
+    <b>🔥 יעדים מחושבים:</b><br>
+    • יעד קלוריות יומי: <b>${targets.kcal} קק״ל</b><br>
+    • 💪 חלבון: ${targets.protein}ג׳ | 🍞 פחמימות: ${targets.carbs}ג׳ | 🥑 שומן: ${targets.fat}ג׳
+  `;
+
+  document.getElementById('profilePreviewContent').innerHTML = content;
+  window.__tempProfileToSave = tempProfile;
+  lockPageScroll();
+  document.getElementById('profileModal').classList.add('open');
+}
+
+// שלב 2: אישור סופי מהחלונית
+function confirmAndSaveProfile() {
+  if(!window.__tempProfileToSave) return;
+  db.profile = window.__tempProfileToSave;
+
   if(db.profile.weight && !db.startWeight) {
     db.startWeight = db.profile.weight;
   }
   
   save();
+  closeModal();
   renderToday();
   renderWeightScreen();
-  alert('הפרופיל עודכן והיעדים הקלוריים חושבו בהצלחה!');
+  alert('היעדים עודכנו בהצלחה באפליקציה!');
   show('today');
 }
 
@@ -444,6 +478,28 @@ function renderWeightScreen(){
 
   const sortedDates = Object.keys(db.weights).sort();
   const startW = db.startWeight || 108;
+  const targetW = db.profile?.targetWeight || 0;
+
+  // חישוב משקל נוכחי (המדידה האחרונה או משקל התחלתי)
+  let currentW = startW;
+  if(sortedDates.length > 0) {
+    currentW = db.weights[sortedDates[sortedDates.length - 1]];
+  }
+
+  // חישוב המרחק מהיעד
+  let distanceToTargetText = 'לא הוגדר יעד';
+  if(targetW > 0) {
+    let diff = round1(currentW - targetW);
+    if(diff === 0) distanceToTargetText = '🎯 הגעת ליעד בהצלחה!';
+    else if(diff > 0) distanceToTargetText = `${diff} ק״ג ליעד`;
+    else distanceToTargetText = `${Math.abs(diff)} ק״ג מעבר ליעד`;
+  }
+
+  let summaryHtml = `
+    <b>🎯 יעד משקל:</b> ${targetW > 0 ? targetW + ' ק״ג' : 'לא הוגדר'} | <b>מרחק מהיעד:</b> ${distanceToTargetText}<br>
+    <b>⚖️ משקל התחלתי:</b> ${startW} ק״ג | <b>משקל נוכחי:</b> ${currentW} ק״ג
+  `;
+  document.getElementById('weightSummaryCard').innerHTML = summaryHtml;
 
   let html = '';
   if(sortedDates.length === 0) {
@@ -456,6 +512,7 @@ function renderWeightScreen(){
       const w = db.weights[d];
       let diffPrev = prevW !== null ? round1(w - prevW) : null;
       let diffStart = round1(w - startW);
+      let diffTarget = targetW > 0 ? round1(w - targetW) : null;
       
       listRows.unshift(`
         <div class="item">
@@ -464,8 +521,9 @@ function renderWeightScreen(){
             <div class="muted">⚖️ ${w} ק״ג</div>
           </div>
           <div style="text-align:left">
-            ${diffPrev !== null ? `<div style="font-size:13px;color:${diffPrev<=0?'#2f855a':'#c53030'}">אתמול: ${diffPrev>0?'+':''}${diffPrev}ק״ג</div>` : ''}
-            <div style="font-size:13px;font-weight:600;color:${diffStart<=0?'#2f855a':'#c53030'}">מהתחלה: ${diffStart>0?'+':''}${diffStart}ק״ג</div>
+            ${diffPrev !== null ? `<div style="font-size:12px;color:${diffPrev<=0?'#2f855a':'#c53030'}">הפרש מאתמול: ${diffPrev>0?'+':''}${diffPrev}ק״ג</div>` : ''}
+            <div style="font-size:12px;color:${diffStart<=0?'#2f855a':'#c53030'}">הפרש מהתחלה: ${diffStart>0?'+':''}${diffStart}ק״ג</div>
+            ${diffTarget !== null ? `<div style="font-size:12px;font-weight:600;color:${diffTarget<=0?'#2f855a':'#c53030'}">הפרש מהיעד: ${diffTarget>0?'+':''}${diffTarget}ק״ג</div>` : ''}
             <button class="secondary" style="font-size:11px;padding:2px 6px;margin-top:4px" onclick="deleteWeight('${d}')">🗑️ מחק</button>
           </div>
         </div>
@@ -832,7 +890,21 @@ function renderToday(){
   document.querySelectorAll('.grid .macro')[2].querySelector('small').textContent = `/ ${targets.fat} ג׳`;
   document.getElementById('targetKcalDisplay').textContent = targets.kcal;
 
-  kleft.textContent=Math.max(0,Math.round(targets.kcal-k)).toLocaleString('he-IL');
+  const leftKcal = targets.kcal - k;
+  const kleftEl = document.getElementById('kleft');
+  const kleftContainer = document.getElementById('kleftContainer');
+
+  if(leftKcal >= 0) {
+    kleftEl.textContent = Math.round(leftKcal).toLocaleString('he-IL');
+    kleftContainer.style.color = '#68707a';
+    kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+  } else {
+    // חריגה - הצגה באדום ובמינוס
+    let overload = Math.abs(Math.round(leftKcal));
+    kleftContainer.style.color = '#c53030';
+    kleftContainer.innerHTML = `🔴 חריגה של <span id="kleft">-${overload.toLocaleString('he-IL')}</span> קלוריות (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+  }
+
   kbar.style.width=Math.min(100,k/targets.kcal*100)+'%';
   
   intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted">${x.amount} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted">💪 ${round1(x.protein)}ג׳ · 🍞 ${round1(x.carbs)}ג׳ · 🥑 ${round1(x.fat)}ג׳</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px">עדיין לא דווחה צריכה היום.</div>';
@@ -851,7 +923,7 @@ function showDailySummaryModal(){
   txt += `🔥 נצרכו: ${Math.round(k)} קלוריות\n`;
   txt += `🎯 יעד יומי: ${targets.kcal} קלוריות\n`;
   if(k <= targets.kcal) txt += `🟢 נשארו: ${Math.round(targets.kcal - k)} קלוריות\n`;
-  else txt += `🔴 חריגה מהיעד: ${Math.round(k - targets.kcal)} קלוריות\n`;
+  else txt += `🔴 חריגה מהיעד: -${Math.round(k - targets.kcal)} קלוריות\n`;
   
   txt += `\n💪 חלבון: ${round1(p)} / ${targets.protein} גרם\n`;
   txt += `🍞 פחמימות: ${round1(c)} / ${targets.carbs} גרם\n`;
@@ -909,8 +981,12 @@ function renderProducts(){
  }).join('')||'<div class="muted">לא נמצאו מוצרים.</div>';
 }
 
+// שדרוג לשונית חודש להצגת נצרך מתוך יעד קלורי
 function renderMonth(){
   const intakeKeys = Object.keys(db.intake).sort().reverse();
+  const targets = calculateTargets();
+  const dailyTargetKcal = targets.kcal;
+
   if(intakeKeys.length === 0) {
     document.getElementById('monthList').innerHTML = '<div class="muted" style="padding-top:6px">אין עדיין נתונים בארכיון.</div>';
     return;
@@ -939,11 +1015,13 @@ function renderMonth(){
       });
     });
 
+    const monthTargetKcal = days.length * dailyTargetKcal;
+
     html += `
       <details class="card" style="margin-bottom:10px;background:#fff;border:1px solid #cbd5e1">
         <summary style="cursor:pointer;font-weight:700;font-size:16px;outline:none;display:flex;justify-content:space-between;align-items:center">
           <span>📁 ${monthName}</span>
-          <span class="muted" style="font-size:13px">🔥 ${Math.round(mKcal)} קק״ל סה״כ</span>
+          <span class="muted" style="font-size:13px">🔥 נצרך ${Math.round(mKcal)} מתוך יעד ${monthTargetKcal} קק״ל</span>
         </summary>
         <div style="margin-top:12px;border-top:1px solid #e4e7eb;padding-top:8px">
     `;
@@ -960,7 +1038,7 @@ function renderMonth(){
         <details style="margin:8px 0;background:#f7f8fa;padding:10px;border-radius:12px;border:1px solid #e2e5e9">
           <summary style="cursor:pointer;font-weight:600;font-size:14px;outline:none;display:flex;justify-content:space-between;align-items:center">
             <span>📅 ${formattedDate}</span>
-            <span class="muted" style="font-size:12px">🔥 ${Math.round(dKcal)} קל׳ | 💪 ${round1(dProt)}ג׳ · 🍞 ${round1(dCarbs)}ג׳ · 🥑 ${round1(dFat)}ג׳</span>
+            <span class="muted" style="font-size:12px">🔥 נצרך ${Math.round(dKcal)} / ${dailyTargetKcal} קל׳ | 💪 ${round1(dProt)}ג׳ · 🍞 ${round1(dCarbs)}ג׳ · 🥑 ${round1(dFat)}ג׳</span>
           </summary>
           <div style="margin-top:8px;border-top:1px dashed #d7dbe0;padding-top:6px">
       `;
