@@ -80,8 +80,10 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;
 nav button{background:transparent;color:var(--text-muted);font-size:11px;padding:6px 2px;border-radius:10px;font-weight:600}
 nav button.active{background:var(--primary-light);color:var(--primary-dark);font-weight:700}
 
-.item{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--border-color);align-items:center}
+.item{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-color);align-items:center}
 .item:last-child{border-bottom:0}
+
+.meal-section-title{font-size:14px;font-weight:700;color:var(--primary-dark);margin:16px 0 6px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--primary-light);padding-bottom:4px}
 
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10;align-items:flex-end;overflow:hidden;touch-action:none}
 .modal.open{display:flex}
@@ -96,7 +98,6 @@ textarea{resize:vertical;min-height:80px}
 .duplicate-warning{background:#fff5f5;border:1px solid #feb2b2;color:#c53030;border-radius:12px;padding:12px;font-size:13px;margin-bottom:10px;display:none}
 .product-img{width:52px;height:52px;border-radius:12px;object-fit:cover;margin-left:12px;border:1px solid var(--border-color)}
 
-/* עיצוב בועות צ'אט מעוגלות ומודרניות */
 .chat-bubble-user { background: var(--chat-user-bg); padding: 10px 14px; border-radius: 14px 14px 2px 14px; margin-bottom: 8px; border: 1px solid var(--border-color); align-self: flex-start; }
 .chat-bubble-ai { background: var(--chat-ai-bg); padding: 10px 14px; border-radius: 14px 14px 14px 2px; margin-bottom: 8px; border: 1px solid var(--chat-ai-border); }
 </style>
@@ -131,7 +132,14 @@ textarea{resize:vertical;min-height:80px}
 <button class="secondary" style="flex:1" onclick="openScanner()">📷 סרוק</button>
 <button class="secondary" style="flex:1" onclick="showDailySummaryModal()">📋 סיכום</button>
 </div>
-<div class="card" style="margin-top:14px"><b style="font-size:15px">צריכה היום</b><div id="intake"></div></div>
+
+<div class="card" style="margin-top:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <b style="font-size:15px">🍽️ צריכה לפי ארוחות היום</b>
+    <button class="ai-btn" style="padding:6px 12px;font-size:12px;width:auto" onclick="openMealRecommendationModal()">✨ המלצת ארוחה מותאמת מ-AI</button>
+  </div>
+  <div id="intake"></div>
+</div>
 </section>
 
 <!-- לשונית עוזר אישי AI עם פידבק, ניתוחים ושיח אינטראקטיבי -->
@@ -339,6 +347,21 @@ textarea{resize:vertical;min-height:80px}
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
 </div></div>
 
+<div class="modal" id="mealRecommendationModalSheet"><div class="sheet">
+<h2>✨ המלצת ארוחה מותאמת מ-AI</h2>
+<div class="muted" style="font-size:13px;margin-bottom:12px">בחר איזו ארוחה אתה תכנן, והמערכת תתאים לך הצעה לפי יתרת הקלוריות והחלבון שלך:</div>
+<label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר ארוחה להמלצה:</label>
+<select id="recommendationMealType" style="margin-bottom:10px">
+  <option value="breakfast">🌅 ארוחת בוקר</option>
+  <option value="lunch" selected>☀️ ארוחת צהריים</option>
+  <option value="dinner">🌙 ארוחת ערב</option>
+  <option value="snacks">🍎 נשנושים וביניים</option>
+</select>
+<button class="ai-btn" onclick="fetchAiMealRecommendation()">🍽️ קבל הצעה מותאמת אישית</button>
+<div id="mealRecommendationResult" style="margin-top:14px;font-size:14px"></div>
+<button class="secondary" style="width:100%;margin-top:12px" onclick="closeModal()">סגור</button>
+</div></div>
+
 <div class="modal" id="scannerModal"><div class="sheet">
 <h2>📷 סריקת ברקוד אוטומטית</h2>
 <div id="scannerStatus" class="muted" style="margin-bottom:10px">מכוון מצלמה לזיהוי ברקוד אוטומטי...</div>
@@ -352,6 +375,15 @@ textarea{resize:vertical;min-height:80px}
 
 <div class="modal" id="addModal"><div class="sheet">
 <h2 id="addModalTitle">הוספת צריכה</h2>
+
+<label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר ארוחה:</label>
+<select id="mealCategorySelect" style="margin-bottom:10px">
+  <option value="breakfast">🌅 ארוחת בוקר</option>
+  <option value="lunch" selected>☀️ ארוחת צהריים</option>
+  <option value="dinner">🌙 ארוחת ערב</option>
+  <option value="snacks">🍎 נשנושים וביניים</option>
+</select>
+
 <input id="foodSearch" placeholder="חפש מוצר קיים או הקלד מוצר חדש..." oninput="debouncedSuggestIntake()">
 <div id="suggestions" style="margin-bottom:10px"></div>
 
@@ -513,6 +545,58 @@ function debounce(func, wait) {
 const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
+
+function openMealRecommendationModal() {
+  lockPageScroll();
+  document.getElementById('mealRecommendationModalSheet').classList.add('open');
+  document.getElementById('mealRecommendationResult').innerHTML = '';
+}
+
+async function fetchAiMealRecommendation() {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  const resultDiv = document.getElementById('mealRecommendationResult');
+  const mealType = document.getElementById('recommendationMealType').value;
+
+  if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
+
+  resultDiv.innerHTML = '<span class="muted">⚡ מאמן ה-AI מחשב עבורך את ההמלצה המדויקת לפי היתרה שלך...</span>';
+
+  const targets = calculateTargets();
+  const a = today();
+  const consumedKcal = a.reduce((s,x)=>s+(x.kcal||0),0);
+  const consumedProtein = a.reduce((s,x)=>s+(x.protein||0),0);
+  const remainingKcal = Math.max(0, targets.kcal - consumedKcal);
+  const remainingProtein = Math.max(0, targets.protein - consumedProtein);
+
+  const mealNamesMap = {
+    breakfast: 'ארוחת בוקר',
+    lunch: 'ארוחת צהריים',
+    dinner: 'ארוחת ערב',
+    snacks: 'נשנושים וביניים'
+  };
+
+  const promptText = `You are a professional, encouraging personal fitness and nutrition coach. 
+The user needs a customized meal recommendation for "${mealNamesMap[mealType]}".
+- Daily Goal Calories: ${targets.kcal} kcal (Protein goal: ${targets.protein}g)
+- Consumed so far today: ${Math.round(consumedKcal)} kcal (Protein: ${Math.round(consumedProtein)}g)
+- Remaining budget today: ~${remainingKcal} kcal and ~${remainingProtein}g protein.
+
+Provide a practical, healthy, and appetizing meal idea in clear Hebrew that fits this remaining budget, including approximate calories and macronutrients for the suggested meal. Keep it encouraging and concise.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API Error');
+    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    resultDiv.innerHTML = `<div class="card" style="margin-top:8px;font-size:13px;white-space:pre-line;background:var(--bg-app)">${textResult}</div>`;
+  } catch(e) {
+    resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בקבלת ההמלצה: ${e.message}</span>`;
+  }
+}
 
 async function getAiDailyCoachFeedback() {
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
@@ -1307,6 +1391,13 @@ function handleImportFile(event){
   reader.readAsText(file);
 }
 
+const mealLabels = {
+  breakfast: '🌅 ארוחת בוקר',
+  lunch: '☀️ ארוחת צהריים',
+  dinner: '🌙 ארוחת ערב',
+  snacks: '🍎 נשנושים וביניים'
+};
+
 function renderToday(){
   const targets = calculateTargets();
   let a=today(), k=a.reduce((s,x)=>s+(x.kcal||0),0),p=a.reduce((s,x)=>s+(x.protein||0),0),c=a.reduce((s,x)=>s+(x.carbs||0),0),f=a.reduce((s,x)=>s+(x.fat||0),0);
@@ -1351,7 +1442,46 @@ function renderToday(){
 
   kbar.style.width=Math.min(100,k/targets.kcal*100)+'%';
   
-  intake.innerHTML=a.length?a.map((x,i)=>`<div class="item"><div><b>${x.name}</b><div class="muted" style="font-size:12px">${x.amount} ${x.unitLabel||'גרם'} · ${Math.round(x.kcal)} קל׳</div><div class="muted" style="font-size:12px">💪 ${round1(x.protein)}ג׳ · 🍞 ${round1(x.carbs)}ג׳ · 🥑 ${round1(x.fat)}ג׳</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${i})">✏️ ערוך</button><button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${i})">🗑️ מחק</button></div></div>`).join(''):'<div class="muted" style="padding-top:12px;font-size:13px">עדיין לא דווחה צריכה היום.</div>';
+  if(a.length === 0) {
+    intake.innerHTML = '<div class="muted" style="padding-top:12px;font-size:13px">עדיין לא דווחה צריכה היום.</div>';
+  } else {
+    let grouped = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+    a.forEach((item, originalIndex) => {
+      let mCat = item.meal || 'lunch';
+      if(!grouped[mCat]) grouped[mCat] = [];
+      grouped[mCat].push({ item, originalIndex });
+    });
+
+    let htmlParts = [];
+    ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(cat => {
+      let itemsInCat = grouped[cat];
+      if(itemsInCat && itemsInCat.length > 0) {
+        let catKcal = itemsInCat.reduce((s, x) => s + (x.item.kcal || 0), 0);
+        htmlParts.push(`
+          <div class="meal-section-title">
+            <span>${mealLabels[cat]}</span>
+            <span class="muted" style="font-size:12px">🔥 ${Math.round(catKcal)} קק״ל</span>
+          </div>
+        `);
+        itemsInCat.forEach(({ item, originalIndex }) => {
+          htmlParts.push(`
+            <div class="item">
+              <div>
+                <b>${item.name}</b>
+                <div class="muted" style="font-size:12px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
+                <div class="muted" style="font-size:12px">💪 ${round1(item.protein)}ג׳ · 🍞 ${round1(item.carbs)}ג׳ · 🥑 ${round1(item.fat)}ג׳</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${originalIndex})">✏️ ערוך</button>
+                <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${originalIndex})">🗑️ מחק</button>
+              </div>
+            </div>
+          `);
+        });
+      }
+    });
+    intake.innerHTML = htmlParts.join('');
+  }
 }
 
 function showDailySummaryModal(){
@@ -1487,10 +1617,11 @@ function renderMonth(){
       `;
 
       dayItems.forEach(item => {
+        let mLabel = mealLabels[item.meal] || 'ארוחה';
         html += `
           <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border-color)">
             <div>
-              <b>${item.name}</b>
+              <b>${item.name}</b> <span class="muted" style="font-size:10px">(${mLabel})</span>
               <div class="muted" style="font-size:11px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
             </div>
             <div class="muted" style="font-size:11px">💪 ${round1(item.protein)}ג׳ · 🍞 ${round1(item.carbs)}ג׳ · 🥑 ${round1(item.fat)}ג׳</div>
@@ -1540,6 +1671,7 @@ function openAdd(){
   grams.value='1';
   unitSelect.value='unit';
   foodSearch.value='';
+  mealCategorySelect.value='lunch';
   document.getElementById('newProductQuickFields').style.display='none';
   document.querySelectorAll('#newProductQuickFields input').forEach(x=>x.value='');
   document.getElementById('quickAiStatus').textContent='';
@@ -1664,6 +1796,7 @@ function updateIntakePreview(){
 function addIntake(){
  let a = Number(grams.value);
  let productName = foodSearch.value.trim();
+ let mealCat = mealCategorySelect.value || 'lunch';
  
  if(!selected) {
    const qKcal = Number(document.getElementById('quickKcal').value);
@@ -1697,6 +1830,7 @@ function addIntake(){
    amount: a,
    unit: unit,
    unitLabel: label,
+   meal: mealCat,
    kcal: r.kcal,
    protein: r.protein,
    carbs: r.carbs,
@@ -1722,7 +1856,7 @@ function addIntake(){
 
 function editIntake(i){
  let x=today()[i],idx=db.products.findIndex(p=>p.name===x.name);if(!x||idx<0)return alert('המוצר לא נמצא במאגר.');
- window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'unit';grams.value=x.amount||'1';updateIntakePreview();
+ window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'unit';grams.value=x.amount||'1';mealCategorySelect.value=x.meal||'lunch';updateIntakePreview();
 }
 
 function removeIntake(i){if(!today()[i])return;if(!confirm('למחוק את הצריכה הזו?'))return;today().splice(i,1);save();renderToday()}
