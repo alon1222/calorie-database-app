@@ -17,8 +17,8 @@ main{padding:16px}.card{background:#f7f8fa;border:1px solid #e4e7eb;border-radiu
 .progress{height:9px;background:#e4e7eb;border-radius:20px;overflow:hidden;margin:10px 0}.progress span{display:block;height:100%;background:#18202a;width:0}
 button,input,select,textarea{font:inherit}button{border:0;border-radius:12px;padding:12px 14px;cursor:pointer}.primary{width:100%;background:#18202a;color:white;font-weight:700}.secondary{background:#eef0f3;color:#18202a}.ai-btn{background:linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);color:white;font-weight:700;width:100%}
 input,select,textarea{width:100%;padding:13px;border:1px solid #d7dbe0;border-radius:12px;margin-bottom:10px;background:#fff}
-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:#fff;border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(3,1fr);padding:8px}
-nav button{background:#fff;color:#606872}nav button.active{background:#18202a;color:#fff}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:#fff;border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(4,1fr);padding:8px}
+nav button{background:#fff;color:#606872;font-size:13px}nav button.active{background:#18202a;color:#fff}
 .item{display:flex;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #e8eaed}.item:last-child{border-bottom:0}
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:10;align-items:flex-end;overflow:hidden;touch-action:none}.modal.open{display:flex}
 .sheet{background:#fff;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:auto;padding:20px;border-radius:22px 22px 0 0;position:relative;touch-action:pan-y}
@@ -41,16 +41,6 @@ textarea{resize:vertical;min-height:50px}
 </header>
 <main>
 <section id="today">
-<!-- מעקב משקל יומי -->
-<div class="card" style="background:#eef2f7;border:1px solid #cbd5e1">
-  <b>⚖️ מעקב משקל יומי</b>
-  <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-    <input id="currentWeightInput" type="number" step="0.1" placeholder="הכנס משקל להיום (ק״ג)" style="margin:0;flex:1">
-    <button class="primary" style="width:auto;padding:13px 16px" onclick="saveTodayWeight()">שמור משקל</button>
-  </div>
-  <div id="weightStats" class="muted" style="font-size:13px;margin-top:8px"></div>
-</div>
-
 <div class="card"><div class="muted">נצרכו היום</div><div><span class="kcal" id="kcal">0</span> קלוריות</div><div class="progress"><span id="kbar"></span></div><div class="muted"><span id="kleft">2,000</span> קלוריות נותרו</div></div>
 <div class="grid">
 <div class="macro"><span>💪 חלבון</span><b id="protein">0</b><small>/ 150 ג׳</small></div>
@@ -62,6 +52,39 @@ textarea{resize:vertical;min-height:50px}
 <button class="secondary" style="flex:1" onclick="showDailySummaryModal()">📋 סיכום יומי</button>
 </div>
 <div class="card"><b>צריכה היום</b><div id="intake"></div></div>
+</section>
+
+<!-- לשונית מעקב משקל חדשה -->
+<section id="weight" class="hidden">
+<div class="card">
+  <b>⚖️ ניהול מעקב משקל</b>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הגדר משקל התחלתי ועדכן משקל לכל תאריך שתרצה:</div>
+  
+  <div style="margin-bottom:12px">
+    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">משקל התחלתי (ק״ג):</label>
+    <div style="display:flex;gap:8px">
+      <input id="startWeightInput" type="number" step="0.1" placeholder="לדוגמה: 108" style="margin:0;flex:1">
+      <button class="secondary" style="width:auto" onclick="saveStartWeight()">שמור התחלתי</button>
+    </div>
+  </div>
+
+  <hr style="border:0;border-top:1px solid #e4e7eb;margin:16px 0">
+
+  <div style="margin-bottom:8px">
+    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">בחר תאריך לעדכון:</label>
+    <input id="weightDateInput" type="date" style="margin-bottom:8px">
+    <label style="font-size:12px;color:#68707a;display:block;margin-bottom:4px">משקל ביום זה (ק״ג):</label>
+    <div style="display:flex;gap:8px">
+      <input id="weightValueInput" type="number" step="0.1" placeholder="לדוגמה: 104.5" style="margin:0;flex:1">
+      <button class="primary" style="width:auto" onclick="saveWeightLog()">שמור מדידה</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <b>📊 היסטוריית התקדמות</b>
+  <div id="weightHistoryList" style="margin-top:10px"></div>
+</div>
 </section>
 
 <section id="products" class="hidden">
@@ -92,6 +115,7 @@ textarea{resize:vertical;min-height:50px}
 </main>
 <nav>
 <button id="n1" class="active" onclick="show('today')">היום</button>
+<button id="n4" onclick="show('weight')">⚖️ משקל</button>
 <button id="n2" onclick="show('products')">מאגר</button>
 <button id="n3" onclick="show('month')">חודש</button>
 </nav>
@@ -121,7 +145,6 @@ textarea{resize:vertical;min-height:50px}
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeScanner()">✕ ביטול / סגור</button>
 </div></div>
 
-<!-- מודאל הוספת צריכה מהיר עם Debounce בחיפוש -->
 <div class="modal" id="addModal"><div class="sheet">
 <h2 id="addModalTitle">הוספת צריכה</h2>
 <input id="foodSearch" placeholder="חפש מוצר קיים או הקלד מוצר חדש..." oninput="debouncedSuggestIntake()">
@@ -236,10 +259,11 @@ let currentImageData = "";
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
-  db = { products: [], intake: {}, weights: {} };
+  db = { products: [], intake: {}, weights: {}, startWeight: 108 };
   save();
 }
 if(!db.weights) db.weights = {};
+if(!db.startWeight) db.startWeight = 108;
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
@@ -256,7 +280,6 @@ function normalizeStr(str) {
     .trim();
 }
 
-// מנגנון Debounce להאצת החיפושים ומניעת תקיעות בהקלדה
 function debounce(func, wait) {
   let timeout;
   return function(...args) {
@@ -269,47 +292,72 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-function saveTodayWeight(){
-  const val = Number(currentWeightInput.value);
-  if(!val || val <= 0) return alert('נא להזין משקל תקין');
-  db.weights[todayKey()] = val;
+// ניהול משקל
+function saveStartWeight(){
+  const val = Number(startWeightInput.value);
+  if(!val || val <= 0) return alert('נא להזין משקל התחלתי תקין');
+  db.startWeight = val;
   save();
-  renderWeightStats();
-  alert('המשקל נשמר בהצלחה!');
+  renderWeightScreen();
+  alert('המשקל ההתחלתי נשמר בהצלחה!');
 }
 
-function renderWeightStats(){
-  const tKey = todayKey();
-  const currentW = db.weights[tKey];
-  if(currentW) currentWeightInput.value = currentW;
+function saveWeightLog(){
+  const dateVal = weightDateInput.value;
+  const val = Number(weightValueInput.value);
+  if(!dateVal) return alert('נא לבחור תאריך');
+  if(!val || val <= 0) return alert('נא להזין משקל תקין');
+
+  db.weights[dateVal] = val;
+  save();
+  renderWeightScreen();
+  alert('המדידה נשמרה בהצלחה!');
+}
+
+function renderWeightScreen(){
+  if(db.startWeight) startWeightInput.value = db.startWeight;
+  if(!weightDateInput.value) weightDateInput.value = todayKey();
 
   const sortedDates = Object.keys(db.weights).sort();
-  const currentIndex = sortedDates.indexOf(tKey);
-  
-  let prevW = null;
-  if(currentIndex > 0) {
-    prevW = db.weights[sortedDates[currentIndex - 1]];
-  } else if(sortedDates.length > 1 && currentIndex === -1) {
-    prevW = db.weights[sortedDates[sortedDates.length - 1]];
-  }
+  const startW = db.startWeight || 108;
 
-  const startW = sortedDates.length > 0 ? db.weights[sortedDates[0]] : 108;
-  
   let html = '';
-  if(currentW) {
-    html += `📍 <b>היום:</b> ${currentW} ק״ג`;
-    if(prevW) {
-      const diffPrev = round1(currentW - prevW);
-      const signPrev = diffPrev > 0 ? `+${diffPrev}` : diffPrev;
-      html += ` | 🔄 בהשוואה לאתמול: <span style="color:${diffPrev <= 0 ? '#2f855a':'#c53030'}">${signPrev} ק״ג</span>`;
-    }
-    const diffStart = round1(currentW - startW);
-    const signStart = diffStart > 0 ? `+${diffStart}` : diffStart;
-    html += ` | 🎯 מתחילת המדידות: <span style="color:${diffStart <= 0 ? '#2f855a':'#c53030'}">${signStart} ק״ג</span>`;
+  if(sortedDates.length === 0) {
+    html = '<div class="muted">טרם הוזנו מדידות משקל.</div>';
   } else {
-    html += `טרם הוזן משקל להיום. (משקל התחלתי במאגר: ${startW} ק״ג)`;
+    let prevW = null;
+    let listRows = [];
+    
+    sortedDates.forEach(d => {
+      const w = db.weights[d];
+      let diffPrev = prevW !== null ? round1(w - prevW) : null;
+      let diffStart = round1(w - startW);
+      
+      listRows.unshift(`
+        <div class="item">
+          <div>
+            <b>${new Date(d+'T12:00:00').toLocaleDateString('he-IL')}</b>
+            <div class="muted">⚖️ ${w} ק״ג</div>
+          </div>
+          <div style="text-align:left">
+            ${diffPrev !== null ? `<div style="font-size:13px;color:${diffPrev<=0?'#2f855a':'#c53030'}">אתמול: ${diffPrev>0?'+':''}${diffPrev}ק״ג</div>` : ''}
+            <div style="font-size:13px;font-weight:600;color:${diffStart<=0?'#2f855a':'#c53030'}">מהתחלה: ${diffStart>0?'+':''}${diffStart}ק״ג</div>
+            <button class="secondary" style="font-size:11px;padding:2px 6px;margin-top:4px" onclick="deleteWeight('${d}')">🗑️ מחק</button>
+          </div>
+        </div>
+      `);
+      prevW = w;
+    });
+    html = listRows.join('');
   }
-  document.getElementById('weightStats').innerHTML = html;
+  document.getElementById('weightHistoryList').innerHTML = html;
+}
+
+function deleteWeight(dateStr){
+  if(!confirm(`למחוק את מדידת המשקל מתאריך ${dateStr}?`)) return;
+  delete db.weights[dateStr];
+  save();
+  renderWeightScreen();
 }
 
 function checkRealtimeDuplicate(){
