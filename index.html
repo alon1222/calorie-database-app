@@ -108,7 +108,6 @@ textarea{resize:vertical;min-height:50px}
 <div class="card" id="productList"></div>
 </section>
 
-<!-- לשונית חודש היררכית -->
 <section id="month" class="hidden">
 <div class="card">
   <b>📅 ארכיון חודשים וצריכה יומית</b>
@@ -533,6 +532,7 @@ async function fetchProductWithAI(){
   }
 }
 
+// חיפוש חכם ומילוי מהיר באמצעות AI עם הצגת רשימת אפשרויות לבחירה
 async function quickFillWithAI(){
   const nameVal = foodSearch.value.trim();
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
@@ -549,10 +549,10 @@ async function quickFillWithAI(){
     return;
   }
 
-  status.textContent = '⚡ מחשב נתונים ב-AI...';
+  status.textContent = '⚡ מחפש אופציות מתאימות ב-AI...';
   status.style.color = '#4f46e5';
 
-  const promptText = `Provide accurate nutritional values per 100g and estimated portion unit weight in grams for food item: "${nameVal}". Return ONLY a valid JSON object without code blocks: {"kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}`;
+  const promptText = `Provide 3 to 4 common food variations in Hebrew with accurate nutritional values per 100g and estimated portion unit weight in grams for food query: "${nameVal}". Return ONLY a valid JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
@@ -566,22 +566,53 @@ async function quickFillWithAI(){
 
     let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     textResult = textResult.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(textResult);
+    const options = JSON.parse(textResult);
 
-    if(parsed.kcal) document.getElementById('quickKcal').value = parsed.kcal;
-    if(parsed.protein) document.getElementById('quickProt').value = parsed.protein;
-    if(parsed.carbs) document.getElementById('quickCarb').value = parsed.carbs;
-    if(parsed.fat) document.getElementById('quickFat').value = parsed.fat;
-    if(parsed.unit_g) document.getElementById('quickUnitG').value = parsed.unit_g;
-
-    status.textContent = '✨ הנתונים הושלמו בהצלחה!';
-    status.style.color = '#2f855a';
-    updateIntakePreview();
+    if (Array.isArray(options) && options.length > 0) {
+      showQuickAiOptionsModal(options);
+      status.textContent = '✅ בחר את המוצר המדויק!';
+      status.style.color = '#2f855a';
+    } else {
+      throw new Error('לא התקבלו תוצאות');
+    }
   } catch(e) {
     console.error(e);
-    status.textContent = '❌ שגיאה במילוי אוטומטי. הזן ידנית.';
+    status.textContent = '❌ שגיאה בחיפוש AI. הזן ידנית.';
     status.style.color = '#c53030';
   }
+}
+
+function showQuickAiOptionsModal(options) {
+  const container = document.getElementById('aiOptionsList');
+  container.innerHTML = options.map((opt, idx) => `
+    <div class="card" style="margin-bottom:8px;cursor:pointer;border:1px solid #c7d2fe" onclick="applyQuickAiSelection(${idx})">
+      <b>${opt.name}</b>
+      <div class="muted" style="font-size:12px;margin-top:4px">
+        🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
+        ${opt.unit_g ? `<br>⚡ משקל יחידה: ${opt.unit_g}ג׳` : ''}
+      </div>
+    </div>
+  `).join('');
+  
+  window.__currentQuickAiOptions = options;
+  document.getElementById('aiOptionsModal').classList.add('open');
+}
+
+function applyQuickAiSelection(index) {
+  const opt = window.__currentQuickAiOptions[index];
+  if(!opt) return;
+  
+  foodSearch.value = opt.name;
+  if(opt.kcal) document.getElementById('quickKcal').value = opt.kcal;
+  if(opt.protein) document.getElementById('quickProt').value = opt.protein;
+  if(opt.carbs) document.getElementById('quickCarb').value = opt.carbs;
+  if(opt.fat) document.getElementById('quickFat').value = opt.fat;
+  if(opt.unit_g) document.getElementById('quickUnitG').value = opt.unit_g;
+  
+  document.getElementById('aiOptionsModal').classList.remove('open');
+  document.getElementById('quickAiStatus').textContent = '✨ נבחר בהצלחה מ-AI!';
+  document.getElementById('quickAiStatus').style.color = '#2f855a';
+  updateIntakePreview();
 }
 
 function showAiOptionsModal(options) {
@@ -886,7 +917,6 @@ function suggestIntake(){
   let q = (foodSearch.value || '').toLowerCase();
   
   if(!q) {
-    // אם השדה ריק לגמרי, נציג את כל המוצרים במאגר (או את 5 הראשונים) כדי לאפשר בחירה מהירה מיד בפתיחה
     let allProducts = db.products.slice(0, 10);
     if(allProducts.length > 0) {
       suggestions.innerHTML = '<div class="muted" style="font-size:12px;margin-bottom:4px">מוצרים נפוצים במאגר:</div>' + 
@@ -1145,7 +1175,7 @@ async function captureBarcode(){
 async function searchBarcode(code){
   barcodeResult.style.display='block';barcodeResult.innerHTML='מחפש...';
   
-  const localIndex = db.products.findIndex(x => x.barcode && cleanCode(x.barcode) === cleanCode(code));
+  const localIndex = db.products.findIndex(x => x.barcode && cleanCode(x.barcode)===cleanCode(code));
   if(localIndex >= 0) {
     const p = db.products[localIndex];
     barcodeResult.innerHTML = `<b>⚠️ המוצר כבר קיים במאגר!</b><br>שם: ${p.name}<br>ברקוד: ${p.barcode}<br><button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${localIndex})">✏️ ערוך מוצר קיים</button>`;
