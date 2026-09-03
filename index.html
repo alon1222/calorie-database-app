@@ -64,7 +64,7 @@ textarea{resize:vertical;min-height:50px}
 <section id="profile" class="hidden">
 <div class="card">
   <b>👤 פרופיל אישי וחישוב יעדים קלוריים</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו:</div>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו (ניתן לערוך חופשי בהמשך):</div>
   
   <div style="display:flex;gap:8px">
     <div style="flex:1">
@@ -114,7 +114,7 @@ textarea{resize:vertical;min-height:50px}
     <option value="1.725">פעילות גבוהה (6-7 אימונים בשבוע)</option>
   </select>
 
-  <button class="primary" onclick="previewProfileCalculation()">חשב והצג יעדים</button>
+  <button class="primary" onclick="previewProfileCalculation()">חשב והצג יעדים להתאמה</button>
 </div>
 </section>
 
@@ -190,11 +190,11 @@ textarea{resize:vertical;min-height:50px}
 </nav>
 </div>
 
-<!-- חלונית אישור יעדים חדשה -->
+<!-- חלונית אישור ועריכת יעדים אישיים -->
 <div class="modal" id="profileModal"><div class="sheet">
-<h2>🎯 תוצאות חישוב יעדים אישיים</h2>
+<h2>🎯 עריכה והתאמת יעדים קלוריים</h2>
 <div id="profilePreviewContent" class="card" style="background:#f0f3ff;border:1px solid #c7d2fe;margin-bottom:12px"></div>
-<button class="primary" onclick="confirmAndSaveProfile()">✅ אישור והחל יעדים</button>
+<button class="primary" onclick="confirmAndSaveProfile()">✅ שמור והחל יעדים מעודכנים</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">✕ ביטול</button>
 </div></div>
 
@@ -338,12 +338,12 @@ let currentImageData = "";
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
-  db = { products: [], intake: {}, weights: {}, startWeight: 108, profile: { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2' } };
+  db = { products: [], intake: {}, weights: {}, startWeight: 108, profile: { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2', customKcal: null } };
   save();
 }
 if(!db.weights) db.weights = {};
 if(!db.startWeight) db.startWeight = 108;
-if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2' };
+if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2', customKcal: null };
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
@@ -366,8 +366,16 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-// חישוב יעדים קלוריים אוטומטי לפי נוסחת Mifflin-St Jeor
+// חישוב יעדים קלוריים אוטומטי לפי נוסחת Mifflin-St Jeor (או שימוש ביעד מותאם אישית אם הוגדר)
 function calculateTargetsForProfile(prof) {
+  if (prof.customKcal && Number(prof.customKcal) > 0) {
+    const targetKcal = Number(prof.customKcal);
+    const targetProtein = Math.round(Number(prof.weight) * 2);
+    const targetFat = Math.round((targetKcal * 0.25) / 9);
+    const targetCarbs = Math.round((targetKcal - (targetProtein * 4) - (targetFat * 9)) / 4);
+    return { kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
+  }
+
   let bmr = (10 * Number(prof.weight)) + (6.25 * Number(prof.height)) - (5 * Number(prof.age));
   bmr += (prof.gender === 'female' ? -161 : 5);
 
@@ -390,7 +398,7 @@ function calculateTargets() {
   return calculateTargetsForProfile(db.profile);
 }
 
-// שלב 1: הצגת חלונית החישוב (Modal) לבחירה והשוואה לפני שמירה סופית
+// שלב 1: הצגת חלונית החישוב (Modal) עם אפשרות עריכה חופשית של היעד הקלורי
 function previewProfileCalculation() {
   const tempProfile = {
     weight: Number(pWeight.value) || 104,
@@ -399,7 +407,8 @@ function previewProfileCalculation() {
     age: Number(pAge.value) || 30,
     gender: pGender.value,
     goal: pGoal.value,
-    activity: pActivity.value
+    activity: pActivity.value,
+    customKcal: null
   };
 
   const targets = calculateTargetsForProfile(tempProfile);
@@ -411,9 +420,12 @@ function previewProfileCalculation() {
     • רמת פעילות: ${activityText}<br>
     • מטרה: ${goalText}<br>
     <hr style="border:0;border-top:1px solid #c7d2fe;margin:8px 0">
-    <b>🔥 יעדים מחושבים:</b><br>
-    • יעד קלוריות יומי: <b>${targets.kcal} קק״ל</b><br>
-    • 💪 חלבון: ${targets.protein}ג׳ | 🍞 פחמימות: ${targets.carbs}ג׳ | 🥑 שומן: ${targets.fat}ג׳
+    <b>🔥 יעד קלוריות מחושב (ניתן לעריכה חופשית):</b><br>
+    <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+      <input id="modalEditableKcal" type="number" value="${targets.kcal}" style="margin:0;font-weight:bold;font-size:16px;text-align:center">
+      <span style="font-size:13px">קק״ל</span>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:4px">*רוצה למשל גירעון של 300 במקום 500? שנה כאן את המספר כרצונך.</div>
   `;
 
   document.getElementById('profilePreviewContent').innerHTML = content;
@@ -422,9 +434,12 @@ function previewProfileCalculation() {
   document.getElementById('profileModal').classList.add('open');
 }
 
-// שלב 2: אישור סופי מהחלונית
+// שלב 2: אישור סופי עם שמירת היעד שנערך (Custom Kcal)
 function confirmAndSaveProfile() {
   if(!window.__tempProfileToSave) return;
+  const customInputVal = document.getElementById('modalEditableKcal').value;
+  
+  window.__tempProfileToSave.customKcal = Number(customInputVal) || null;
   db.profile = window.__tempProfileToSave;
 
   if(db.profile.weight && !db.startWeight) {
@@ -480,13 +495,11 @@ function renderWeightScreen(){
   const startW = db.startWeight || 108;
   const targetW = db.profile?.targetWeight || 0;
 
-  // חישוב משקל נוכחי (המדידה האחרונה או משקל התחלתי)
   let currentW = startW;
   if(sortedDates.length > 0) {
     currentW = db.weights[sortedDates[sortedDates.length - 1]];
   }
 
-  // חישוב המרחק מהיעד
   let distanceToTargetText = 'לא הוגדר יעד';
   if(targetW > 0) {
     let diff = round1(currentW - targetW);
@@ -868,7 +881,7 @@ function handleImportFile(event){
           db = imported;
           if(!db.weights) db.weights = {};
           if(!db.startWeight) db.startWeight = 108;
-          if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2' };
+          if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2', customKcal: null };
           save();
           renderToday();
           renderProducts();
@@ -899,7 +912,6 @@ function renderToday(){
     kleftContainer.style.color = '#68707a';
     kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
   } else {
-    // חריגה - הצגה באדום ובמינוס
     let overload = Math.abs(Math.round(leftKcal));
     kleftContainer.style.color = '#c53030';
     kleftContainer.innerHTML = `🔴 חריגה של <span id="kleft">-${overload.toLocaleString('he-IL')}</span> קלוריות (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
@@ -981,7 +993,6 @@ function renderProducts(){
  }).join('')||'<div class="muted">לא נמצאו מוצרים.</div>';
 }
 
-// שדרוג לשונית חודש להצגת נצרך מתוך יעד קלורי
 function renderMonth(){
   const intakeKeys = Object.keys(db.intake).sort().reverse();
   const targets = calculateTargets();
