@@ -60,7 +60,7 @@ textarea{resize:vertical;min-height:70px}
 <div class="card"><b>צריכה היום</b><div id="intake"></div></div>
 </section>
 
-<!-- לשונית עוזר אישי AI עם פס חיווי קלורי מהיר -->
+<!-- לשונית עוזר אישי AI -->
 <section id="aiAssistant" class="hidden">
 <div class="card" style="background:#eef2f7;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center">
   <div>
@@ -70,6 +70,13 @@ textarea{resize:vertical;min-height:70px}
   <div style="text-align:left;font-size:12px;color:#68707a">
     יעד יומי: <span id="aiAssistantTarget">2000</span><br>נצרך: <span id="aiAssistantConsumed">0</span>
   </div>
+</div>
+
+<div class="card" style="background:linear-gradient(135deg, #f0f3ff 0%, #ede9fe 100%);border:1px solid #c7d2fe">
+  <b>🌟 חוות דעת חכמה ומוטיבציה להיום</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:10px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור:</div>
+  <button class="ai-btn" onclick="getAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי מהמאמן</button>
+  <div id="coachFeedbackResult" style="margin-top:10px;font-size:14px"></div>
 </div>
 
 <div class="card">
@@ -384,7 +391,16 @@ if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
-function todayKey(){return new Date().toISOString().slice(0,10)}
+
+// פונקציית todayKey מעודכנת לשעון מקומי מדויק שמתאפס בחצות
+function todayKey(){
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function today(){return db.intake[todayKey()]||[]}
 function round1(v){return Math.round(Number(v||0)*10)/10}
 
@@ -402,6 +418,49 @@ function debounce(func, wait) {
 const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
+
+async function getAiDailyCoachFeedback() {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  const resultDiv = document.getElementById('coachFeedbackResult');
+
+  if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
+
+  resultDiv.innerHTML = '<span class="muted">⚡ מאמן ה-AI מנתח את התזונה וההתקדמות שלך להיום...</span>';
+
+  const targets = calculateTargets();
+  const a = today();
+  const consumedKcal = a.reduce((s,x)=>s+(x.kcal||0),0);
+  const consumedProtein = a.reduce((s,x)=>s+(x.protein||0),0);
+  const consumedCarbs = a.reduce((s,x)=>s+(x.carbs||0),0);
+  const consumedFat = a.reduce((s,x)=>s+(x.fat||0),0);
+  const itemsList = a.map(x => `- ${x.name} (${x.amount} ${x.unitLabel||'גרם'}, ${Math.round(x.kcal)} קק״ל)`).join('\n');
+
+  const promptText = `You are a professional, encouraging personal fitness and nutrition coach. 
+Analyze today's food intake for the user:
+- Goal Daily Calories: ${targets.kcal} kcal (Protein goal: ${targets.protein}g, Carbs goal: ${targets.carbs}g, Fat goal: ${targets.fat}g)
+- Consumed Today: ${Math.round(consumedKcal)} kcal (Protein: ${Math.round(consumedProtein)}g, Carbs: ${Math.round(consumedCarbs)}g, Fat: ${Math.round(consumedFat)}g)
+- Items eaten today:
+${itemsList || 'No items logged yet today.'}
+
+Provide a supportive response in clear Hebrew including:
+1. Positive reinforcement and a strong motivational quote/statement if they are sticking well to their calorie and macro goals (or encouraging words if they are struggling).
+2. Professional nutritional feedback and constructive tips for improvement (e.g., if protein is low, or calories are close to limit).
+Keep it engaging, warm, and concise.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API Error');
+    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:6px;font-size:13px;white-space:pre-line">${textResult}</div>`;
+  } catch(e) {
+    resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בקבלת הפידבק: ${e.message}</span>`;
+  }
+}
 
 async function analyzeRecipeWithAI() {
   const name = document.getElementById('recipeNameInput').value.trim() || 'מוקפץ ביתי';
@@ -1035,7 +1094,6 @@ function renderToday(){
   document.querySelectorAll('.grid .macro')[2].querySelector('small').textContent = `/ ${targets.fat} ג׳`;
   document.getElementById('targetKcalDisplay').textContent = targets.kcal;
 
-  // עדכון נתונים גם בפס המהיר של לשונית עוזר AI
   const aiAssistantKcalLeft = document.getElementById('aiAssistantKcalLeft');
   const aiAssistantTarget = document.getElementById('aiAssistantTarget');
   const aiAssistantConsumed = document.getElementById('aiAssistantConsumed');
@@ -1136,7 +1194,7 @@ function renderProducts(){
    <div style="flex:1"><b>${x.name}</b> ${hasBarcode ? '<span class="badge-barcode">🏷️ ברקוד</span>' : ''}
    <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
    <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
-   ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קקל״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
+   ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
    </div><div style="display:flex;flex-direction:column;gap:6px;min-width:90px">
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
