@@ -80,10 +80,11 @@ nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;
 nav button{background:transparent;color:var(--text-muted);font-size:11px;padding:6px 2px;border-radius:10px;font-weight:600}
 nav button.active{background:var(--primary-light);color:var(--primary-dark);font-weight:700}
 
-.item{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-color);align-items:center}
+.item{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-color);align-items:center}
 .item:last-child{border-bottom:0}
 
-.meal-section-title{font-size:14px;font-weight:700;color:var(--primary-dark);margin:16px 0 6px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--primary-light);padding-bottom:4px}
+.meal-container { background: var(--bg-app); border: 1px solid var(--border-color); border-radius: 16px; padding: 14px; margin-bottom: 12px; }
+.meal-header { font-size: 14px; font-weight: 700; color: var(--primary-dark); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:10;align-items:flex-end;overflow:hidden;touch-action:none}
 .modal.open{display:flex}
@@ -134,10 +135,7 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <div class="card" style="margin-top:14px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <b style="font-size:15px">🍽️ צריכה לפי ארוחות היום</b>
-    <button class="ai-btn" style="padding:6px 12px;font-size:12px;width:auto" onclick="openMealRecommendationModal()">✨ המלצת ארוחה מותאמת מ-AI</button>
-  </div>
+  <b style="font-size:15px;display:block;margin-bottom:12px">🍽️ חלוקת ארוחות להיום</b>
   <div id="intake"></div>
 </div>
 </section>
@@ -347,21 +345,6 @@ textarea{resize:vertical;min-height:80px}
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
 </div></div>
 
-<div class="modal" id="mealRecommendationModalSheet"><div class="sheet">
-<h2>✨ המלצת ארוחה מותאמת מ-AI</h2>
-<div class="muted" style="font-size:13px;margin-bottom:12px">בחר איזו ארוחה אתה תכנן, והמערכת תתאים לך הצעה לפי יתרת הקלוריות והחלבון שלך:</div>
-<label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר ארוחה להמלצה:</label>
-<select id="recommendationMealType" style="margin-bottom:10px">
-  <option value="breakfast">🌅 ארוחת בוקר</option>
-  <option value="lunch" selected>☀️ ארוחת צהריים</option>
-  <option value="dinner">🌙 ארוחת ערב</option>
-  <option value="snacks">🍎 נשנושים וביניים</option>
-</select>
-<button class="ai-btn" onclick="fetchAiMealRecommendation()">🍽️ קבל הצעה מותאמת אישית</button>
-<div id="mealRecommendationResult" style="margin-top:14px;font-size:14px"></div>
-<button class="secondary" style="width:100%;margin-top:12px" onclick="closeModal()">סגור</button>
-</div></div>
-
 <div class="modal" id="scannerModal"><div class="sheet">
 <h2>📷 סריקת ברקוד אוטומטית</h2>
 <div id="scannerStatus" class="muted" style="margin-bottom:10px">מכוון מצלמה לזיהוי ברקוד אוטומטי...</div>
@@ -545,58 +528,6 @@ function debounce(func, wait) {
 const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
-
-function openMealRecommendationModal() {
-  lockPageScroll();
-  document.getElementById('mealRecommendationModalSheet').classList.add('open');
-  document.getElementById('mealRecommendationResult').innerHTML = '';
-}
-
-async function fetchAiMealRecommendation() {
-  const apiKey = localStorage.getItem(API_KEY_STORAGE);
-  const resultDiv = document.getElementById('mealRecommendationResult');
-  const mealType = document.getElementById('recommendationMealType').value;
-
-  if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
-
-  resultDiv.innerHTML = '<span class="muted">⚡ מאמן ה-AI מחשב עבורך את ההמלצה המדויקת לפי היתרה שלך...</span>';
-
-  const targets = calculateTargets();
-  const a = today();
-  const consumedKcal = a.reduce((s,x)=>s+(x.kcal||0),0);
-  const consumedProtein = a.reduce((s,x)=>s+(x.protein||0),0);
-  const remainingKcal = Math.max(0, targets.kcal - consumedKcal);
-  const remainingProtein = Math.max(0, targets.protein - consumedProtein);
-
-  const mealNamesMap = {
-    breakfast: 'ארוחת בוקר',
-    lunch: 'ארוחת צהריים',
-    dinner: 'ארוחת ערב',
-    snacks: 'נשנושים וביניים'
-  };
-
-  const promptText = `You are a professional, encouraging personal fitness and nutrition coach. 
-The user needs a customized meal recommendation for "${mealNamesMap[mealType]}".
-- Daily Goal Calories: ${targets.kcal} kcal (Protein goal: ${targets.protein}g)
-- Consumed so far today: ${Math.round(consumedKcal)} kcal (Protein: ${Math.round(consumedProtein)}g)
-- Remaining budget today: ~${remainingKcal} kcal and ~${remainingProtein}g protein.
-
-Provide a practical, healthy, and appetizing meal idea in clear Hebrew that fits this remaining budget, including approximate calories and macronutrients for the suggested meal. Keep it encouraging and concise.`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || 'API Error');
-    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    resultDiv.innerHTML = `<div class="card" style="margin-top:8px;font-size:13px;white-space:pre-line;background:var(--bg-app)">${textResult}</div>`;
-  } catch(e) {
-    resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בקבלת ההמלצה: ${e.message}</span>`;
-  }
-}
 
 async function getAiDailyCoachFeedback() {
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
@@ -1442,45 +1373,91 @@ function renderToday(){
 
   kbar.style.width=Math.min(100,k/targets.kcal*100)+'%';
   
-  if(a.length === 0) {
-    intake.innerHTML = '<div class="muted" style="padding-top:12px;font-size:13px">עדיין לא דווחה צריכה היום.</div>';
-  } else {
-    let grouped = { breakfast: [], lunch: [], dinner: [], snacks: [] };
-    a.forEach((item, originalIndex) => {
-      let mCat = item.meal || 'lunch';
-      if(!grouped[mCat]) grouped[mCat] = [];
-      grouped[mCat].push({ item, originalIndex });
-    });
+  let grouped = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  a.forEach((item, originalIndex) => {
+    let mCat = item.meal || 'lunch';
+    if(!grouped[mCat]) grouped[mCat] = [];
+    grouped[mCat].push({ item, originalIndex });
+  });
 
-    let htmlParts = [];
-    ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(cat => {
-      let itemsInCat = grouped[cat];
-      if(itemsInCat && itemsInCat.length > 0) {
-        let catKcal = itemsInCat.reduce((s, x) => s + (x.item.kcal || 0), 0);
-        htmlParts.push(`
-          <div class="meal-section-title">
-            <span>${mealLabels[cat]}</span>
-            <span class="muted" style="font-size:12px">🔥 ${Math.round(catKcal)} קק״ל</span>
-          </div>
-        `);
-        itemsInCat.forEach(({ item, originalIndex }) => {
-          htmlParts.push(`
-            <div class="item">
-              <div>
-                <b>${item.name}</b>
-                <div class="muted" style="font-size:12px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
-                <div class="muted" style="font-size:12px">💪 ${round1(item.protein)}ג׳ · 🍞 ${round1(item.carbs)}ג׳ · 🥑 ${round1(item.fat)}ג׳</div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:6px">
-                <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${originalIndex})">✏️ ערוך</button>
-                <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${originalIndex})">🗑️ מחק</button>
-              </div>
-            </div>
-          `);
-        });
-      }
+  let htmlParts = [];
+  ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(cat => {
+    let itemsInCat = grouped[cat];
+    let catKcal = itemsInCat.reduce((s, x) => s + (x.item.kcal || 0), 0);
+    
+    let itemsHtml = itemsInCat.length > 0 ? itemsInCat.map(({ item, originalIndex }) => `
+      <div class="item">
+        <div>
+          <b>${item.name}</b>
+          <div class="muted" style="font-size:12px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
+          <div class="muted" style="font-size:12px">💪 ${round1(item.protein)}ג׳ · 🍞 ${round1(item.carbs)}ג׳ · 🥑 ${round1(item.fat)}ג׳</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${originalIndex})">✏️ ערוך</button>
+          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${originalIndex})">🗑️ מחק</button>
+        </div>
+      </div>
+    `).join('') : `<div class="muted" style="font-size:12px;padding:6px 0">אין עדיין פריטים בארוחה זו.</div>`;
+
+    // המלצה אוטומטית מובנית לכל ארוחה לפי היתרה
+    let recommendationBox = `
+      <div id="ai-rec-${cat}" style="margin-top:8px;padding:8px 12px;background:var(--bg-card);border-radius:10px;font-size:12px;border:1px dashed var(--border-color)">
+        <span class="muted">💡 טיפ/המלצה אוטומטית: לחץ על ״הצג המלצה חכמה״ לקבלת הצעה מותאמת אישית מ-AI.</span>
+        <button class="secondary" style="font-size:11px;padding:4px 8px;margin-top:6px;width:auto;display:block" onclick="fetchInlineMealRecommendation('${cat}')">✨ קבל המלצה חכמה לארוחה זו</button>
+      </div>
+    `;
+
+    htmlParts.push(`
+      <div class="meal-container">
+        <div class="meal-header">
+          <span>${mealLabels[cat]}</span>
+          <span class="muted" style="font-size:12px">🔥 ${Math.round(catKcal)} קק״ל</span>
+        </div>
+        ${itemsHtml}
+        ${recommendationBox}
+      </div>
+    `);
+  });
+
+  intake.innerHTML = htmlParts.join('');
+}
+
+async function fetchInlineMealRecommendation(cat) {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  const recContainer = document.getElementById(`ai-rec-${cat}`);
+
+  if(!apiKey) {
+    recContainer.innerHTML = `<span style="color:#c53030;font-size:12px">⚠️ נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API במאגר.</span>`;
+    return;
+  }
+
+  recContainer.innerHTML = `<span class="muted" style="font-size:12px">⚡ מאמן ה-AI מכין המלצה מותאמת אישית לפי יתרת הקלוריות שלך...</span>`;
+
+  const targets = calculateTargets();
+  const a = today();
+  const consumedKcal = a.reduce((s,x)=>s+(x.kcal||0),0);
+  const consumedProtein = a.reduce((s,x)=>s+(x.protein||0),0);
+  const remainingKcal = Math.max(0, targets.kcal - consumedKcal);
+  const remainingProtein = Math.max(0, targets.protein - consumedProtein);
+
+  const promptText = `You are a professional, encouraging personal fitness and nutrition coach. 
+Give a short, practical meal recommendation for "${mealLabels[cat]}" in clear Hebrew.
+- User daily target: ${targets.kcal} kcal (Protein: ${targets.protein}g)
+- Remaining today: ~${remainingKcal} kcal and ~${remainingProtein}g protein.
+Provide a concise, appetizing suggestion with approximate calories and macros.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
     });
-    intake.innerHTML = htmlParts.join('');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API Error');
+    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    recContainer.innerHTML = `<div style="font-size:12px;white-space:pre-line;color:var(--text-main)"><b>✨ המלצת מאמן:</b><br>${textResult}</div>`;
+  } catch(e) {
+    recContainer.innerHTML = `<span style="color:#c53030;font-size:12px">שגיאה בקבלת ההמלצה: ${e.message}</span>`;
   }
 }
 
