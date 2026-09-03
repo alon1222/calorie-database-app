@@ -60,8 +60,18 @@ textarea{resize:vertical;min-height:70px}
 <div class="card"><b>צריכה היום</b><div id="intake"></div></div>
 </section>
 
-<!-- לשונית עוזר אישי AI משודרגת -->
+<!-- לשונית עוזר אישי AI עם פס חיווי קלורי מהיר -->
 <section id="aiAssistant" class="hidden">
+<div class="card" style="background:#eef2f7;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <div style="font-size:12px;color:#68707a">יתרה קלורית נוכחית להיום:</div>
+    <div style="font-size:20px;font-weight:800" id="aiAssistantKcalLeft">2,000 קק״ל</div>
+  </div>
+  <div style="text-align:left;font-size:12px;color:#68707a">
+    יעד יומי: <span id="aiAssistantTarget">2000</span><br>נצרך: <span id="aiAssistantConsumed">0</span>
+  </div>
+</div>
+
 <div class="card">
   <b>🤖 עוזר תזונה חכם (AI)</b>
   <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:12px">נתח מתכונים, שמור למאגר ושבץ במאזן היומי בקלות:</div>
@@ -81,7 +91,7 @@ textarea{resize:vertical;min-height:70px}
   <div class="ai-box" style="background:#f7fcf5;border-color:#c6f6d5">
     <b>🎯 תכנון ארוחה לפי יתרה ושיבוץ למאזן</b>
     <div class="muted" style="font-size:12px;margin-bottom:8px">איזה מתכון מנותח או אוכל תרצה לשלב מול היתרה שנשארה ביומן?</div>
-    <textarea id="mealPlanInput" placeholder="לדוגמה: אני רוצה לאכול מהמוקפץ שהכנתי יחד עם אורז. כמה גרם לקחת מכל דבר לפי הקלוריות שנשארו לי היום?"></textarea>
+    <textarea id="mealPlanInput" placeholder="לדוגמה: אני רוצה לאכול מהמוקפץ שהכנתי יחד עם אורז. כמה גרם לקחת ממנה?"></textarea>
     <button class="primary" style="background:#2f855a" onclick="planMealWithAI()">💡 קבל המלצת כמויות מדויקת</button>
     <div id="mealPlanResult" style="margin-top:10px;font-size:14px"></div>
   </div>
@@ -361,7 +371,7 @@ const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 
 let currentImageData = "";
-let lastAnalyzedRecipeData = null; // שומר את ניתוח המתכון האחרון לשם שמירה או שיבוץ
+let lastAnalyzedRecipeData = null;
 
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
@@ -393,7 +403,6 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-// --- פונקציות עוזר AI משודרגות ---
 async function analyzeRecipeWithAI() {
   const name = document.getElementById('recipeNameInput').value.trim() || 'מוקפץ ביתי';
   const recipe = document.getElementById('recipeInput').value.trim();
@@ -432,8 +441,6 @@ async function analyzeRecipeWithAI() {
       </div>
     `;
     saveBtnContainer.style.display = 'block';
-
-    // מעדכן אוטומטית גם את שדה התכנון למטה כדי ליצור קשר בין המסכים
     document.getElementById('mealPlanInput').value = `אני רוצה לאכול מהמנה "${parsed.name}" (${parsed.kcal} קק״ל ל-100ג׳). כמה גרם לקחת ממנה?`;
 
   } catch(e) {
@@ -441,7 +448,6 @@ async function analyzeRecipeWithAI() {
   }
 }
 
-// שמירת המנה המנותחת למאגר המוצרים
 function saveAnalyzedRecipeToDB() {
   if(!lastAnalyzedRecipeData) return alert('אין נתוני מנה שמורים לשימור.');
   
@@ -460,7 +466,7 @@ function saveAnalyzedRecipeToDB() {
 
   db.products.push(newItem);
   save();
-  alert(`המתכון "${newItem.name}" נשמר בהצלחה למאגר המוצרים שלך! תוכל לבחור אותו מעתה בלשונית היום ובמאגר.`);
+  alert(`המתכון "${newItem.name}" נשמר בהצלחה למאגר המוצרים שלך!`);
 }
 
 async function planMealWithAI() {
@@ -1029,18 +1035,37 @@ function renderToday(){
   document.querySelectorAll('.grid .macro')[2].querySelector('small').textContent = `/ ${targets.fat} ג׳`;
   document.getElementById('targetKcalDisplay').textContent = targets.kcal;
 
+  // עדכון נתונים גם בפס המהיר של לשונית עוזר AI
+  const aiAssistantKcalLeft = document.getElementById('aiAssistantKcalLeft');
+  const aiAssistantTarget = document.getElementById('aiAssistantTarget');
+  const aiAssistantConsumed = document.getElementById('aiAssistantConsumed');
+  if(aiAssistantTarget) aiAssistantTarget.textContent = targets.kcal;
+  if(aiAssistantConsumed) aiAssistantConsumed.textContent = Math.round(k);
+
   const leftKcal = targets.kcal - k;
   const kleftEl = document.getElementById('kleft');
   const kleftContainer = document.getElementById('kleftContainer');
 
   if(leftKcal >= 0) {
-    kleftEl.textContent = Math.round(leftKcal).toLocaleString('he-IL');
-    kleftContainer.style.color = '#68707a';
-    kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+    if(kleftEl) kleftEl.textContent = Math.round(leftKcal).toLocaleString('he-IL');
+    if(kleftContainer) {
+      kleftContainer.style.color = '#68707a';
+      kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+    }
+    if(aiAssistantKcalLeft) {
+      aiAssistantKcalLeft.textContent = `${Math.round(leftKcal).toLocaleString('he-IL')} קק״ל`;
+      aiAssistantKcalLeft.style.color = '#18202a';
+    }
   } else {
     let overload = Math.abs(Math.round(leftKcal));
-    kleftContainer.style.color = '#c53030';
-    kleftContainer.innerHTML = `🔴 חריגה של <span id="kleft">-${overload.toLocaleString('he-IL')}</span> קלוריות (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+    if(kleftContainer) {
+      kleftContainer.style.color = '#c53030';
+      kleftContainer.innerHTML = `🔴 חריגה של <span id="kleft">-${overload.toLocaleString('he-IL')}</span> קלוריות (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+    }
+    if(aiAssistantKcalLeft) {
+      aiAssistantKcalLeft.textContent = `-${overload.toLocaleString('he-IL')} קק״ל (חריגה)`;
+      aiAssistantKcalLeft.style.color = '#c53030';
+    }
   }
 
   kbar.style.width=Math.min(100,k/targets.kcal*100)+'%';
@@ -1111,7 +1136,7 @@ function renderProducts(){
    <div style="flex:1"><b>${x.name}</b> ${hasBarcode ? '<span class="badge-barcode">🏷️ ברקוד</span>' : ''}
    <div class="muted">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
    <div class="muted">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
-   ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
+   ${unitKcal !== null ? `<div class="muted" style="color:#18202a;font-weight:600">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קקל״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
    </div><div style="display:flex;flex-direction:column;gap:6px;min-width:90px">
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
    <button class="secondary" style="font-size:12px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
@@ -1205,6 +1230,7 @@ function show(id){
   ['today','aiAssistant','profile','weight','products','month'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
   ['n1','n6','n5','n4','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','aiAssistant','profile','weight','products','month'][i]===id));
   if(id==='today')renderToday();
+  if(id==='aiAssistant')renderToday();
   if(id==='profile')loadProfileToInputs();
   if(id==='weight')renderWeightScreen();
   if(id==='products')renderProducts();
