@@ -108,7 +108,7 @@ textarea{resize:vertical;min-height:50px}
 <div class="card" id="productList"></div>
 </section>
 
-<!-- לשונית חודש היררכית מעודכנת -->
+<!-- לשונית חודש היררכית -->
 <section id="month" class="hidden">
 <div class="card">
   <b>📅 ארכיון חודשים וצריכה יומית</b>
@@ -747,7 +747,6 @@ function renderProducts(){
  }).join('')||'<div class="muted">לא נמצאו מוצרים.</div>';
 }
 
-// עיבוד לשונית חודש היררכית (חודשים -> ימים -> פירוט פריטים)
 function renderMonth(){
   const intakeKeys = Object.keys(db.intake).sort().reverse();
   if(intakeKeys.length === 0) {
@@ -755,10 +754,9 @@ function renderMonth(){
     return;
   }
 
-  // קיבוץ לפי חודש (פורמט YYYY-MM)
   let monthsMap = {};
   intakeKeys.forEach(d => {
-    const monthKey = d.slice(0, 7); // YYYY-MM
+    const monthKey = d.slice(0, 7);
     if(!monthsMap[monthKey]) monthsMap[monthKey] = [];
     monthsMap[monthKey].push(d);
   });
@@ -769,7 +767,6 @@ function renderMonth(){
     const [year, monthNum] = mKey.split('-');
     const monthName = new Date(year, monthNum - 1, 1).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
     
-    // חישוב סיכום חודשי כולל
     let mKcal = 0, mProt = 0, mCarbs = 0, mFat = 0;
     days.forEach(d => {
       db.intake[d].forEach(x => {
@@ -886,29 +883,37 @@ function closeModal(){
 }
 
 function suggestIntake(){
-  let q=(foodSearch.value||'').toLowerCase();
+  let q = (foodSearch.value || '').toLowerCase();
+  
   if(!q) {
-    suggestions.innerHTML='';
-    document.getElementById('newProductQuickFields').style.display='none';
-    selected=null;
+    // אם השדה ריק לגמרי, נציג את כל המוצרים במאגר (או את 5 הראשונים) כדי לאפשר בחירה מהירה מיד בפתיחה
+    let allProducts = db.products.slice(0, 10);
+    if(allProducts.length > 0) {
+      suggestions.innerHTML = '<div class="muted" style="font-size:12px;margin-bottom:4px">מוצרים נפוצים במאגר:</div>' + 
+        allProducts.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:13px;padding:8px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
+    } else {
+      suggestions.innerHTML = '';
+    }
+    document.getElementById('newProductQuickFields').style.display = 'none';
+    selected = null;
     updateIntakePreview();
     return;
   }
   
-  let a=db.products.filter(x=>(x.name+' '+(x.brand||'')).toLowerCase().includes(q)).slice(0,5);
+  let matches = db.products.filter(x => (x.name + ' ' + (x.brand || '')).toLowerCase().includes(q)).slice(0, 5);
   const exactMatch = db.products.find(x => x.name.toLowerCase() === q.toLowerCase());
   
-  if(a.length > 0) {
-    suggestions.innerHTML=a.map(x=>`<button class="secondary" style="margin:3px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
+  if(matches.length > 0) {
+    suggestions.innerHTML = matches.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:13px;padding:8px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
   } else {
-    suggestions.innerHTML='<span class="muted" style="font-size:13px">המוצר לא נמצא במאגר. השתמש בכפתור ה-AI למילוי מהיר או הזן ידנית:</span>';
+    suggestions.innerHTML = '<span class="muted" style="font-size:13px">המוצר לא נמצא במאגר. השתמש בכפתור ה-AI למילוי מהיר או הזן ידנית:</span>';
   }
 
   if(!exactMatch && q.length >= 2) {
-    document.getElementById('newProductQuickFields').style.display='block';
+    document.getElementById('newProductQuickFields').style.display = 'block';
     selected = null;
   } else {
-    document.getElementById('newProductQuickFields').style.display='none';
+    document.getElementById('newProductQuickFields').style.display = 'none';
   }
   updateIntakePreview();
 }
