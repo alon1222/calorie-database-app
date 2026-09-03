@@ -121,15 +121,19 @@ textarea{resize:vertical;min-height:50px}
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeScanner()">✕ ביטול / סגור</button>
 </div></div>
 
-<!-- מודאל הוספת צריכה משולב עם יצירת מוצר חדש אוטומטית -->
+<!-- מודאל הוספת צריכה משולב עם השלמה אוטומטית ב-AI -->
 <div class="modal" id="addModal"><div class="sheet">
 <h2 id="addModalTitle">הוספת צריכה</h2>
 <input id="foodSearch" placeholder="חפש מוצר קיים או הקלד מוצר חדש..." oninput="suggestIntake()">
 <div id="suggestions" style="margin-bottom:8px"></div>
 
-<!-- שדות להזנה מהירה אם המוצר חדש לחלוטין ולא קיים במאגר -->
+<!-- שדות להזנה מהירה עם כפתור מילוי AI אוטומטי -->
 <div id="newProductQuickFields" class="card" style="display:none;background:#f0f3ff;border:1px solid #c7d2fe;padding:12px">
-  <div style="font-size:13px;color:#4f46e5;font-weight:700;margin-bottom:8px">✨ מוצר חדש! יתווסף אוטומטית למאגר ולצריכה:</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span style="font-size:13px;color:#4f46e5;font-weight:700">✨ מוצר חדש!</span>
+    <button type="button" class="ai-btn" style="padding:6px 10px;font-size:12px;width:auto" onclick="quickFillWithAI()">🪄 השלם נתונים ב-AI</button>
+  </div>
+  <div id="quickAiStatus" class="muted" style="font-size:11px;margin-bottom:6px;min-height:14px"></div>
   <div style="display:flex;gap:6px">
     <input id="quickKcal" type="number" placeholder="קלוריות ל-100ג׳ *" style="margin-bottom:6px" oninput="updateIntakePreview()">
     <input id="quickUnitG" type="number" placeholder="משקל יחידה (ג׳)" style="margin-bottom:6px" oninput="updateIntakePreview()">
@@ -269,7 +273,6 @@ function renderWeightStats(){
   const currentW = db.weights[tKey];
   if(currentW) currentWeightInput.value = currentW;
 
-  // מציאת יارب קודם עם מדידה
   const sortedDates = Object.keys(db.weights).sort();
   const currentIndex = sortedDates.indexOf(tKey);
   
@@ -277,11 +280,9 @@ function renderWeightStats(){
   if(currentIndex > 0) {
     prevW = db.weights[sortedDates[currentIndex - 1]];
   } else if(sortedDates.length > 1 && currentIndex === -1) {
-    // אם היום לא רשום אבל יש היסטוריה, הקודם הוא האחרון ברשימה
     prevW = db.weights[sortedDates[sortedDates.length - 1]];
   }
 
-  // חישוב התחלה (לוקחים את המדידה הראשונה אי פעם, או 108 כדוגמה אם אין)
   const startW = sortedDates.length > 0 ? db.weights[sortedDates[0]] : 108;
   
   let html = '';
@@ -467,6 +468,58 @@ async function fetchProductWithAI(){
     console.error(e);
     aiStatus.textContent = '❌ שגיאה: ' + e.message;
     aiStatus.style.color = '#c53030';
+  }
+}
+
+// פונקציית מילוי אוטומטי מהירה מתוך חלון הוספת הצריכה
+async function quickFillWithAI(){
+  const nameVal = foodSearch.value.trim();
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  const status = document.getElementById('quickAiStatus');
+
+  if(!nameVal) {
+    status.textContent = '❌ נא להזין קודם את שם המוצר בשדה החיפוש';
+    status.style.color = '#c53030';
+    return;
+  }
+  if(!apiKey) {
+    status.textContent = '❌ לא הוגדר API Key! הגדר בהגדרות ⚙️ API';
+    status.style.color = '#c53030';
+    return;
+  }
+
+  status.textContent = '⚡ מחשב נתונים ב-AI...';
+  status.style.color = '#4f46e5';
+
+  const promptText = `Provide accurate nutritional values per 100g and estimated portion unit weight in grams for food item: "${nameVal}". Return ONLY a valid JSON object without code blocks: {"kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+    
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API Error');
+
+    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    textResult = textResult.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(textResult);
+
+    if(parsed.kcal) document.getElementById('quickKcal').value = parsed.kcal;
+    if(parsed.protein) document.getElementById('quickProt').value = parsed.protein;
+    if(parsed.carbs) document.getElementById('quickCarb').value = parsed.carbs;
+    if(parsed.fat) document.getElementById('quickFat').value = parsed.fat;
+    if(parsed.unit_g) document.getElementById('quickUnitG').value = parsed.unit_g;
+
+    status.textContent = '✨ הנתונים הושלמו בהצלחה!';
+    status.style.color = '#2f855a';
+    updateIntakePreview();
+  } catch(e) {
+    console.error(e);
+    status.textContent = '❌ שגיאה במילוי אוטומטי. הזן ידנית.';
+    status.style.color = '#c53030';
   }
 }
 
@@ -664,6 +717,7 @@ function openAdd(){
   foodSearch.value='';
   document.getElementById('newProductQuickFields').style.display='none';
   document.querySelectorAll('#newProductQuickFields input').forEach(x=>x.value='');
+  document.getElementById('quickAiStatus').textContent='';
   document.getElementById('aiUnitStatus').textContent='';
   intakePreview.style.display='none';
   suggestIntake();
@@ -688,7 +742,6 @@ function closeModal(){
  window.editingIntakeIndex=null;
 }
 
-// חיפוש חכם בצריכה שמאפשר גם הוספה מהירה
 function suggestIntake(){
   let q=(foodSearch.value||'').toLowerCase();
   if(!q) {
@@ -700,20 +753,17 @@ function suggestIntake(){
   }
   
   let a=db.products.filter(x=>(x.name+' '+(x.brand||'')).toLowerCase().includes(q)).slice(0,5);
-  
-  // בדיקה האם המוצר קיים בדיוק בשם שלו
   const exactMatch = db.products.find(x => x.name.toLowerCase() === q.toLowerCase());
   
   if(a.length > 0) {
     suggestions.innerHTML=a.map(x=>`<button class="secondary" style="margin:3px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
   } else {
-    suggestions.innerHTML='<span class="muted" style="font-size:13px">המוצר לא נמצא במאגר. הזן נתונים למטה כדי להוסיף אותו אוטומטית וישר לצרוך אותו:</span>';
+    suggestions.innerHTML='<span class="muted" style="font-size:13px">המוצר לא נמצא במאגר. השתמש בכפתור ה-AI למילוי מהיר או הזן ידנית:</span>';
   }
 
   if(!exactMatch && q.length >= 2) {
-    // מציג שדות הוספה מהירה
     document.getElementById('newProductQuickFields').style.display='block';
-    selected = null; // לא נבחר מהמאגר, יצור חדש
+    selected = null;
   } else {
     document.getElementById('newProductQuickFields').style.display='none';
   }
@@ -754,7 +804,6 @@ function calcIntake(p,unit,a){
 
 function updateIntakePreview(){
   let activeProduct = selected;
-  // אם לא נבחר מהמאגר אבל שדות ההוספה המהירה מלאים
   if(!activeProduct && document.getElementById('newProductQuickFields').style.display !== 'none') {
     const qKcal = Number(document.getElementById('quickKcal').value);
     if(qKcal > 0) {
@@ -785,9 +834,8 @@ function addIntake(){
  let productName = foodSearch.value.trim();
  
  if(!selected) {
-   // יוצר וישר שומר את המוצר החדש במאגר הכללי!
    const qKcal = Number(document.getElementById('quickKcal').value);
-   if(!productName || !qKcal) return alert('נא להזין שם מוצר תקין וקלוריות ל-100 גרם');
+   if(!productName || !qKcal) return alert('נא להזין שם מוצר תקין וקלוריות ל-100 גרם (אפשר להיעזר בכפתור ה-AI)');
    
    selected = {
      name: productName,
