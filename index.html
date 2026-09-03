@@ -60,7 +60,7 @@ textarea{resize:vertical;min-height:70px}
 <div class="card"><b>צריכה היום</b><div id="intake"></div></div>
 </section>
 
-<!-- לשונית עוזר אישי AI -->
+<!-- לשונית עוזר אישי AI עם פידבק יומי ופידבק כולל -->
 <section id="aiAssistant" class="hidden">
 <div class="card" style="background:#eef2f7;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center">
   <div>
@@ -75,8 +75,15 @@ textarea{resize:vertical;min-height:70px}
 <div class="card" style="background:linear-gradient(135deg, #f0f3ff 0%, #ede9fe 100%);border:1px solid #c7d2fe">
   <b>🌟 חוות דעת חכמה ומוטיבציה להיום</b>
   <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:10px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור:</div>
-  <button class="ai-btn" onclick="getAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי מהמאמן</button>
+  <button class="ai-btn" onclick="getAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי להיום</button>
   <div id="coachFeedbackResult" style="margin-top:10px;font-size:14px"></div>
+</div>
+
+<div class="card" style="background:linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);border:1px solid #bbf7d0">
+  <b>📈 ניתוח מצטבר וסקירת תקופה מהמאמן</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:10px">קבל חוות דעת כוללת על ההתנהלות התזונתית שלך לאורך הימים האחרונים ומגמות ההתקדמות:</div>
+  <button class="ai-btn" style="background:linear-gradient(135deg, #16a34a 0%, #15803d 100%)" onclick="getAiCumulativeCoachFeedback()">📊 בקש ניתוח כולל עד כה</button>
+  <div id="cumulativeFeedbackResult" style="margin-top:10px;font-size:14px"></div>
 </div>
 
 <div class="card">
@@ -392,7 +399,6 @@ if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
 
-// פונקציית todayKey מעודכנת לשעון מקומי מדויק שמתאפס בחצות
 function todayKey(){
   const d = new Date();
   const year = d.getFullYear();
@@ -459,6 +465,60 @@ Keep it engaging, warm, and concise.`;
     resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:6px;font-size:13px;white-space:pre-line">${textResult}</div>`;
   } catch(e) {
     resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בקבלת הפידבק: ${e.message}</span>`;
+  }
+}
+
+// פונקציית פידבק מצטבר וכולל עד כה מהמאמן
+async function getAiCumulativeCoachFeedback() {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  const resultDiv = document.getElementById('cumulativeFeedbackResult');
+
+  if(!apiKey) return alert('נא להגדיר תחילה מפתח Gemini API דרך כפתור ⚙️ API בלשונית מאגר.');
+
+  resultDiv.innerHTML = '<span class="muted">⚡ מאמן ה-AI מנתח את ההיסטוריה והמגמות שלך לאורך התקופה...</span>';
+
+  const targets = calculateTargets();
+  const intakeKeys = Object.keys(db.intake).sort().reverse().slice(0, 7); // 7 הימים האחרונים
+  
+  if (intakeKeys.length === 0) {
+    resultDiv.innerHTML = '<span class="muted">אין עדיין מספיק נתונים מצטברים להצגה. הוסף רשומות בימים האחרונים.</span>';
+    return;
+  }
+
+  let historySummary = intakeKeys.map(d => {
+    const dayItems = db.intake[d];
+    const k = dayItems.reduce((s,x)=>s+(x.kcal||0),0);
+    const p = dayItems.reduce((s,x)=>s+(x.protein||0),0);
+    return `- תאריך ${d}: ${Math.round(k)} קק״ל (חלבון: ${Math.round(p)}ג׳)`;
+  }).join('\n');
+
+  const weightsList = Object.keys(db.weights).sort().map(d => `${d}: ${db.weights[d]}kg`).join(', ');
+
+  const promptText = `You are a professional, encouraging personal fitness and nutrition coach. 
+Analyze the user's cumulative nutrition history and progress over recent days:
+- Daily Goal Calories: ${targets.kcal} kcal (Protein goal: ${targets.protein}g)
+- Recent days intake history:
+${historySummary}
+- Weight logs: ${weightsList || 'No weight logs'}
+
+Provide a comprehensive, encouraging progress review in clear Hebrew including:
+1. Overall assessment of consistency and adherence to targets over the past week.
+2. Motivational feedback and positive reinforcement for their hard work.
+3. Constructive guidance or adjustments for the coming days to help them reach their weight goal.
+Keep it structured, warm, and professional.`;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API Error');
+    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    resultDiv.innerHTML = `<div class="card" style="background:#fff;margin-top:6px;font-size:13px;white-space:pre-line">${textResult}</div>`;
+  } catch(e) {
+    resultDiv.innerHTML = `<span style="color:#c53030">שגיאה בקבלת הניתוח המצטבר: ${e.message}</span>`;
   }
 }
 
