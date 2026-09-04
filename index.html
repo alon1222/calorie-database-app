@@ -102,13 +102,14 @@ textarea{resize:vertical;min-height:80px}
 .chat-bubble-user { background: var(--chat-user-bg); padding: 10px 14px; border-radius: 14px 14px 2px 14px; margin-bottom: 8px; border: 1px solid var(--border-color); }
 .chat-bubble-ai { background: var(--chat-ai-bg); padding: 10px 14px; border-radius: 14px 14px 14px 2px; margin-bottom: 8px; border: 1px solid var(--chat-ai-border); }
 
-/* סגנונות לחלון הצף המהיר (Floating AI Widget) האינטראקטיבי */
+/* סגנונות לחלון הצף הניתן לגרירה, מזעור והזזה */
 #ai-chat-widget {
   position: fixed;
   bottom: 80px;
   right: 20px;
   z-index: 9999;
   font-family: inherit;
+  touch-action: none;
 }
 #ai-fab-btn {
   width: 50px;
@@ -121,6 +122,9 @@ textarea{resize:vertical;min-height:80px}
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #ai-fab-btn:hover {
   transform: scale(1.1);
@@ -137,6 +141,7 @@ textarea{resize:vertical;min-height:80px}
   box-shadow: 0 5px 25px rgba(0,0,0,0.25);
   overflow: hidden;
   direction: rtl;
+  display: none;
 }
 .ai-widget-header {
   background: var(--primary-light);
@@ -148,6 +153,10 @@ textarea{resize:vertical;min-height:80px}
   font-weight: bold;
   font-size: 14px;
   border-bottom: 1px solid var(--border-color);
+  cursor: grab;
+}
+.ai-widget-header:active {
+  cursor: grabbing;
 }
 .ai-widget-body {
   padding: 12px;
@@ -361,19 +370,20 @@ textarea{resize:vertical;min-height:80px}
 </nav>
 </div>
 
-<!-- חלון צף (Floating AI Widget) אינטראקטיבי מלא לכל פעולות ה-AI באפליקציה -->
+<!-- חלון צף (Floating AI Widget) עם אפשרות גרירה, מזעור וסגירה -->
 <div id="ai-chat-widget">
-  <button id="ai-fab-btn" onclick="toggleAIWidget()" title="עוזר אישי מהיר">🤖</button>
-  <div id="aiWidgetModal" class="ai-widget-modal" style="display: none;">
-    <div class="ai-widget-header">
+  <div id="aiWidgetModal" class="ai-widget-modal">
+    <div class="ai-widget-header" id="aiWidgetHeader">
       <span id="aiWidgetTitle">עוזר תזונה חכם באפליקציה</span>
-      <button onclick="toggleAIWidget()" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
+      <div style="display:flex;gap:6px;">
+        <button onclick="minimizeAIWidget()" title="מזער חלון" style="background:none;border:none;color:var(--primary-dark);font-size:14px;cursor:pointer;padding:0;">🗕</button>
+        <button onclick="toggleAIWidget()" title="סגור חלון" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
+      </div>
     </div>
-    <div class="ai-widget-body">
-      <!-- היסטוריית השיחה בחלון הצף -->
+    <div class="ai-widget-body" id="aiWidgetBodyContent">
       <div id="aiWidgetChatHistory" style="height: 190px; overflow-y: auto; margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-app); border-radius: 8px; border: 1px solid var(--border-color);">
         <div class="chat-bubble-ai">
-          <b>עוזר חכם:</b> שלום! איך אפשר לעזור לך עם הקלוריות או הנתונים להיום?
+          <b>עוזר חכם:</b> שלום! איך אוכל לעזור לך עם הקלוריות או הנתונים להיום?
         </div>
       </div>
 
@@ -385,6 +395,7 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
   </div>
+  <button id="ai-fab-btn" onclick="toggleAIWidget()" title="עוזר אישי מהיר">🤖</button>
 </div>
 
 <div class="modal" id="profileModal"><div class="sheet">
@@ -592,7 +603,7 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-// פונקציות לחלון הצף האינטראקטיבי המרכזי
+// ניהול חלון צף: פתיחה, סגירה, מזעור וגרירה (Drag & Drop)
 function toggleAIWidget(customPrompt = null, customTitle = 'עוזר תזונה חכם באפליקציה') {
   const modal = document.getElementById('aiWidgetModal');
   const titleEl = document.getElementById('aiWidgetTitle');
@@ -610,6 +621,64 @@ function toggleAIWidget(customPrompt = null, customTitle = 'עוזר תזונה 
     historyDiv.scrollTop = historyDiv.scrollHeight;
   }
 }
+
+function minimizeAIWidget() {
+  const bodyContent = document.getElementById('aiWidgetBodyContent');
+  if(bodyContent.style.display === 'none') {
+    bodyContent.style.display = 'block';
+  } else {
+    bodyContent.style.display = 'none';
+  }
+}
+
+// לוגיקת גרירה לחלון הצף (תמיכה בעכבר ובמגע במסכים ניידים)
+(function initWidgetDrag() {
+  const widget = document.getElementById('ai-chat-widget');
+  const header = document.getElementById('aiWidgetHeader');
+  let isDragging = false, startX, startY, initialX, initialY;
+
+  header.addEventListener('mousedown', dragStart);
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('mouseup', dragEnd);
+
+  header.addEventListener('touchstart', dragStart, {passive: true});
+  document.addEventListener('touchmove', drag, {passive: true});
+  document.addEventListener('touchend', dragEnd);
+
+  function dragStart(e) {
+    isDragging = true;
+    const clientX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+    
+    startX = clientX;
+    startY = clientY;
+    
+    const rect = widget.getBoundingClientRect();
+    widget.style.left = rect.left + 'px';
+    widget.style.top = rect.top + 'px';
+    widget.style.right = 'auto';
+    widget.style.bottom = 'auto';
+  }
+
+  function drag(e) {
+    if (!isDragging) return;
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+
+    startX = clientX;
+    startY = clientY;
+
+    widget.style.left = (widget.offsetLeft + dx) + 'px';
+    widget.style.top = (widget.offsetTop + dy) + 'px';
+  }
+
+  function dragEnd() {
+    isDragging = false;
+  }
+})();
 
 async function sendAIWidgetMessage() {
   const inputEl = document.getElementById('aiWidgetInput');
@@ -633,7 +702,6 @@ async function sendAIWidgetMessage() {
     const consumed = a.reduce((s,x)=>s+(x.kcal||0),0);
     const remaining = Math.max(0, targets.kcal - consumed);
 
-    // זיהוי פקודות מערכת אוטומטיות (כמו עדכון משקל או הוספת אריזה)
     let systemActionExecuted = false;
     let systemActionMsg = '';
 
@@ -668,7 +736,15 @@ Answer in clear Hebrew. If the user asked for a coaching analysis, meal recommen
         body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error.message || 'API Error');
+      
+      // טיפול חכם בשגיאות מכסה (Rate Limit / Quota Exceeded)
+      if (data.error) {
+        if(data.error.code === 429 || (data.error.message && data.error.message.includes('Quota exceeded'))) {
+          throw new Error('הגעת למכסת הבקשות החינמית של מפתח ה-API כרגע. אנא המתן מספר דקות או בדוק את הגדרות החשבון ב-Google AI Studio.');
+        }
+        throw new Error(data.error.message || 'שגיאת API');
+      }
+
       let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
       
       document.getElementById(typingId).remove();
@@ -689,7 +765,7 @@ Answer in clear Hebrew. If the user asked for a coaching analysis, meal recommen
   } catch(e) {
     const typingEl = document.getElementById(typingId);
     if(typingEl) typingEl.remove();
-    historyDiv.innerHTML += `<div style="color:#c53030; font-size:11px;">שגיאה בתקשורת: ${e.message}</div>`;
+    historyDiv.innerHTML += `<div style="color:#c53030; font-size:11px; padding:4px;">⚠️ <b>שגיאה:</b> ${e.message}</div>`;
     historyDiv.scrollTop = historyDiv.scrollHeight;
   }
 }
@@ -703,7 +779,6 @@ function resetAIWidgetChat() {
   document.getElementById('aiWidgetInput').value = '';
 }
 
-// מעבר כל לחיצות ה-AI לחלון הצף האינטראקטיבי
 function triggerAiDailyCoachFeedback() {
   const prompt = "נתח את התזונה וההתקדמות שלי להיום, תן לי משפט חיזוק, מוטיבציה וטיפים מעשיים לשיפור.";
   toggleAIWidget(prompt, "🌟 חוות דעת ופידבק יומי מהמאמן");
