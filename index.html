@@ -374,7 +374,10 @@ textarea{resize:vertical;min-height:80px}
 <div id="ai-chat-widget">
   <div id="aiWidgetModal" class="ai-widget-modal">
     <div class="ai-widget-header" id="aiWidgetHeader">
-      <span id="aiWidgetTitle">עוזר תזונה חכם באפליקציה</span>
+      <div>
+        <span id="aiWidgetTitle">עוזר תזונה חכם באפליקציה</span>
+        <div id="aiUsageBadge" style="font-size:10px;font-weight:500;opacity:0.8;margin-top:2px"></div>
+      </div>
       <div style="display:flex;gap:6px;">
         <button onclick="minimizeAIWidget()" title="מזער חלון" style="background:none;border:none;color:var(--primary-dark);font-size:14px;cursor:pointer;padding:0;">🗕</button>
         <button onclick="toggleAIWidget()" title="סגור חלון" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
@@ -410,6 +413,16 @@ textarea{resize:vertical;min-height:80px}
 <div class="muted" style="font-size:13px;margin-bottom:12px">מפתח ה-API משמש למילוי אוטומטי והמרות AI:</div>
 <input id="apiKeyInput" type="password" placeholder="הדבק API Key כאן (AIzaSy...)">
 <button class="primary" onclick="saveApiKey()">שמור מפתח</button>
+<div class="card" style="margin-top:14px;background:var(--bg-app)">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <b style="font-size:13px">📦 מטמון תשובות AI</b>
+      <div class="muted" style="font-size:11px;margin-top:2px">שומר תשובות למוצרים כדי לחסוך בקשות חוזרות</div>
+    </div>
+    <button class="secondary" style="width:auto;font-size:11px;padding:8px 10px" onclick="clearAiCache()">נקה מטמון</button>
+  </div>
+  <div class="muted" id="cacheInfoText" style="font-size:11px;margin-top:8px"></div>
+</div>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
 </div></div>
 
@@ -594,33 +607,122 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-async function callGeminiWithRetry(promptText, retries = 3, delay = 3000) {
+// ==================== AI CACHE + QUEUE + BACKOFF ====================
+const CACHE_KEY = 'gemini_cache_v1';
+const USAGE_KEY = 'gemini_usage_v1';
+
+function loadCache(){ return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
+function getCachedResponse(cacheKey){
+  if(!cacheKey) return null;
+  const cache = loadCache();
+  return cache[cacheKey] ? cache[cacheKey].text : null;
+}
+function setCachedResponse(cacheKey, text){
+  if(!cacheKey || !text) return;
+  const cache = loadCache();
+  cache[cacheKey] = { text, ts: Date.now() };
+  localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+}
+function clearAiCache(){
+  localStorage.removeItem(CACHE_KEY);
+  updateCacheInfo();
+  alert('המטמון נוקה!');
+}
+function updateCacheInfo(){
+  const el = document.getElementById('cacheInfoText');
+  if(!el) return;
+  const cache = loadCache();
+  const count = Object.keys(cache).length;
+  el.textContent = count > 0 ? `📦 ${count} תשובות שמורות במטמון (יחסכו בקשות עתידיות)` : 'המטמון ריק כרגע.';
+}
+
+function trackUsage(){
+  const usage = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+  const dKey = todayKey();
+  usage[dKey] = (usage[dKey] || 0) + 1;
+  Object.keys(usage).forEach(d => { if(d !== dKey) delete usage[d]; }); // שומר רק את היום הנוכחי
+  localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+  updateUsageBadge();
+  return usage[dKey];
+}
+function getTodayUsage(){
+  const usage = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+  return usage[todayKey()] || 0;
+}
+function updateUsageBadge(){
+  const badge = document.getElementById('aiUsageBadge');
+  if(badge) badge.textContent = `📊 ${getTodayUsage()} בקשות נשלחו היום`;
+}
+
+// תור בקשות: מריץ קריאות ל-Gemini אחת אחרי השנייה עם ריווח מינימלי ביניהן,
+// כדי לא לחצות את מגבלת הבקשות-לדקה של השכבה החינמית.
+let __geminiQueue = Promise.resolve();
+let __lastGeminiCallTime = 0;
+const MIN_GAP_MS = 4200;
+
+function queueGeminiCall(taskFn){
+  const runTask = () => {
+    const wait = Math.max(0, MIN_GAP_MS - (Date.now() - __lastGeminiCallTime));
+    return new Promise(resolve => setTimeout(resolve, wait)).then(() => {
+      __lastGeminiCallTime = Date.now();
+      return taskFn();
+    });
+  };
+  const result = __geminiQueue.then(runTask, runTask);
+  __geminiQueue = result.then(() => {}, () => {}); // הבקשה הבאה תמתין גם אם זו נכשלה
+  return result;
+}
+
+async function callGeminiWithRetry(promptText, options = {}) {
+  const { cacheKey = null, retries = 5, baseDelay = 4000, onStatus = null } = options;
+
+  if (cacheKey) {
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      if (onStatus) onStatus('✨ נמצא במטמון (ללא קריאת API)');
+      return { candidates: [{ content: { parts: [{ text: cached }] } }] };
+    }
+  }
+
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
   if(!apiKey) throw new Error('לא הוגדר API Key בהגדרות');
 
-  for (let i = 0; i < retries; i++) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
-    const data = await res.json();
-    
-    if (!data.error) return data;
+  return queueGeminiCall(async () => {
+    for (let i = 0; i < retries; i++) {
+      if (i > 0 && onStatus) onStatus(`מנסה שוב (${i+1}/${retries})...`);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+      });
+      const data = await res.json();
 
-    if ((data.error.code === 429 || (data.error.message && data.error.message.includes('Quota'))) && i < retries - 1) {
-      await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
-      continue;
+      if (!data.error) {
+        trackUsage();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (cacheKey && text) setCachedResponse(cacheKey, text);
+        return data;
+      }
+
+      const isRateLimit = data.error.code === 429 || (data.error.message && data.error.message.toLowerCase().includes('quota'));
+      if (isRateLimit && i < retries - 1) {
+        const delay = baseDelay * Math.pow(2, i); // 4s, 8s, 16s, 32s, 64s
+        if (onStatus) onStatus(`⏳ עומס זמני - ממתין ${Math.round(delay/1000)} שנ׳ ומנסה שוב אוטומטית...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      throw new Error(data.error.message || 'שגיאת API');
     }
-    throw new Error(data.error.message || 'שגיאת API');
-  }
-  throw new Error('הגעת למכסת הבקשות החינמית. אנא המתן מספר דקות ונסה שוב.');
+    throw new Error('הגעת למכסת הבקשות החינמית. אנא המתן מספר דקות ונסה שוב.');
+  });
 }
+// ==================== END AI CACHE + QUEUE + BACKOFF ====================
 
 function toggleAIWidget(customPrompt = null, customTitle = 'עוזר תזונה חכם באפליקציה') {
   const modal = document.getElementById('aiWidgetModal');
   const titleEl = document.getElementById('aiWidgetTitle');
   if(titleEl) titleEl.textContent = customTitle;
+  updateUsageBadge();
 
   const isOpen = modal.style.display === 'block';
   modal.style.display = isOpen ? 'none' : 'block';
@@ -696,6 +798,12 @@ async function sendAIWidgetMessage() {
   historyDiv.innerHTML += `<div id="${typingId}" class="muted" style="font-size: 11px; padding: 2px;">⚡ מעבד פעולה ותשובה...</div>`;
   historyDiv.scrollTop = historyDiv.scrollHeight;
 
+  const setTypingStatus = (msg) => {
+    const el = document.getElementById(typingId);
+    if(el) el.textContent = msg;
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+  };
+
   try {
     const targets = calculateTargets();
     const a = today();
@@ -730,7 +838,7 @@ User request: "${query}"
 
 Answer in clear Hebrew concisely.`;
       
-      const data = await callGeminiWithRetry(promptText);
+      const data = await callGeminiWithRetry(promptText, { onStatus: setTypingStatus });
       let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
       
       document.getElementById(typingId).remove();
@@ -742,6 +850,7 @@ Answer in clear Hebrew concisely.`;
       fullHtmlResponse += `<div style="white-space:pre-line;">${textResult}</div>`;
 
       historyDiv.innerHTML += `<div class="chat-bubble-ai" style="background: var(--chat-ai-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--chat-ai-border);"><b>עוזר חכם:</b><div style="margin-top:4px;">${fullHtmlResponse}</div></div>`;
+      updateUsageBadge();
     } else {
       document.getElementById(typingId).remove();
       let localAnswer = systemActionExecuted ? systemActionMsg : `נשארו לך להיום ${remaining} קלוריות מתוך יעד של ${targets.kcal}. (הגדר API Key בהגדרות לשיחות מתקדמות).`;
@@ -891,7 +1000,7 @@ function checkRealtimeDuplicate(){
   } else { notice.style.display = 'none'; }
 }
 
-function openSettings(){ apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || ''; lockPageScroll(); settingsModal.classList.add('open'); }
+function openSettings(){ apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || ''; updateCacheInfo(); lockPageScroll(); settingsModal.classList.add('open'); }
 function saveApiKey(){
   const key = apiKeyInput.value.trim();
   if(key) localStorage.setItem(API_KEY_STORAGE, key); else localStorage.removeItem(API_KEY_STORAGE);
@@ -906,7 +1015,7 @@ async function handleUnitSelection() {
     try {
       status.textContent = '⚡ מברר משקל יחידה ב-AI...';
       const promptText = `Provide standard unit weight in grams for: "${selected.name}". Return ONLY valid JSON: {"unit_g": number}`;
-      const data = await callGeminiWithRetry(promptText);
+      const data = await callGeminiWithRetry(promptText, { cacheKey: 'unit:' + normalizeStr(selected.name), onStatus: (m) => status.textContent = m });
       let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text.replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(textResult);
       if (parsed.unit_g) {
@@ -929,7 +1038,7 @@ async function fetchProductWithAI(){
   aiStatus.textContent = '⚡ מחפש נתונים ב-AI...';
   try {
     const promptText = `Provide nutrition per 100g and portion weight for: "${nameVal}". Return ONLY JSON array: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
-    const data = await callGeminiWithRetry(promptText);
+    const data = await callGeminiWithRetry(promptText, { cacheKey: 'product:' + normalizeStr(nameVal), onStatus: (m) => aiStatus.textContent = m });
     const options = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
     showAiOptionsModal(options);
     aiStatus.textContent = '✅ בחר מוצר';
@@ -939,13 +1048,14 @@ async function fetchProductWithAI(){
 async function quickFillWithAI(){
   const nameVal = foodSearch.value.trim();
   if(!nameVal) return alert('הזן שם מוצר');
-  document.getElementById('quickAiStatus').textContent = '⚡ מחפש ב-AI...';
+  const statusEl = document.getElementById('quickAiStatus');
+  statusEl.textContent = '⚡ מחפש ב-AI...';
   try {
     const promptText = `Provide nutrition per 100g for: "${nameVal}". Return ONLY JSON array: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
-    const data = await callGeminiWithRetry(promptText);
+    const data = await callGeminiWithRetry(promptText, { cacheKey: 'product:' + normalizeStr(nameVal), onStatus: (m) => statusEl.textContent = m });
     const options = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
     showQuickAiOptionsModal(options);
-  } catch(e) { document.getElementById('quickAiStatus').textContent = 'שגיאה'; }
+  } catch(e) { statusEl.textContent = '❌ ' + e.message; }
 }
 
 function showQuickAiOptionsModal(options) {
@@ -1230,7 +1340,7 @@ function stopScanner(){
 }
 function closeScanner(){ stopScanner(); scannerModal.classList.remove('open'); unlockPageScroll(); }
 
-dateText(); renderToday();
+dateText(); renderToday(); updateUsageBadge();
 </script>
 </body>
 </html>
