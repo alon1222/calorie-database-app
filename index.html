@@ -101,6 +101,57 @@ textarea{resize:vertical;min-height:80px}
 
 .chat-bubble-user { background: var(--chat-user-bg); padding: 10px 14px; border-radius: 14px 14px 2px 14px; margin-bottom: 8px; border: 1px solid var(--border-color); align-self: flex-start; }
 .chat-bubble-ai { background: var(--chat-ai-bg); padding: 10px 14px; border-radius: 14px 14px 14px 2px; margin-bottom: 8px; border: 1px solid var(--chat-ai-border); }
+
+/* סגנונות לחלון הצף החדש (Floating AI Widget) */
+#ai-chat-widget {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 9999;
+  font-family: inherit;
+}
+#ai-fab-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}
+#ai-fab-btn:hover {
+  transform: scale(1.1);
+}
+.ai-widget-modal {
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 310px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+  overflow: hidden;
+  direction: rtl;
+}
+.ai-widget-header {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+.ai-widget-body {
+  padding: 12px;
+}
 </style>
 </head>
 <body data-theme="light">
@@ -325,6 +376,23 @@ textarea{resize:vertical;min-height:80px}
 </nav>
 </div>
 
+<!-- חלון צף (Floating AI Widget) בתוך האפליקציה -->
+<div id="ai-chat-widget">
+  <button id="ai-fab-btn" onclick="toggleAIWidget()" title="עוזר אישי מהיר">🤖</button>
+  <div id="aiWidgetModal" class="ai-widget-modal" style="display: none;">
+    <div class="ai-widget-header">
+      <span>עוזר מהיר באפליקציה</span>
+      <button onclick="toggleAIWidget()" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
+    </div>
+    <div class="ai-widget-body">
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">שאל שאלה מהירה או רשום פריט:</div>
+      <textarea id="aiWidgetInput" placeholder="למשל: כמה קלוריות יש ב-2 תפוחים?" rows="2" style="margin-bottom: 6px; font-size: 13px;"></textarea>
+      <button class="ai-btn" style="padding: 8px; font-size: 13px;" onclick="sendAIWidgetMessage()">שלח לשאלה מהירה</button>
+      <div id="aiWidgetResponse" style="margin-top: 8px; font-size: 12px; background: var(--bg-app); padding: 8px; border-radius: 8px; max-height: 100px; overflow-y: auto; display: none; border: 1px solid var(--border-color);"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="profileModal"><div class="sheet">
 <h2>🎯 עריכה והתאמת יעדים קלוריים</h2>
 <div id="profilePreviewContent" class="card" style="background:var(--primary-light);margin-bottom:14px"></div>
@@ -530,6 +598,49 @@ function debounce(func, wait) {
 const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
+
+// פונקציות לחלון הצף המהיר (AI Widget)
+function toggleAIWidget() {
+  const modal = document.getElementById('aiWidgetModal');
+  modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+}
+
+async function sendAIWidgetMessage() {
+  const input = document.getElementById('aiWidgetInput').value.trim();
+  const respArea = document.getElementById('aiWidgetResponse');
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+
+  if(!input) return;
+  if(!apiKey) {
+    respArea.style.display = 'block';
+    respArea.innerHTML = 'שגיאה: נא להגדיר תחילה API Key בהגדרות (⚙️ API).';
+    return;
+  }
+
+  respArea.style.display = 'block';
+  respArea.innerHTML = '⚡ מעבד שאלה...';
+
+  try {
+    const targets = calculateTargets();
+    const a = today();
+    const consumed = a.reduce((s,x)=>s+(x.kcal||0),0);
+    const remaining = Math.max(0, targets.kcal - consumed);
+
+    const promptText = `You are a helpful nutrition assistant in a calorie tracking app. User's remaining calories today: ${remaining} kcal. User's query: "${input}". Answer concisely and accurately in Hebrew.`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'API Error');
+    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
+    respArea.innerHTML = `<div style="white-space:pre-line">${textResult}</div>`;
+  } catch(e) {
+    respArea.innerHTML = `<span style="color:#c53030">שגיאה: ${e.message}</span>`;
+  }
+}
 
 async function getAiDailyCoachFeedback() {
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
@@ -1979,107 +2090,107 @@ let scannerStream=null;
 let isScanningActive = false;
 
 async function openScanner(){
-  lockPageScroll();scannerModal.classList.add('open');scannerStatus.textContent='מכוון מצלמה לזיהוי ברקוד אוטומטי...';barcodeResult.style.display='none';
-  isScanningActive = true;
-  try{
-    if(!navigator.mediaDevices?.getUserMedia) throw new Error('camera unavailable');
-    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-    barcodeVideo.srcObject=scannerStream;await barcodeVideo.play();
-    requestAnimationFrame(scanLoop);
-  }catch(e){scannerStatus.textContent='לא ניתן לפתוח את המצלמה.';}
+ lockPageScroll();scannerModal.classList.add('open');scannerStatus.textContent='מכוון מצלמה לזיהוי ברקוד אוטומטי...';barcodeResult.style.display='none';
+ isScanningActive = true;
+ try{
+   if(!navigator.mediaDevices?.getUserMedia) throw new Error('camera unavailable');
+   scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+   barcodeVideo.srcObject=scannerStream;await barcodeVideo.play();
+   requestAnimationFrame(scanLoop);
+ }catch(e){scannerStatus.textContent='לא ניתן לפתוח את המצלמה.';}
 }
 
 async function scanLoop(){
-  if(!isScanningActive || !window.ZXingBrowser || !barcodeVideo.videoWidth) {
-    if(isScanningActive) requestAnimationFrame(scanLoop);
-    return;
-  }
-  try{
-    const canvas=document.createElement('canvas');canvas.width=barcodeVideo.videoWidth;canvas.height=barcodeVideo.videoHeight;
-    const ctx=canvas.getContext('2d');ctx.drawImage(barcodeVideo,0,0);
-    const reader=new ZXingBrowser.BrowserMultiFormatReader();
-    const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/jpeg'));
-    const code=result.getText();
-    if(code) {
-      isScanningActive = false;
-      stopScanner();
-      await searchBarcode(code);
-      return;
-    }
-  }catch(e){/* ממשיך לסרוק ברקף */}
-  if(isScanningActive) requestAnimationFrame(scanLoop);
+ if(!isScanningActive || !window.ZXingBrowser || !barcodeVideo.videoWidth) {
+   if(isScanningActive) requestAnimationFrame(scanLoop);
+   return;
+ }
+ try{
+   const canvas=document.createElement('canvas');canvas.width=barcodeVideo.videoWidth;canvas.height=barcodeVideo.videoHeight;
+   const ctx=canvas.getContext('2d');ctx.drawImage(barcodeVideo,0,0);
+   const reader=new ZXingBrowser.BrowserMultiFormatReader();
+   const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/jpeg'));
+   const code=result.getText();
+   if(code) {
+     isScanningActive = false;
+     stopScanner();
+     await searchBarcode(code);
+     return;
+   }
+ }catch(e){/* ממשיך לסרוק ברקף */}
+ if(isScanningActive) requestAnimationFrame(scanLoop);
 }
 
 async function searchBarcode(code){
-  barcodeResult.style.display='block';barcodeResult.innerHTML='מחפש ברקוד במאגר וברשת...';
-  
-  const cleanC = cleanCode(code);
-  const localMatches = db.products.filter(x => x.barcode && cleanCode(x.barcode) === cleanC);
-  
-  if(localMatches.length > 0) {
-    if(localMatches.length === 1) {
-      const p = localMatches[0];
-      const pIdx = db.products.indexOf(p);
-      barcodeResult.innerHTML = `<b>⚠️ המוצר קיים במאגר:</b><br>${p.name} (${p.kcal} קק״ל/100ג׳)<br><button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>`;
-    } else {
-      showBarcodeOptionsModal(localMatches, code);
-    }
-    return;
-  }
+ barcodeResult.style.display='block';barcodeResult.innerHTML='מחפש ברקוד במאגר וברשת...';
+ 
+ const cleanC = cleanCode(code);
+ const localMatches = db.products.filter(x => x.barcode && cleanCode(x.barcode) === cleanC);
+ 
+ if(localMatches.length > 0) {
+   if(localMatches.length === 1) {
+     const p = localMatches[0];
+     const pIdx = db.products.indexOf(p);
+     barcodeResult.innerHTML = `<b>⚠️ המוצר קיים במאגר:</b><br>${p.name} (${p.kcal} קק״ל/100ג׳)<br><button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>`;
+   } else {
+     showBarcodeOptionsModal(localMatches, code);
+   }
+   return;
+ }
 
-  try{
-    const res=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(cleanC));
-    const data=await res.json();
-    if(data.status===1&&data.product){
-      const p=data.product, n=p.nutriments||{};
-      let unitG = Number(p.product_quantity) || 0;
-      
-      const found = {
-        name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
-        unit_g:unitG,
-        kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
-        image:p.image_front_url||'',
-        updated:new Date().toLocaleDateString('he-IL')
-      };
-      
-      window.foundProduct = found;
-      let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(found.kcal * unitG / 100)} קק״ל` : '';
-      barcodeResult.innerHTML=`<b>${found.name}</b><br>קלוריות ל-100ג׳: ${found.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
-    } else {
-      barcodeResult.innerHTML=`הברקוד ${code} לא נמצא. <button class="primary" style="margin-top:8px" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש עם ברקוד זה</button>`;
-    }
-  }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד';}
+ try{
+   const res=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(cleanC));
+   const data=await res.json();
+   if(data.status===1&&data.product){
+     const p=data.product, n=p.nutriments||{};
+     let unitG = Number(p.product_quantity) || 0;
+     
+     const found = {
+       name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
+       unit_g:unitG,
+       kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
+       image:p.image_front_url||'',
+       updated:new Date().toLocaleDateString('he-IL')
+     };
+     
+     window.foundProduct = found;
+     let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(found.kcal * unitG / 100)} קק״ל` : '';
+     barcodeResult.innerHTML=`<b>${found.name}</b><br>קלוריות ל-100ג׳: ${found.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
+   } else {
+     barcodeResult.innerHTML=`הברקוד ${code} לא נמצא. <button class="primary" style="margin-top:8px" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש עם ברקוד זה</button>`;
+   }
+ }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד';}
 }
 
 function showBarcodeOptionsModal(matches, code) {
-  const container = document.getElementById('aiOptionsList');
-  container.innerHTML = matches.map((m) => {
-    const idx = db.products.indexOf(m);
-    return `
-      <div class="card" style="margin-bottom:8px;cursor:pointer;background:var(--bg-app)" onclick="closeScanner();editProduct(${idx})">
-        <b>${m.name}</b>
-        <div class="muted" style="font-size:12px;margin-top:4px">
-          🔥 ${m.kcal} קק״ל ל-100ג׳ | מותג: ${m.brand||'כללי'}
-        </div>
-      </div>
-    `;
-  }).join('');
-  document.getElementById('aiOptionsModal').classList.add('open');
-  barcodeResult.innerHTML = `נמצאו מספר מוצרים התואמים לברקוד ${code}. בחר מהרשימה שנפתחה.`;
+ const container = document.getElementById('aiOptionsList');
+ container.innerHTML = matches.map((m) => {
+   const idx = db.products.indexOf(m);
+   return `
+     <div class="card" style="margin-bottom:8px;cursor:pointer;background:var(--bg-app)" onclick="closeScanner();editProduct(${idx})">
+       <b>${m.name}</b>
+       <div class="muted" style="font-size:12px;margin-top:4px">
+         🔥 ${m.kcal} קק״ל ל-100ג׳ | מותג: ${m.brand||'כללי'}
+       </div>
+     </div>
+   `;
+ }).join('');
+ document.getElementById('aiOptionsModal').classList.add('open');
+ barcodeResult.innerHTML = `נמצאו מספר מוצרים התואמים לברקוד ${code}. בחר מהרשימה שנפתחה.`;
 }
 
 function addFoundProduct(){
-  if(!window.foundProduct)return;
-  const p=window.foundProduct;
-  const idx=db.products.findIndex(x=>x.barcode&&cleanCode(x.barcode)===cleanCode(p.barcode));
-  if(idx>=0) db.products[idx]=Object.assign({},db.products[idx],p);
-  else db.products.push(p);
-  save();closeScanner();show('products');
+ if(!window.foundProduct)return;
+ const p=window.foundProduct;
+ const idx=db.products.findIndex(x=>x.barcode&&cleanCode(x.barcode)===cleanCode(p.barcode));
+ if(idx>=0) db.products[idx]=Object.assign({},db.products[idx],p);
+ else db.products.push(p);
+ save();closeScanner();show('products');
 }
 
 function stopScanner(){
-  isScanningActive = false;
-  if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
+ isScanningActive = false;
+ if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
 }
 function closeScanner(){stopScanner();scannerModal.classList.remove('open');unlockPageScroll();}
 
