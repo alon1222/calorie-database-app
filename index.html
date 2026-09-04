@@ -1975,15 +1975,37 @@ async function handleUnitSelection() {
 
     try {
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+     // בדיקה האם התשובה קיימת כבר ב-Cache החכם כדי לחסוך פנייה לשרת
+    const cachedData = getAICache(promptText);
+    if (cachedData) {
+      var data = cachedData;
+    } else {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-        method: 'POST',
+      let res;
+      try {
+        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') {
+          throw new Error('השרת לא הגיב בזמן (Timeout). נסה שוב בעוד מספר רגעים.');
+        }
+        throw fetchErr;
+      }
 
-        headers: { 'Content-Type': 'application/json' },
+      var data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'שגיאת API');
 
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-
-      });
+      // שמירת התוצאה ב-Cache החכם לפעאות הבאות
+      setAICache(promptText, data);
+    }
 
 
 
