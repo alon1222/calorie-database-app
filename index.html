@@ -560,7 +560,7 @@ Provide a supportive response in clear Hebrew including:
 Keep it engaging, warm, and concise.`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -613,7 +613,7 @@ Provide a comprehensive, encouraging progress review in clear Hebrew including:
 Keep it structured, warm, and professional.`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -655,7 +655,7 @@ Return ONLY a valid JSON object without code blocks:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -764,7 +764,7 @@ async function continueMealChatWithAI() {
 Keep responses conversational, warm, and practical in Hebrew, allowing the user to reply and adjust continuously.`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1054,7 +1054,7 @@ async function handleUnitSelection() {
     const promptText = `Provide standard single portion/unit weight in grams for food item: "${selected.name}". Return ONLY a valid JSON object without code blocks: {"unit_g": number}`;
 
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -1128,7 +1128,7 @@ async function fetchProductWithAI(){
   const promptText = `For the food query: "${nameVal}", provide 3 to 4 common food variations in Hebrew with accurate nutrition per 100g and estimated portion weight in grams. Return ONLY a JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -1177,7 +1177,7 @@ async function quickFillWithAI(){
   const promptText = `Provide 3 to 4 common food variations in Hebrew with accurate nutritional values per 100g and estimated portion unit weight in grams for food query: "${nameVal}". Return ONLY a valid JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -1401,7 +1401,6 @@ function renderToday(){
       </div>
     `).join('') : `<div class="muted" style="font-size:12px;padding:4px 0">אין עדיין פריטים בארוחה זו.</div>`;
 
-    // במקום טעינה אוטומטית שמציפה את השרת, כל ארוחה מקבלת כפתור קטן ונקי להצגת המלצה לפי הצורך
     let recommendationBox = `
       <div id="ai-rec-box-${cat}" style="margin-top:10px;padding:10px 12px;background:var(--bg-card);border-radius:12px;font-size:12px;border:1px dashed var(--border-color)">
         <button class="secondary" style="font-size:11px;padding:6px 10px;width:100%" onclick="fetchSingleMealRecommendation('${cat}')">✨ קבל המלצת AI חכמה לארוחה זו</button>
@@ -1455,7 +1454,7 @@ Return ONLY a valid JSON object without code blocks:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -1480,7 +1479,7 @@ Return ONLY a valid JSON object without code blocks:
       `;
     }
   } catch(e) {
-    box.innerHTML = `<span style="color:#c53030;font-size:11px">שגיאה: חריגה ממכסת ה-API החינמי. המתן דקה ונסה שוב.</span>`;
+    box.innerHTML = `<span style="color:#c53030;font-size:11px">שגיאה: ${e.message}</span>`;
   }
 }
 
