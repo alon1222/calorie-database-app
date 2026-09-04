@@ -3,38 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title> TaliaFIT  </title>
+<title> TaliaFIT </title>
 <style>
 :root {
-  --primary: #10b981;
-  --primary-dark: #059669;
-  --primary-light: #ecfdf5;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  --bg-app: #f8fafc;
-  --bg-card: #ffffff;
-  --border-color: #e2e8f0;
-  --header-bg: rgba(255,255,255,0.92);
-  --nav-bg: rgba(255,255,255,0.95);
-  --chat-user-bg: #f1f5f9;
-  --chat-ai-bg: #ecfdf5;
-  --chat-ai-border: #a7f3d0;
+  --primary: #10b981;
+  --primary-dark: #059669;
+  --primary-light: #ecfdf5;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+  --header-bg: rgba(255,255,255,0.92);
+  --nav-bg: rgba(255,255,255,0.95);
+  --chat-user-bg: #f1f5f9;
+  --chat-ai-bg: #ecfdf5;
+  --chat-ai-border: #a7f3d0;
 }
 
 [data-theme="dark"] {
-  --primary: #34d399;
-  --primary-dark: #10b981;
-  --primary-light: #064e3b;
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --bg-app: #0f172a;
-  --bg-card: #1e293b;
-  --border-color: #334155;
-  --header-bg: rgba(30,41,59,0.92);
-  --nav-bg: rgba(30,41,59,0.95);
-  --chat-user-bg: #334155;
-  --chat-ai-bg: #064e3b;
-  --chat-ai-border: #059669;
+  --primary: #34d399;
+  --primary-dark: #10b981;
+  --primary-light: #064e3b;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --bg-app: #0f172a;
+  --bg-card: #1e293b;
+  --border-color: #334155;
+  --header-bg: rgba(30,41,59,0.92);
+  --nav-bg: rgba(30,41,59,0.95);
+  --chat-user-bg: #334155;
+  --chat-ai-bg: #064e3b;
+  --chat-ai-border: #059669;
 }
 
 *{box-sizing:border-box}
@@ -102,77 +102,86 @@ textarea{resize:vertical;min-height:80px}
 .chat-bubble-user { background: var(--chat-user-bg); padding: 10px 14px; border-radius: 14px 14px 2px 14px; margin-bottom: 8px; border: 1px solid var(--border-color); }
 .chat-bubble-ai { background: var(--chat-ai-bg); padding: 10px 14px; border-radius: 14px 14px 14px 2px; margin-bottom: 8px; border: 1px solid var(--chat-ai-border); }
 
-/* סגנונות לחלון הצף המהיר (Floating AI Widget) האינטראקטיבי */
+/* חלון צף מורחב, נגרר, מזוהר וניתן להזזה */
 #ai-chat-widget {
-  position: fixed;
-  bottom: 80px;
-  right: 20px;
-  z-index: 9999;
-  font-family: inherit;
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  z-index: 9999;
+  font-family: inherit;
+  touch-action: none;
 }
 #ai-fab-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background-color: #10b981;
-  color: white;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  transition: transform 0.2s;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 #ai-fab-btn:hover {
-  transform: scale(1.1);
+  transform: scale(1.1);
 }
 .ai-widget-modal {
-  position: absolute;
-  bottom: 60px;
-  right: 0;
-  width: 330px;
-  background: var(--bg-card);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  box-shadow: 0 5px 25px rgba(0,0,0,0.25);
-  overflow: hidden;
-  direction: rtl;
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 330px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+  overflow: hidden;
+  direction: rtl;
+  display: none;
 }
 .ai-widget-header {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-  padding: 10px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  font-size: 14px;
-  border-bottom: 1px solid var(--border-color);
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: grab;
+}
+.ai-widget-header:active {
+  cursor: grabbing;
 }
 .ai-widget-body {
-  padding: 12px;
+  padding: 12px;
 }
 </style>
 </head>
 <body data-theme="light">
 <div class="app">
 <header>
-  <div>
-    <h1>מאגר קלוריות</h1>
-    <div class="date" id="date"></div>
-  </div>
-  <div class="header-actions">
-    <button class="theme-toggle" onclick="toggleTheme()" title="החלף מצב תאורה">🌙</button>
-    <span class="admin-badge">מנהל</span>
-  </div>
+  <div>
+    <h1>מאגר קלוריות</h1>
+    <div class="date" id="date"></div>
+  </div>
+  <div class="header-actions">
+    <button class="theme-toggle" onclick="toggleTheme()" title="החלף מצב תאורה">🌙</button>
+    <span class="admin-badge">מנהל</span>
+  </div>
 </header>
 <main>
 <section id="today">
 <div class="card kcal-card">
-  <div class="muted" style="font-weight:600;font-size:13px">נצרכו היום</div>
-  <div><span class="kcal" id="kcal">0</span> <span style="font-size:16px;font-weight:700">קלוריות</span></div>
-  <div class="progress"><span id="kbar"></span></div>
-  <div class="muted" id="kleftContainer" style="font-size:13px"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div>
+  <div class="muted" style="font-weight:600;font-size:13px">נצרכו היום</div>
+  <div><span class="kcal" id="kcal">0</span> <span style="font-size:16px;font-weight:700">קלוריות</span></div>
+  <div class="progress"><span id="kbar"></span></div>
+  <div class="muted" id="kleftContainer" style="font-size:13px"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div>
 </div>
 <div class="grid">
 <div class="macro"><span>💪 חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
@@ -186,167 +195,167 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <div class="card" style="margin-top:14px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-    <b style="font-size:15px">🍽️ חלוקת ארוחות והמלצות חכמות</b>
-  </div>
-  <div id="intake"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <b style="font-size:15px">🍽️ חלוקת ארוחות והמלצות חכמות</b>
+  </div>
+  <div id="intake"></div>
 </div>
 </section>
 
-<!-- לשונית עוזר אישי AI עם פידבק, ניתוחים ושיח אינטראקטיבי -->
+<!-- לשונית עוזר אישי AI -->
 <section id="aiAssistant" class="hidden">
 <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-  <div>
-    <div style="font-size:12px;color:var(--text-muted);font-weight:600">יתרה קלוריות נוכחית להיום:</div>
-    <div style="font-size:20px;font-weight:800;color:var(--primary)" id="aiAssistantKcalLeft">2,000 קק״ל</div>
-  </div>
-  <div style="text-align:left;font-size:12px;color:var(--text-muted)">
-    יעד יומי: <span id="aiAssistantTarget">2000</span><br>נצרך: <span id="aiAssistantConsumed">0</span>
-  </div>
+  <div>
+    <div style="font-size:12px;color:var(--text-muted);font-weight:600">יתרה קלוריות נוכחית להיום:</div>
+    <div style="font-size:20px;font-weight:800;color:var(--primary)" id="aiAssistantKcalLeft">2,000 קק״ל</div>
+  </div>
+  <div style="text-align:left;font-size:12px;color:var(--text-muted)">
+    יעד יומי: <span id="aiAssistantTarget">2000</span><br>נצרך: <span id="aiAssistantConsumed">0</span>
+  </div>
 </div>
 
 <div class="card" style="background:linear-gradient(135deg, var(--primary-light) 0%, var(--bg-card) 100%)">
-  <b style="color:var(--primary-dark)">🌟 חוות דעת חכמה ומוטיבציה להיום</b>
-  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור (נפתח בחלון הצף):</div>
-  <button class="ai-btn" onclick="triggerAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי להיום</button>
+  <b style="color:var(--primary-dark)">🌟 חוות דעת חכמה ומוטיבציה להיום</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור (נפתח בחלון הצף):</div>
+  <button class="ai-btn" onclick="triggerAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי להיום</button>
 </div>
 
 <div class="card" style="background:linear-gradient(135deg, var(--primary-light) 0%, var(--bg-card) 100%)">
-  <b style="color:var(--primary-dark)">📈 ניתוח מצטבר וסקירת תקופה מהמאמן</b>
-  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל חוות דעת כוללת על ההתנהלות התזונתית שלך לאורך הימים האחרונים (נפתח בחלון הצף):</div>
-  <button class="ai-btn" onclick="triggerAiCumulativeCoachFeedback()">📊 בקש ניתוח כולל עד כה</button>
+  <b style="color:var(--primary-dark)">📈 ניתוח מצטבר וסקירת תקופה מהמאמן</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל חוות דעת כוללת על ההתנהלות התזונתית שלך לאורך הימים האחרונים (נפתח בחלון הצף):</div>
+  <button class="ai-btn" onclick="triggerAiCumulativeCoachFeedback()">📊 בקש ניתוח כולל עד כה</button>
 </div>
 
 <div class="card">
-  <b style="font-size:15px">🤖 עוזר תזונה חכם (AI)</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">נתח מתכונים ושמור למאגר בקלות:</div>
+  <b style="font-size:15px">🤖 עוזר תזונה חכם (AI)</b>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">נתח מתכונים ושמור למאגר בקלות:</div>
 
-  <div class="ai-box">
-    <b>🍲 ניתוח מתכון מורכב ורכיביו (עם אפשרות הוספה למאגר)</b>
-    <div class="muted" style="font-size:12px;margin-bottom:8px;margin-top:4px">הקלד את שם המנה והרכיבים:</div>
-    <input id="recipeNameInput" placeholder="שם המנה (לדוגמה: מוקפץ עוף ביתי)" style="margin-bottom:6px">
-    <textarea id="recipeInput" placeholder="לדוגמה: 500 גרם עוף, גמבה אדומה אחת, בצל אחד, 2 כפות סילאן, 2 כפות צ׳ילי מתוק"></textarea>
-    <button class="ai-btn" onclick="triggerAnalyzeRecipeWithAI()">🔍 חשב קלוריות ומאקרו ל-100 גרם</button>
-    <div id="recipeResult" style="margin-top:12px;font-size:14px"></div>
-  </div>
+  <div class="ai-box">
+    <b>🍲 ניתוח מתכון מורכב ורכיביו (עם אפשרות הוספה למאגר)</b>
+    <div class="muted" style="font-size:12px;margin-bottom:8px;margin-top:4px">הקלד את שם המנה והרכיבים:</div>
+    <input id="recipeNameInput" placeholder="שם המנה (לדוגמה: מוקפץ עוף ביתי)" style="margin-bottom:6px">
+    <textarea id="recipeInput" placeholder="לדוגמה: 500 גרם עוף, גמבה אדומה אחת, בצל אחד, 2 כפות סילאן, 2 כפות צ׳ילי מתוק"></textarea>
+    <button class="ai-btn" onclick="triggerAnalyzeRecipeWithAI()">🔍 חשב קלוריות ומאקרו ל-100 גרם</button>
+    <div id="recipeResult" style="margin-top:12px;font-size:14px"></div>
+  </div>
 </div>
 </section>
 
 <section id="profile" class="hidden">
 <div class="card">
-  <b style="font-size:15px">👤 פרופיל אישי וחישוב יעדים קלוריים</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו:</div>
-  
-  <div style="display:flex;gap:10px">
-    <div style="flex:1">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל נוכחי (ק״ג):</label>
-      <input id="pWeight" type="number" step="0.1" placeholder="לדוגמה: 104">
-    </div>
-    <div style="flex:1">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">יעד משקל (ק״ג):</label>
-      <input id="pTargetWeight" type="number" step="0.1" placeholder="לדוגמה: 90">
-    </div>
-  </div>
+  <b style="font-size:15px">👤 פרופיל אישי וחישוב יעדים קלוריים</b>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">הזן את הנתונים שלך כדי שהמערכת תחשב אוטומטית את היעד היומי והמאקרו:</div>
+  
+  <div style="display:flex;gap:10px">
+    <div style="flex:1">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל נוכחי (ק״ג):</label>
+      <input id="pWeight" type="number" step="0.1" placeholder="לדוגמה: 104">
+    </div>
+    <div style="flex:1">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">יעד משקל (ק״ג):</label>
+      <input id="pTargetWeight" type="number" step="0.1" placeholder="לדוגמה: 90">
+    </div>
+  </div>
 
-  <div style="display:flex;gap:10px">
-    <div style="flex:1">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">גובה (ס״מ):</label>
-      <input id="pHeight" type="number" placeholder="לדוגמה: 178">
-    </div>
-    <div style="flex:1">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">גיל (שנים):</label>
-      <input id="pAge" type="number" placeholder="לדוגמה: 30">
-    </div>
-  </div>
+  <div style="display:flex;gap:10px">
+    <div style="flex:1">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">גובה (ס״מ):</label>
+      <input id="pHeight" type="number" placeholder="לדוגמה: 178">
+    </div>
+    <div style="flex:1">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">גיל (שנים):</label>
+      <input id="pAge" type="number" placeholder="לדוגמה: 30">
+    </div>
+  </div>
 
-  <div style="display:flex;gap:10px">
-    <div style="flex:1">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">מין:</label>
-      <select id="pGender">
-        <option value="male">זכר</option>
-        <option value="female">נקבה</option>
-      </select>
-    </div>
-    <div style="flex:1">
-      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">מטרה:</label>
-      <select id="pGoal">
-        <option value="cut">חיטוב (גירעון קלורי 500-)</option>
-        <option value="bulk">מסה (עודף קלורי 300+)</option>
-        <option value="maintain">שימור משקל</option>
-      </select>
-    </div>
-  </div>
+  <div style="display:flex;gap:10px">
+    <div style="flex:1">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">מין:</label>
+      <select id="pGender">
+        <option value="male">זכר</option>
+        <option value="female">נקבה</option>
+      </select>
+    </div>
+    <div style="flex:1">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">מטרה:</label>
+      <select id="pGoal">
+        <option value="cut">חיטוב (גירעון קלורי 500-)</option>
+        <option value="bulk">מסה (עודף קלורי 300+)</option>
+        <option value="maintain">שימור משקל</option>
+      </select>
+    </div>
+  </div>
 
-  <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">רמת פעילות גופנית:</label>
-  <select id="pActivity" style="margin-bottom:14px">
-    <option value="1.2">יושבני (ללא פעילות מיוחדת)</option>
-    <option value="1.375">פעילות קלה (1-3 אימונים בשבוע)</option>
-    <option value="1.55">פעילות בינונית (3-5 אימונים בשבוע)</option>
-    <option value="1.725">פעילות גבוהה (6-7 אימונים בשבוע)</option>
-  </select>
+  <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">רמת פעילות גופנית:</label>
+  <select id="pActivity" style="margin-bottom:14px">
+    <option value="1.2">יושבני (ללא פעילות מיוחדת)</option>
+    <option value="1.375">פעילות קלה (1-3 אימונים בשבוע)</option>
+    <option value="1.55">פעילות בינונית (3-5 אימונים בשבוע)</option>
+    <option value="1.725">פעילות גבוהה (6-7 אימונים בשבוע)</option>
+  </select>
 
-  <button class="primary" onclick="previewProfileCalculation()">חשב והצג יעדים להתאמה</button>
+  <button class="primary" onclick="previewProfileCalculation()">חשב והצג יעדים להתאמה</button>
 </div>
 </section>
 
 <section id="weight" class="hidden">
 <div class="card">
-  <b style="font-size:15px">⚖️ ניהול מעקב משקל ויעדים</b>
-  <div id="weightSummaryCard" style="margin:12px 0;padding:14px;background:var(--primary-light);border-radius:14px;font-size:14px;border:1px solid var(--border-color)"></div>
-  
-  <div style="margin-bottom:14px">
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל התחלתי (ק״ג):</label>
-    <div style="display:flex;gap:8px">
-      <input id="startWeightInput" type="number" step="0.1" placeholder="לדוגמה: 108" style="margin:0;flex:1">
-      <button class="secondary" style="width:auto" onclick="saveStartWeight()">שמור התחלתי</button>
-    </div>
-  </div>
+  <b style="font-size:15px">⚖️ ניהול מעקב משקל ויעדים</b>
+  <div id="weightSummaryCard" style="margin:12px 0;padding:14px;background:var(--primary-light);border-radius:14px;font-size:14px;border:1px solid var(--border-color)"></div>
+  
+  <div style="margin-bottom:14px">
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל התחלתי (ק״ג):</label>
+    <div style="display:flex;gap:8px">
+      <input id="startWeightInput" type="number" step="0.1" placeholder="לדוגמה: 108" style="margin:0;flex:1">
+      <button class="secondary" style="width:auto" onclick="saveStartWeight()">שמור התחלתי</button>
+    </div>
+  </div>
 
-  <hr style="border:0;border-top:1px solid var(--border-color);margin:16px 0">
+  <hr style="border:0;border-top:1px solid var(--border-color);margin:16px 0">
 
-  <div style="margin-bottom:8px">
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר תאריך לעדכון:</label>
-    <input id="weightDateInput" type="date" style="margin-bottom:8px">
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל ביום זה (ק״ג):</label>
-    <div style="display:flex;gap:8px">
-      <input id="weightValueInput" type="number" step="0.1" placeholder="לדוגמה: 104.5" style="margin:0;flex:1">
-      <button class="primary" style="width:auto" onclick="saveWeightLog()">שמור מדידה</button>
-    </div>
-  </div>
+  <div style="margin-bottom:8px">
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר תאריך לעדכון:</label>
+    <input id="weightDateInput" type="date" style="margin-bottom:8px">
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">משקל ביום זה (ק״ג):</label>
+    <div style="display:flex;gap:8px">
+      <input id="weightValueInput" type="number" step="0.1" placeholder="לדוגמה: 104.5" style="margin:0;flex:1">
+      <button class="primary" style="width:auto" onclick="saveWeightLog()">שמור מדידה</button>
+    </div>
+  </div>
 </div>
 
 <div class="card">
-  <b style="font-size:15px">📊 היסטוריית התקדמות והפרשים</b>
-  <div id="weightHistoryList" style="margin-top:12px"></div>
+  <b style="font-size:15px">📊 היסטוריית התקדמות והפרשים</b>
+  <div id="weightHistoryList" style="margin-top:12px"></div>
 </div>
 </section>
 
 <section id="products" class="hidden">
 <div class="card" style="display:flex;justify-content:space-between;align-items:center">
-  <b style="font-size:15px">📦 <span id="productCount">0</span> מוצרים במאגר</b>
-  <div style="display:flex;gap:6px">
-    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="openSettings()">⚙️ API</button>
-    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="exportBackup()">📤 גיבוי</button>
-    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="importBackup()">📥 שחזור</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImportFile(event)">
-  </div>
+  <b style="font-size:15px">📦 <span id="productCount">0</span> מוצרים במאגר</b>
+  <div style="display:flex;gap:6px">
+    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="openSettings()">⚙️ API</button>
+    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="exportBackup()">📤 גיבוי</button>
+    <button class="secondary" style="padding:7px 10px;font-size:12px" onclick="importBackup()">📥 שחזור</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImportFile(event)">
+  </div>
 </div>
 <div class="card">
-  <b style="font-size:14px">חיפוש וניהול מאגר</b>
-  <input id="search" placeholder="חפש מוצר..." oninput="debouncedRenderProducts()" style="margin-top:8px">
-  <div style="display:flex;gap:8px">
-    <button class="primary" style="flex:1" onclick="openScanner()">📷 סרוק ברקוד</button>
-    <button class="ai-btn" style="flex:1" onclick="openProduct()">＋ הוסף מוצר (AI)</button>
-  </div>
+  <b style="font-size:14px">חיפוש וניהול מאגר</b>
+  <input id="search" placeholder="חפש מוצר..." oninput="debouncedRenderProducts()" style="margin-top:8px">
+  <div style="display:flex;gap:8px">
+    <button class="primary" style="flex:1" onclick="openScanner()">📷 סרוק ברקוד</button>
+    <button class="ai-btn" style="flex:1" onclick="openProduct()">＋ הוסף מוצר (AI)</button>
+  </div>
 </div>
 <div class="card" id="productList"></div>
 </section>
 
 <section id="month" class="hidden">
 <div class="card">
-  <b style="font-size:15px">📅 ארכיון חודשים וצריכה יומית</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">צפה בצריכה היומית מול היעד בכל חודש:</div>
-  <div id="monthList"></div>
+  <b style="font-size:15px">📅 ארכיון חודשים וצריכה יומית</b>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">צפה בצריכה היומית מול היעד בכל חודש:</div>
+  <div id="monthList"></div>
 </div>
 </section>
 <div class="spacer"></div>
@@ -361,30 +370,32 @@ textarea{resize:vertical;min-height:80px}
 </nav>
 </div>
 
-<!-- חלון צף (Floating AI Widget) אינטראקטיבי מלא לכל פעולות ה-AI באפליקציה -->
+<!-- חלון צף (Floating AI Widget) עם אפשרות גרירה, מזעור וסגירה -->
 <div id="ai-chat-widget">
-  <button id="ai-fab-btn" onclick="toggleAIWidget()" title="עוזר אישי מהיר">🤖</button>
-  <div id="aiWidgetModal" class="ai-widget-modal" style="display: none;">
-    <div class="ai-widget-header">
-      <span id="aiWidgetTitle">עוזר תזונה חכם באפליקציה</span>
-      <button onclick="toggleAIWidget()" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
-    </div>
-    <div class="ai-widget-body">
-      <!-- היסטוריית השיחה בחלון הצף -->
-      <div id="aiWidgetChatHistory" style="height: 190px; overflow-y: auto; margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-app); border-radius: 8px; border: 1px solid var(--border-color);">
-        <div class="chat-bubble-ai">
-          <b>עוזר חכם:</b> שלום! איך אפשר לעזור לך עם הקלוריות או הנתונים להיום?
-        </div>
-      </div>
+  <div id="aiWidgetModal" class="ai-widget-modal">
+    <div class="ai-widget-header" id="aiWidgetHeader">
+      <span id="aiWidgetTitle">עוזר תזונה חכם באפליקציה</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="minimizeAIWidget()" title="מזער חלון" style="background:none;border:none;color:var(--primary-dark);font-size:14px;cursor:pointer;padding:0;">🗕</button>
+        <button onclick="toggleAIWidget()" title="סגור חלון" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
+      </div>
+    </div>
+    <div class="ai-widget-body" id="aiWidgetBodyContent">
+      <div id="aiWidgetChatHistory" style="height: 190px; overflow-y: auto; margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-app); border-radius: 8px; border: 1px solid var(--border-color);">
+        <div class="chat-bubble-ai">
+          <b>עוזר חכם:</b> שלום! איך אוכל לעזור לך עם הקלוריות או הנתונים להיום?
+        </div>
+      </div>
 
-      <textarea id="aiWidgetInput" placeholder="כתוב שאלה או בקשה (למשל: עדכן משקל 95 ק״ג)..." rows="2" style="margin-bottom: 6px; font-size: 13px; resize: none;"></textarea>
-      
-      <div style="display: flex; gap: 6px;">
-        <button class="ai-btn" style="padding: 8px; font-size: 12px; flex: 2;" onclick="sendAIWidgetMessage()">שלח הודעה</button>
-        <button class="secondary" style="padding: 8px; font-size: 12px; flex: 1;" onclick="resetAIWidgetChat()">איפוס</button>
-      </div>
-    </div>
-  </div>
+      <textarea id="aiWidgetInput" placeholder="כתוב שאלה או בקשה (למשל: עדכן משקל 95 ק״ג)..." rows="2" style="margin-bottom: 6px; font-size: 13px; resize: none;"></textarea>
+      
+      <div style="display: flex; gap: 6px;">
+        <button class="ai-btn" style="padding: 8px; font-size: 12px; flex: 2;" onclick="sendAIWidgetMessage()">שלח הודעה</button>
+        <button class="secondary" style="padding: 8px; font-size: 12px; flex: 1;" onclick="resetAIWidgetChat()">איפוס</button>
+      </div>
+    </div>
+  </div>
+  <button id="ai-fab-btn" onclick="toggleAIWidget()" title="עוזר אישי מהיר">🤖</button>
 </div>
 
 <div class="modal" id="profileModal"><div class="sheet">
@@ -413,8 +424,8 @@ textarea{resize:vertical;min-height:80px}
 <h2>📷 סריקת ברקוד אוטומטית</h2>
 <div id="scannerStatus" class="muted" style="margin-bottom:10px">מכוון מצלמה לזיהוי ברקוד אוטומטי...</div>
 <div style="position:relative;width:100%;background:#111;border-radius:16px;overflow:hidden">
-  <video id="barcodeVideo" playsinline muted style="width:100%;max-height:50vh;object-fit:cover;display:block"></video>
-  <div style="position:absolute;inset:15%;border:2px dashed var(--primary);border-radius:12px;pointer-events:none;box-shadow:0 0 0 1000px rgba(0,0,0,0.5)"></div>
+  <video id="barcodeVideo" playsinline muted style="width:100%;max-height:50vh;object-fit:cover;display:block"></video>
+  <div style="position:absolute;inset:15%;border:2px dashed var(--primary);border-radius:12px;pointer-events:none;box-shadow:0 0 0 1000px rgba(0,0,0,0.5)"></div>
 </div>
 <div id="barcodeResult" class="card" style="display:none;margin-top:12px"></div>
 <button class="secondary" style="width:100%;margin-top:12px" onclick="closeScanner()">✕ סגור מצלמה</button>
@@ -425,42 +436,42 @@ textarea{resize:vertical;min-height:80px}
 
 <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר ארוחה:</label>
 <select id="mealCategorySelect" style="margin-bottom:10px">
-  <option value="breakfast">🌅 ארוחת בוקר</option>
-  <option value="lunch" selected>☀️ ארוחת צהריים</option>
-  <option value="dinner">🌙 ארוחת ערב</option>
-  <option value="snacks">🍎 נשנושים וביניים</option>
+  <option value="breakfast">🌅 ארוחת בוקר</option>
+  <option value="lunch" selected>☀️ ארוחת צהריים</option>
+  <option value="dinner">🌙 ארוחת ערב</option>
+  <option value="snacks">🍎 נשנושים וביניים</option>
 </select>
 
 <input id="foodSearch" placeholder="חפש מוצר קיים או הקלד מוצר חדש..." oninput="debouncedSuggestIntake()">
 <div id="suggestions" style="margin-bottom:10px"></div>
 
 <div id="newProductQuickFields" class="card" style="display:none;background:var(--primary-light);padding:14px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <span style="font-size:13px;color:var(--primary-dark);font-weight:700">✨ מוצר חדש!</span>
-    <button type="button" class="ai-btn" style="padding:6px 10px;font-size:12px;width:auto" onclick="quickFillWithAI()">🪄 השלם נתונים ב-AI</button>
-  </div>
-  <div id="quickAiStatus" class="muted" style="font-size:11px;margin-bottom:6px;min-height:14px"></div>
-  <div style="display:flex;gap:6px">
-    <input id="quickKcal" type="number" placeholder="קלוריות ל-100ג׳ *" style="margin-bottom:6px" oninput="updateIntakePreview()">
-    <input id="quickUnitG" type="number" placeholder="משקל יחידה (ג׳)" style="margin-bottom:6px" oninput="updateIntakePreview()">
-  </div>
-  <div style="display:flex;gap:6px">
-    <input id="quickProt" type="number" placeholder="חלבון ל-100ג׳" style="margin-bottom:0" oninput="updateIntakePreview()">
-    <input id="quickCarb" type="number" placeholder="פחמימות ל-100ג׳" style="margin-bottom:0" oninput="updateIntakePreview()">
-    <input id="quickFat" type="number" placeholder="שומן ל-100ג׳" style="margin-bottom:0" oninput="updateIntakePreview()">
-  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span style="font-size:13px;color:var(--primary-dark);font-weight:700">✨ מוצר חדש!</span>
+    <button type="button" class="ai-btn" style="padding:6px 10px;font-size:12px;width:auto" onclick="quickFillWithAI()">🪄 השלם נתונים ב-AI</button>
+  </div>
+  <div id="quickAiStatus" class="muted" style="font-size:11px;margin-bottom:6px;min-height:14px"></div>
+  <div style="display:flex;gap:6px">
+    <input id="quickKcal" type="number" placeholder="קלוריות ל-100ג׳ *" style="margin-bottom:6px" oninput="updateIntakePreview()">
+    <input id="quickUnitG" type="number" placeholder="משקל יחידה (ג׳)" style="margin-bottom:6px" oninput="updateIntakePreview()">
+  </div>
+  <div style="display:flex;gap:6px">
+    <input id="quickProt" type="number" placeholder="חלבון ל-100ג׳" style="margin-bottom:0" oninput="updateIntakePreview()">
+    <input id="quickCarb" type="number" placeholder="פחמימות ל-100ג׳" style="margin-bottom:0" oninput="updateIntakePreview()">
+    <input id="quickFat" type="number" placeholder="שומן ל-100ג׳" style="margin-bottom:0" oninput="updateIntakePreview()">
+  </div>
 </div>
 
 <div style="display:flex;gap:8px;margin-top:10px">
-  <select id="unitSelect" style="flex:1" onchange="handleUnitSelection()">
-    <option value="unit">יחידה</option>
-    <option value="g">גרם</option>
-    <option value="ml">מ״ל</option>
-    <option value="tsp">כפית (5 ג׳)</option>
-    <option value="tbsp">כף (15 ג׳)</option>
-    <option value="cup">כוס (240 ג׳)</option>
-  </select>
-  <input id="grams" type="number" min="0" step="any" placeholder="כמות" value="1" style="flex:1" oninput="updateIntakePreview()">
+  <select id="unitSelect" style="flex:1" onchange="handleUnitSelection()">
+    <option value="unit">יחידה</option>
+    <option value="g">גרם</option>
+    <option value="ml">מ״ל</option>
+    <option value="tsp">כפית (5 ג׳)</option>
+    <option value="tbsp">כף (15 ג׳)</option>
+    <option value="cup">כוס (240 ג׳)</option>
+  </select>
+  <input id="grams" type="number" min="0" step="any" placeholder="כמות" value="1" style="flex:1" oninput="updateIntakePreview()">
 </div>
 
 <div id="aiUnitStatus" class="muted" style="font-size:12px;margin-top:6px;text-align:center;min-height:16px"></div>
@@ -477,33 +488,33 @@ textarea{resize:vertical;min-height:80px}
 <div id="duplicateNotice" class="duplicate-warning"></div>
 
 <div class="ai-box">
-  <button type="button" id="aiFillBtn" class="ai-btn" onclick="fetchProductWithAI()">🪄 מילוי/השלמת נתונים ב-AI</button>
-  <div id="aiStatus" class="muted" style="font-size:12px;margin-top:6px;text-align:center;min-height:16px;"></div>
+  <button type="button" id="aiFillBtn" class="ai-btn" onclick="fetchProductWithAI()">🪄 מילוי/השלמת נתונים ב-AI</button>
+  <div id="aiStatus" class="muted" style="font-size:12px;margin-top:6px;text-align:center;min-height:16px;"></div>
 </div>
 
 <div id="productFormFields">
-  <div style="display:flex;gap:8px">
-    <input id="pbrand" placeholder="מותג/יצרן (רשות)">
-    <input id="pbarcode" placeholder="ברקוד (רשות)" oninput="checkBarcodeProtection()">
-  </div>
-  
-  <div style="margin-bottom:12px">
-    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">📷 צלם או העלה תמונה אמיתית של המוצר:</label>
-    <input type="file" id="pImageInput" accept="image/*" onchange="previewProductImage(event)" style="padding:8px">
-    <div id="imgPreviewContainer" style="display:none;margin-top:6px;text-align:center">
-      <img id="imgPreview" style="max-height:100px;border-radius:12px;border:1px solid var(--border-color);display:block;margin:auto">
-      <button type="button" class="secondary" style="font-size:12px;padding:6px 12px;margin-top:8px;width:auto" onclick="clearProductImage()">🔄 צלם/החלף תמונה מחדש</button>
-    </div>
-  </div>
+  <div style="display:flex;gap:8px">
+    <input id="pbrand" placeholder="מותג/יצרן (רשות)">
+    <input id="pbarcode" placeholder="ברקוד (רשות)" oninput="checkBarcodeProtection()">
+  </div>
+  
+  <div style="margin-bottom:12px">
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">📷 צלם או העלה תמונה אמיתית של המוצר:</label>
+    <input type="file" id="pImageInput" accept="image/*" onchange="previewProductImage(event)" style="padding:8px">
+    <div id="imgPreviewContainer" style="display:none;margin-top:6px;text-align:center">
+      <img id="imgPreview" style="max-height:100px;border-radius:12px;border:1px solid var(--border-color);display:block;margin:auto">
+      <button type="button" class="secondary" style="font-size:12px;padding:6px 12px;margin-top:8px;width:auto" onclick="clearProductImage()">🔄 צלם/החלף תמונה מחדש</button>
+    </div>
+  </div>
 
-  <input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
-  <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל *" oninput="updateProductUnitCalc()">
-  <div style="display:flex;gap:6px">
-    <input id="pprotein" type="number" placeholder="חלבון ל-100ג׳" oninput="updateProductUnitCalc()">
-    <input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
-    <input id="pfat" type="number" placeholder="שומן ל-100ג׳" oninput="updateProductUnitCalc()">
-  </div>
-  <div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:var(--primary-light);font-size:14px"></div>
+  <input id="punitg" type="number" min="0" step="any" placeholder="משקל / נפח יחידה אחת (גרם/מ״ל)" oninput="updateProductUnitCalc()">
+  <input id="pkcal" type="number" placeholder="קלוריות ל-100 גרם/מ״ל *" oninput="updateProductUnitCalc()">
+  <div style="display:flex;gap:6px">
+    <input id="pprotein" type="number" placeholder="חלבון ל-100ג׳" oninput="updateProductUnitCalc()">
+    <input id="pcarbs" type="number" placeholder="פחמימות ל-100ג׳" oninput="updateProductUnitCalc()">
+    <input id="pfat" type="number" placeholder="שומן ל-100ג׳" oninput="updateProductUnitCalc()">
+  </div>
+  <div id="productUnitPreview" class="card" style="display:none;margin-bottom:10px;background:var(--primary-light);font-size:14px"></div>
 </div>
 
 <button class="primary" id="saveProductBtn" onclick="saveProduct()">שמור מוצר למאגר</button>
@@ -519,20 +530,14 @@ textarea{resize:vertical;min-height:80px}
 
 <script>
 (function(){
-  function load(src, fallback){
-    var s=document.createElement('script');s.src=src;
-    s.onload=function(){ window.__zxingLoaded=true; };
-    s.onerror=function(){
-      if(fallback){
-        var f=document.createElement('script');f.src=fallback;
-        f.onload=function(){ window.__zxingLoaded=true; };
-        document.head.appendChild(f);
-      }
-    };
-    document.head.appendChild(s);
-  }
-  load('https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
-       'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js');
+  var s=document.createElement('script');
+  s.src='https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js';
+  s.onerror=function(){
+    var f=document.createElement('script');
+    f.src='https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js';
+    document.head.appendChild(f);
+  };
+  document.head.appendChild(s);
 })();
 </script>
 <script>
@@ -540,12 +545,10 @@ const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 
 let currentImageData = "";
-let analyzedIngredientsList = [];
-
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
 if(!db) {
-  db = { products: [], intake: {}, weights: {}, startWeight: 108, profile: { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2', customKcal: null } };
-  save();
+  db = { products: [], intake: {}, weights: {}, startWeight: 108, profile: { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2', customKcal: null } };
+  save();
 }
 if(!db.weights) db.weights = {};
 if(!db.startWeight) db.startWeight = 108;
@@ -555,1362 +558,679 @@ function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function dateText(){document.getElementById('date').textContent=new Date().toLocaleDateString('he-IL',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
 
 function todayKey(){
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function today(){return db.intake[todayKey()]||[]}
 function round1(v){return Math.round(Number(v||0)*10)/10}
-
 function cleanCode(str){ return String(str || '').replace(/\D/g, '').trim(); }
 function normalizeStr(str) { return String(str || '').toLowerCase().replace(/[׳'"]/g, '').trim(); }
 
 function toggleTheme() {
-  const body = document.body;
-  const btn = document.querySelector('.theme-toggle');
-  if(body.getAttribute('data-theme') === 'light') {
-    body.setAttribute('data-theme', 'dark');
-    btn.textContent = '☀️';
-  } else {
-    body.setAttribute('data-theme', 'light');
-    btn.textContent = '🌙';
-  }
+  const body = document.body;
+  const btn = document.querySelector('.theme-toggle');
+  if(body.getAttribute('data-theme') === 'light') {
+    body.setAttribute('data-theme', 'dark');
+    btn.textContent = '☀️';
+  } else {
+    body.setAttribute('data-theme', 'light');
+    btn.textContent = '🌙';
+  }
 }
 
 function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), wait);
-  };
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
 }
 
 const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-// פונקציות לחלון הצף האינטראקטיבי המרכזי
-function toggleAIWidget(customPrompt = null, customTitle = 'עוזר תזונה חכם באפליקציה') {
-  const modal = document.getElementById('aiWidgetModal');
-  const titleEl = document.getElementById('aiWidgetTitle');
-  if(titleEl) titleEl.textContent = customTitle;
+async function callGeminiWithRetry(promptText, retries = 3, delay = 3000) {
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  if(!apiKey) throw new Error('לא הוגדר API Key בהגדרות');
 
-  const isOpen = modal.style.display === 'block';
-  modal.style.display = isOpen ? 'none' : 'block';
+  for (let i = 0; i < retries; i++) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+    });
+    const data = await res.json();
+    
+    if (!data.error) return data;
 
-  if(!isOpen && customPrompt) {
-    const inputEl = document.getElementById('aiWidgetInput');
-    inputEl.value = customPrompt;
-    sendAIWidgetMessage();
-  } else if(modal.style.display === 'block') {
-    const historyDiv = document.getElementById('aiWidgetChatHistory');
-    historyDiv.scrollTop = historyDiv.scrollHeight;
-  }
+    if ((data.error.code === 429 || (data.error.message && data.error.message.includes('Quota'))) && i < retries - 1) {
+      await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+      continue;
+    }
+    throw new Error(data.error.message || 'שגיאת API');
+  }
+  throw new Error('הגעת למכסת הבקשות החינמית. אנא המתן מספר דקות ונסה שוב.');
 }
 
+function toggleAIWidget(customPrompt = null, customTitle = 'עוזר תזונה חכם באפליקציה') {
+  const modal = document.getElementById('aiWidgetModal');
+  const titleEl = document.getElementById('aiWidgetTitle');
+  if(titleEl) titleEl.textContent = customTitle;
+
+  const isOpen = modal.style.display === 'block';
+  modal.style.display = isOpen ? 'none' : 'block';
+
+  if(!isOpen && customPrompt) {
+    const inputEl = document.getElementById('aiWidgetInput');
+    inputEl.value = customPrompt;
+    sendAIWidgetMessage();
+  } else if(modal.style.display === 'block') {
+    const historyDiv = document.getElementById('aiWidgetChatHistory');
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+  }
+}
+
+function minimizeAIWidget() {
+  const bodyContent = document.getElementById('aiWidgetBodyContent');
+  bodyContent.style.display = bodyContent.style.display === 'none' ? 'block' : 'none';
+}
+
+(function initWidgetDrag() {
+  const widget = document.getElementById('ai-chat-widget');
+  const header = document.getElementById('aiWidgetHeader');
+  let isDragging = false, startX, startY;
+
+  header.addEventListener('mousedown', dragStart);
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('mouseup', dragEnd);
+
+  header.addEventListener('touchstart', dragStart, {passive: true});
+  document.addEventListener('touchmove', drag, {passive: true});
+  document.addEventListener('touchend', dragEnd);
+
+  function dragStart(e) {
+    isDragging = true;
+    startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+    
+    const rect = widget.getBoundingClientRect();
+    widget.style.left = rect.left + 'px';
+    widget.style.top = rect.top + 'px';
+    widget.style.right = 'auto';
+    widget.style.bottom = 'auto';
+  }
+
+  function drag(e) {
+    if (!isDragging) return;
+    const clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+
+    widget.style.left = (widget.offsetLeft + (clientX - startX)) + 'px';
+    widget.style.top = (widget.offsetTop + (clientY - startY)) + 'px';
+
+    startX = clientX;
+    startY = clientY;
+  }
+
+  function dragEnd() { isDragging = false; }
+})();
+
 async function sendAIWidgetMessage() {
-  const inputEl = document.getElementById('aiWidgetInput');
-  const historyDiv = document.getElementById('aiWidgetChatHistory');
-  const query = inputEl.value.trim();
-  const apiKey = localStorage.getItem(API_KEY_STORAGE);
+  const inputEl = document.getElementById('aiWidgetInput');
+  const historyDiv = document.getElementById('aiWidgetChatHistory');
+  const query = inputEl.value.trim();
+  const apiKey = localStorage.getItem(API_KEY_STORAGE);
 
-  if(!query) return;
+  if(!query) return;
 
-  historyDiv.innerHTML += `<div class="chat-bubble-user" style="background: var(--chat-user-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);"><b>אתה:</b> ${query}</div>`;
-  inputEl.value = '';
-  historyDiv.scrollTop = historyDiv.scrollHeight;
+  historyDiv.innerHTML += `<div class="chat-bubble-user" style="background: var(--chat-user-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);"><b>אתה:</b> ${query}</div>`;
+  inputEl.value = '';
+  historyDiv.scrollTop = historyDiv.scrollHeight;
 
-  const typingId = 'typing_' + Date.now();
-  historyDiv.innerHTML += `<div id="${typingId}" class="muted" style="font-size: 11px; padding: 2px;">⚡ מעבד פעולה ותשובה...</div>`;
-  historyDiv.scrollTop = historyDiv.scrollHeight;
+  const typingId = 'typing_' + Date.now();
+  historyDiv.innerHTML += `<div id="${typingId}" class="muted" style="font-size: 11px; padding: 2px;">⚡ מעבד פעולה ותשובה...</div>`;
+  historyDiv.scrollTop = historyDiv.scrollHeight;
 
-  try {
-    const targets = calculateTargets();
-    const a = today();
-    const consumed = a.reduce((s,x)=>s+(x.kcal||0),0);
-    const remaining = Math.max(0, targets.kcal - consumed);
+  try {
+    const targets = calculateTargets();
+    const a = today();
+    const consumed = a.reduce((s,x)=>s+(x.kcal||0),0);
+    const remaining = Math.max(0, targets.kcal - consumed);
 
-    // זיהוי פקודות מערכת אוטומטיות (כמו עדכון משקל או הוספת אריזה)
-    let systemActionExecuted = false;
-    let systemActionMsg = '';
+    let systemActionExecuted = false;
+    let systemActionMsg = '';
 
-    if(query.includes('משקל') && (query.includes('עדכן') || query.includes('שמור') || query.includes('היה'))) {
-      const matchNum = query.match(/\d+(\.\d+)?/);
-      if(matchNum) {
-        const valW = Number(matchNum[0]);
-        const dKey = todayKey();
-        db.weights[dKey] = valW;
-        db.profile.weight = valW;
-        save();
-        systemActionExecuted = true;
-        systemActionMsg = `⚖️ פעולה בוצעה אוטומטית: עודכן משקל נוכחי ל-${valW} ק״ג להיום (${dKey}) ונשמר במערכת!`;
-        renderWeightScreen();
-      }
-    }
+    if(query.includes('משקל') && (query.includes('עדכן') || query.includes('שמור') || query.includes('היה'))) {
+      const matchNum = query.match(/\d+(\.\d+)?/);
+      if(matchNum) {
+        const valW = Number(matchNum[0]);
+        const dKey = todayKey();
+        db.weights[dKey] = valW;
+        db.profile.weight = valW;
+        save();
+        systemActionExecuted = true;
+        systemActionMsg = `⚖️ פעולה בוצעה אוטומטית: עודכן משקל נוכחי ל-${valW} ק״ג להיום ונשמר במערכת!`;
+        renderWeightScreen();
+      }
+    }
 
-    if(apiKey) {
-      const promptText = `You are a professional personal fitness, nutrition coach and in-app action assistant inside a calorie tracking app.
+    if(apiKey) {
+      const promptText = `You are a professional personal fitness, nutrition coach and in-app action assistant inside a calorie tracking app.
 App current state:
-- Daily calorie goal: ${targets.kcal} kcal (Protein: ${targets.protein}g, Carbs: ${targets.carbs}g, Fat: ${targets.fat}g)
+- Daily calorie goal: ${targets.kcal} kcal
 - Consumed today: ${Math.round(consumed)} kcal, Remaining: ${remaining} kcal
-- Current weight: ${db.profile?.weight || 104}kg, Target weight: ${db.profile?.targetWeight || 90}kg
+- Current weight: ${db.profile?.weight || 104}kg
 
 User request: "${query}"
 
-Answer in clear Hebrew. If the user asked for a coaching analysis, meal recommendation, or recipe breakdown, provide it professionally and concisely. If they requested an action (like weight update), acknowledge the executed action.`;
-      
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message || 'API Error');
-      let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
-      
-      document.getElementById(typingId).remove();
-      
-      let fullHtmlResponse = '';
-      if(systemActionExecuted) {
-        fullHtmlResponse += `<div style="color:var(--primary-dark); font-weight:bold; margin-bottom:4px;">${systemActionMsg}</div>`;
-      }
-      fullHtmlResponse += `<div style="white-space:pre-line;">${textResult}</div>`;
+Answer in clear Hebrew concisely.`;
+      
+      const data = await callGeminiWithRetry(promptText);
+      let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
+      
+      document.getElementById(typingId).remove();
+      
+      let fullHtmlResponse = '';
+      if(systemActionExecuted) {
+        fullHtmlResponse += `<div style="color:var(--primary-dark); font-weight:bold; margin-bottom:4px;">${systemActionMsg}</div>`;
+      }
+      fullHtmlResponse += `<div style="white-space:pre-line;">${textResult}</div>`;
 
-      historyDiv.innerHTML += `<div class="chat-bubble-ai" style="background: var(--chat-ai-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--chat-ai-border);"><b>עוזר חכם:</b><div style="margin-top:4px;">${fullHtmlResponse}</div></div>`;
-    } else {
-      document.getElementById(typingId).remove();
-      let localAnswer = systemActionExecuted ? systemActionMsg : `נשארו לך להיום ${remaining} קלוריות מתוך יעד של ${targets.kcal}. (לניתוחים מתקדמים, הגדר API Key בהגדרות).`;
-      historyDiv.innerHTML += `<div class="chat-bubble-ai" style="background: var(--chat-ai-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--chat-ai-border);"><b>עוזר חכם:</b><br>${localAnswer}</div>`;
-    }
-    historyDiv.scrollTop = historyDiv.scrollHeight;
-  } catch(e) {
-    const typingEl = document.getElementById(typingId);
-    if(typingEl) typingEl.remove();
-    historyDiv.innerHTML += `<div style="color:#c53030; font-size:11px;">שגיאה בתקשורת: ${e.message}</div>`;
-    historyDiv.scrollTop = historyDiv.scrollHeight;
-  }
+      historyDiv.innerHTML += `<div class="chat-bubble-ai" style="background: var(--chat-ai-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--chat-ai-border);"><b>עוזר חכם:</b><div style="margin-top:4px;">${fullHtmlResponse}</div></div>`;
+    } else {
+      document.getElementById(typingId).remove();
+      let localAnswer = systemActionExecuted ? systemActionMsg : `נשארו לך להיום ${remaining} קלוריות מתוך יעד של ${targets.kcal}. (הגדר API Key בהגדרות לשיחות מתקדמות).`;
+      historyDiv.innerHTML += `<div class="chat-bubble-ai" style="background: var(--chat-ai-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--chat-ai-border);"><b>עוזר חכם:</b><br>${localAnswer}</div>`;
+    }
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+  } catch(e) {
+    const typingEl = document.getElementById(typingId);
+    if(typingEl) typingEl.remove();
+    historyDiv.innerHTML += `<div style="color:#c53030; font-size:11px; padding:4px;">⚠️ <b>שגיאת מכסה או תקשורת:</b> ${e.message}</div>`;
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+  }
 }
 
 function resetAIWidgetChat() {
-  document.getElementById('aiWidgetChatHistory').innerHTML = `
-    <div class="chat-bubble-ai">
-      <b>עוזר חכם:</b> השיחה אופסה. איך אוכל לעזור?
-    </div>
-  `;
-  document.getElementById('aiWidgetInput').value = '';
+  document.getElementById('aiWidgetChatHistory').innerHTML = `
+    <div class="chat-bubble-ai">
+      <b>עוזר חכם:</b> השיחה אופסה. איך אוכל לעזור?
+    </div>
+  `;
+  document.getElementById('aiWidgetInput').value = '';
 }
 
-// מעבר כל לחיצות ה-AI לחלון הצף האינטראקטיבי
 function triggerAiDailyCoachFeedback() {
-  const prompt = "נתח את התזונה וההתקדמות שלי להיום, תן לי משפט חיזוק, מוטיבציה וטיפים מעשיים לשיפור.";
-  toggleAIWidget(prompt, "🌟 חוות דעת ופידבק יומי מהמאמן");
+  toggleAIWidget("נתח את התזונה וההתקדמות שלי להיום ותן לי טיפים ומוטיבציה.", "🌟 חוות דעת ופידבק יומי");
 }
 
 function triggerAiCumulativeCoachFeedback() {
-  const prompt = "תן לי ניתוח מצטבר וסקירת תקופה כוללת על ההתנהלות התזונתית שלי בימים האחרונים ומגמות ההתקדמות.";
-  toggleAIWidget(prompt, "📈 ניתוח מצטבר וסקירת תקופה");
+  toggleAIWidget("תן לי ניתוח מצטבר וסקירת תקופה על ההתנהלות התזונתית שלי בימים האחרונים.", "📈 ניתוח מצטבר");
 }
 
 function triggerAnalyzeRecipeWithAI() {
-  const name = document.getElementById('recipeNameInput').value.trim() || 'מוקפץ ביתי';
-  const recipe = document.getElementById('recipeInput').value.trim();
-  if(!recipe) return alert('נא להזין את רכיבי המתכון בשדה למעלה.');
-  
-  const prompt = `נתח את רכיבי המתכון הבאים עבור "${name}": "${recipe}". חשב קלוריות ומאקרו ל-100 גרם, והצג גם את פירוט הרכיבים כך שאוכל לשמור אותם למאגר.`;
-  toggleAIWidget(prompt, `🍲 ניתוח מתכון: ${name}`);
+  const name = document.getElementById('recipeNameInput').value.trim() || 'מוקפץ ביתי';
+  const recipe = document.getElementById('recipeInput').value.trim();
+  if(!recipe) return alert('נא להזין את רכיבי המתכון בשדה למעלה.');
+  toggleAIWidget(`נתח את רכיבי המתכון עבור "${name}": "${recipe}". חשב קלוריות ומאקרו ל-100 גרם.`, `🍲 ניתוח מתכון: ${name}`);
 }
 
 function triggerSingleMealRecommendation(cat) {
-  const mealNamesMap = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snacks: 'נשנושים וביניים' };
-  const prompt = `המלץ לי על מנה אחת מדויקת ובריאה עבור ${mealNamesMap[cat]} שמתאימה בדיוק ליתרת הקלוריות שלי להיום, כולל כמויות וערכים תזונתיים.`;
-  toggleAIWidget(prompt, `✨ המלצת AI לארוחת ${mealNamesMap[cat]}`);
+  const mealNamesMap = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snacks: 'נשנושים וביניים' };
+  toggleAIWidget(`המלץ לי על מנה אחת מדויקת עבור ${mealNamesMap[cat]} שמתאימה בדיוק ליתרת הקלוריות שלי להיום.`, `✨ המלצת AI לארוחת ${mealNamesMap[cat]}`);
 }
 
 function calculateTargetsForProfile(prof) {
-  if (prof.customKcal && Number(prof.customKcal) > 0) {
-    const targetKcal = Number(prof.customKcal);
-    const targetProtein = Math.round(Number(prof.weight) * 2);
-    const targetFat = Math.round((targetKcal * 0.25) / 9);
-    const targetCarbs = Math.round((targetKcal - (targetProtein * 4) - (targetFat * 9)) / 4);
-    return { kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
-  }
+  if (prof.customKcal && Number(prof.customKcal) > 0) {
+    const targetKcal = Number(prof.customKcal);
+    const targetProtein = Math.round(Number(prof.weight) * 2);
+    const targetFat = Math.round((targetKcal * 0.25) / 9);
+    const targetCarbs = Math.round((targetKcal - (targetProtein * 4) - (targetFat * 9)) / 4);
+    return { kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
+  }
 
-  let bmr = (10 * Number(prof.weight)) + (6.25 * Number(prof.height)) - (5 * Number(prof.age));
-  bmr += (prof.gender === 'female' ? -161 : 5);
+  let bmr = (10 * Number(prof.weight)) + (6.25 * Number(prof.height)) - (5 * Number(prof.age));
+  bmr += (prof.gender === 'female' ? -161 : 5);
+  let targetKcal = Math.round(bmr * Number(prof.activity));
 
-  let tdee = bmr * Number(prof.activity);
-  let targetKcal = Math.round(tdee);
+  if (prof.goal === 'cut') targetKcal -= 500;
+  else if (prof.goal === 'bulk') targetKcal += 300;
+  if (targetKcal < 1200) targetKcal = 1200;
 
-  if (prof.goal === 'cut') targetKcal -= 500;
-  else if (prof.goal === 'bulk') targetKcal += 300;
+  const targetProtein = Math.round(Number(prof.weight) * 2);
+  const targetFat = Math.round((targetKcal * 0.25) / 9);
+  const targetCarbs = Math.round((targetKcal - (targetProtein * 4) - (targetFat * 9)) / 4);
 
-  if (targetKcal < 1200) targetKcal = 1200;
-
-  const targetProtein = Math.round(Number(prof.weight) * 2);
-  const targetFat = Math.round((targetKcal * 0.25) / 9);
-  const targetCarbs = Math.round((targetKcal - (targetProtein * 4) - (targetFat * 9)) / 4);
-
-  return { kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
+  return { kcal: targetKcal, protein: targetProtein, carbs: targetCarbs, fat: targetFat };
 }
 
-function calculateTargets() {
-  return calculateTargetsForProfile(db.profile);
-}
+function calculateTargets() { return calculateTargetsForProfile(db.profile); }
 
 function previewProfileCalculation() {
-  const tempProfile = {
-    weight: Number(pWeight.value) || 104,
-    targetWeight: Number(pTargetWeight.value) || 90,
-    height: Number(pHeight.value) || 178,
-    age: Number(pAge.value) || 30,
-    gender: pGender.value,
-    goal: pGoal.value,
-    activity: pActivity.value,
-    customKcal: null
-  };
-
-  const targets = calculateTargetsForProfile(tempProfile);
-  const activityText = pActivity.options[pActivity.selectedIndex].text;
-  const goalText = pGoal.options[pGoal.selectedIndex].text;
-
-  const content = `
-    <b>📋 נתונים נבחרים:</b><br>
-    • רמת פעילות: ${activityText}<br>
-    • מטרה: ${goalText}<br>
-    <hr style="border:0;border-top:1px solid var(--border-color);margin:10px 0">
-    <b>🔥 יעד קלוריות מחושב (ניתן לעריכה חופשית):</b><br>
-    <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
-      <input id="modalEditableKcal" type="number" value="${targets.kcal}" style="margin:0;font-weight:bold;font-size:16px;text-align:center">
-      <span style="font-size:13px">קק״ל</span>
-    </div>
-  `;
-
-  document.getElementById('profilePreviewContent').innerHTML = content;
-  window.__tempProfileToSave = tempProfile;
-  lockPageScroll();
-  document.getElementById('profileModal').classList.add('open');
+  const tempProfile = {
+    weight: Number(pWeight.value) || 104,
+    targetWeight: Number(pTargetWeight.value) || 90,
+    height: Number(pHeight.value) || 178,
+    age: Number(pAge.value) || 30,
+    gender: pGender.value,
+    goal: pGoal.value,
+    activity: pActivity.value,
+    customKcal: null
+  };
+  const targets = calculateTargetsForProfile(tempProfile);
+  document.getElementById('profilePreviewContent').innerHTML = `
+    <b>🔥 יעד קלוריות מחושב:</b><br>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+      <input id="modalEditableKcal" type="number" value="${targets.kcal}" style="margin:0;font-weight:bold;font-size:16px;text-align:center">
+      <span style="font-size:13px">קק״ל</span>
+    </div>
+  `;
+  window.__tempProfileToSave = tempProfile;
+  lockPageScroll();
+  document.getElementById('profileModal').classList.add('open');
 }
 
 function confirmAndSaveProfile() {
-  if(!window.__tempProfileToSave) return;
-  const customInputVal = document.getElementById('modalEditableKcal').value;
-  
-  window.__tempProfileToSave.customKcal = Number(customInputVal) || null;
-  db.profile = window.__tempProfileToSave;
-
-  if(db.profile.weight && !db.startWeight) {
-    db.startWeight = db.profile.weight;
-  }
-  
-  save();
-  closeModal();
-  renderToday();
-  renderWeightScreen();
-  alert('היעדים עודכנו בהצלחה באפליקציה!');
-  show('today');
+  if(!window.__tempProfileToSave) return;
+  window.__tempProfileToSave.customKcal = Number(document.getElementById('modalEditableKcal').value) || null;
+  db.profile = window.__tempProfileToSave;
+  save(); closeModal(); renderToday(); alert('היעדים עודכנו בהצלחה!'); show('today');
 }
 
 function loadProfileToInputs(){
-  const p = db.profile;
-  if(!p) return;
-  pWeight.value = p.weight || '';
-  pTargetWeight.value = p.targetWeight || '';
-  pHeight.value = p.height || '';
-  pAge.value = p.age || '';
-  pGender.value = p.gender || 'male';
-  pGoal.value = p.goal || 'cut';
-  pActivity.value = p.activity || '1.2';
+  const p = db.profile;
+  if(!p) return;
+  pWeight.value = p.weight || ''; pTargetWeight.value = p.targetWeight || '';
+  pHeight.value = p.height || ''; pAge.value = p.age || '';
+  pGender.value = p.gender || 'male'; pGoal.value = p.goal || 'cut'; pActivity.value = p.activity || '1.2';
 }
 
 function saveStartWeight(){
-  const val = Number(startWeightInput.value);
-  if(!val || val <= 0) return alert('נא להזין משקל התחלתי תקין');
-  db.startWeight = val;
-  save();
-  renderWeightScreen();
-  alert('המשקל ההתחלתי נשמר בהצלחה!');
+  const val = Number(startWeightInput.value);
+  if(!val || val <= 0) return alert('נא להזין משקל תקין');
+  db.startWeight = val; save(); renderWeightScreen(); alert('נשמר בהצלחה!');
 }
 
 function saveWeightLog(){
-  const dateVal = weightDateInput.value;
-  const val = Number(weightValueInput.value);
-  if(!dateVal) return alert('נא לבחור תאריך');
-  if(!val || val <= 0) return alert('נא להזין משקל תקין');
-
-  db.weights[dateVal] = val;
-  save();
-  renderWeightScreen();
-  alert('המדידה נשמרה בהצלחה!');
+  const dateVal = weightDateInput.value, val = Number(weightValueInput.value);
+  if(!dateVal || !val) return alert('נא למלא תאריך ומשקל');
+  db.weights[dateVal] = val; save(); renderWeightScreen(); alert('המדידה נשמרה!');
 }
 
 function renderWeightScreen(){
-  if(db.startWeight) startWeightInput.value = db.startWeight;
-  if(!weightDateInput.value) weightDateInput.value = todayKey();
+  if(db.startWeight) startWeightInput.value = db.startWeight;
+  if(!weightDateInput.value) weightDateInput.value = todayKey();
+  const sortedDates = Object.keys(db.weights).sort();
+  const startW = db.startWeight || 108, targetW = db.profile?.targetWeight || 0;
+  let currentW = sortedDates.length > 0 ? db.weights[sortedDates[sortedDates.length - 1]] : startW;
 
-  const sortedDates = Object.keys(db.weights).sort();
-  const startW = db.startWeight || 108;
-  const targetW = db.profile?.targetWeight || 0;
-
-  let currentW = startW;
-  if(sortedDates.length > 0) {
-    currentW = db.weights[sortedDates[sortedDates.length - 1]];
-  }
-
-  let distanceToTargetText = 'לא הוגדר יעד';
-  if(targetW > 0) {
-    let diff = round1(currentW - targetW);
-    if(diff === 0) distanceToTargetText = '🎯 הגעת ליעד בהצלחה!';
-    else if(diff > 0) distanceToTargetText = `${diff} ק״ג ליעד`;
-    else distanceToTargetText = `${Math.abs(diff)} ק״ג מעבר ליעד`;
-  }
-
-  let summaryHtml = `
-    <b>🎯 יעד משקל:</b> ${targetW > 0 ? targetW + ' ק״ג' : 'לא הוגדר'} | <b>מרחק מהיעד:</b> ${distanceToTargetText}<br>
-    <b>⚖️ משקל התחלתי:</b> ${startW} ק״ג | <b>משקל נוכחי:</b> ${currentW} ק״ג
-  `;
-  document.getElementById('weightSummaryCard').innerHTML = summaryHtml;
-
-  let html = '';
-  if(sortedDates.length === 0) {
-    html = '<div class="muted">טרם הוזנו מדידות משקל.</div>';
-  } else {
-    let prevW = null;
-    let listRows = [];
-    
-    sortedDates.forEach(d => {
-      const w = db.weights[d];
-      let diffPrev = prevW !== null ? round1(w - prevW) : null;
-      let diffStart = round1(w - startW);
-      let diffTarget = targetW > 0 ? round1(w - targetW) : null;
-      
-      listRows.unshift(`
-        <div class="item">
-          <div>
-            <b>${new Date(d+'T12:00:00').toLocaleDateString('he-IL')}</b>
-            <div class="muted">⚖️ ${w} ק״ג</div>
-          </div>
-          <div style="text-align:left">
-            ${diffPrev !== null ? `<div style="font-size:12px;color:${diffPrev<=0?'var(--primary)':'#c53030'}">הפרש מאתמול: ${diffPrev>0?'+':''}${diffPrev}ק״ג</div>` : ''}
-            <div style="font-size:12px;color:${diffStart<=0?'var(--primary)':'#c53030'}">הפרש מהתחלה: ${diffStart>0?'+':''}${diffStart}ק״ג</div>
-            ${diffTarget !== null ? `<div style="font-size:12px;font-weight:600;color:${diffTarget<=0?'var(--primary)':'#c53030'}">הפרש מהיעד: ${diffTarget>0?'+':''}${diffTarget}ק״ג</div>` : ''}
-            <button class="secondary" style="font-size:11px;padding:3px 8px;margin-top:6px" onclick="deleteWeight('${d}')">🗑️ מחק</button>
-          </div>
-        </div>
-      `);
-      prevW = w;
-    });
-    html = listRows.join('');
-  }
-  document.getElementById('weightHistoryList').innerHTML = html;
+  document.getElementById('weightSummaryCard').innerHTML = `<b>🎯 יעד:</b> ${targetW} ק״ג | <b>נוכחי:</b> ${currentW} ק״ג`;
+  
+  document.getElementById('weightHistoryList').innerHTML = sortedDates.length === 0 ? '<div class="muted">אין מדידות.</div>' : sortedDates.map(d => `
+    <div class="item">
+      <div><b>${new Date(d+'T12:00:00').toLocaleDateString('he-IL')}</b><div class="muted">⚖️ ${db.weights[d]} ק״ג</div></div>
+      <button class="secondary" style="font-size:11px;padding:3px 8px" onclick="deleteWeight('${d}')">🗑️ מחק</button>
+    </div>
+  `).join('');
 }
 
-function deleteWeight(dateStr){
-  if(!confirm(`למחוק את מדידת המשקל מתאריך ${dateStr}?`)) return;
-  delete db.weights[dateStr];
-  save();
-  renderWeightScreen();
-}
-
+function deleteWeight(d){ delete db.weights[d]; save(); renderWeightScreen(); }
 function checkRealtimeDuplicate(){
-  const val = normalizeStr(pname.value);
-  const editing = window.editingProductIndex;
-  const notice = document.getElementById('duplicateNotice');
-  
-  if(!val || val.length < 2) {
-    notice.style.display = 'none';
-    return;
-  }
-  
-  let matchedIndex = -1;
-  for(let i = 0; i < db.products.length; i++) {
-    if(editing !== null && editing !== undefined && i === editing) continue;
-    let target = normalizeStr(db.products[i].name);
-    if(target.includes(val) || val.includes(target)) {
-      matchedIndex = i;
-      break;
-    }
-  }
-
-  if(matchedIndex >= 0) {
-    const matchedProduct = db.products[matchedIndex];
-    notice.style.display = 'block';
-    notice.innerHTML = `⚠️ <b>מצאנו מוצר דומה במאגר:</b> "${matchedProduct.name}"<br>` +
-      `<button type="button" class="secondary" style="padding:6px 10px;font-size:12px;margin-top:6px;width:100%" onclick="editProduct(${matchedIndex})">✏️ לעריכת המוצר הקיים לחץ כאן</button>`;
-  } else {
-    notice.style.display = 'none';
-  }
+  const val = normalizeStr(pname.value);
+  const notice = document.getElementById('duplicateNotice');
+  if(!val || val.length < 2) { notice.style.display = 'none'; return; }
+  const found = db.products.find(x => normalizeStr(x.name).includes(val));
+  if(found) {
+    notice.style.display = 'block';
+    notice.innerHTML = `⚠️ מוצר דומה קיים: "${found.name}"`;
+  } else { notice.style.display = 'none'; }
 }
 
-function openSettings(){
-  apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || '';
-  lockPageScroll();
-  settingsModal.classList.add('open');
-}
-
+function openSettings(){ apiKeyInput.value = localStorage.getItem(API_KEY_STORAGE) || ''; lockPageScroll(); settingsModal.classList.add('open'); }
 function saveApiKey(){
-  const key = apiKeyInput.value.trim();
-  if(key) {
-    localStorage.setItem(API_KEY_STORAGE, key);
-    alert('מפתח ה-API נשמר בהצלחה!');
-  } else {
-    localStorage.removeItem(API_KEY_STORAGE);
-    alert('מפתח ה-API הוסר.');
-  }
-  closeModal();
+  const key = apiKeyInput.value.trim();
+  if(key) localStorage.setItem(API_KEY_STORAGE, key); else localStorage.removeItem(API_KEY_STORAGE);
+  closeModal(); alert('המפתח נשמר!');
 }
 
 async function handleUnitSelection() {
-  const unit = unitSelect.value;
-  const status = document.getElementById('aiUnitStatus');
-  status.textContent = '';
-
-  if (unit === 'unit' && selected && !selected.unit_g) {
-    const apiKey = localStorage.getItem(API_KEY_STORAGE);
-    if (!apiKey) {
-      status.textContent = '⚠️ למוצר אין משקל יחידה במאגר. (הגדר API Key להשלמה אוטומטית)';
-      status.style.color = '#c53030';
-      updateIntakePreview();
-      return;
-    }
-
-    status.textContent = '⚡ מברר משקל יחידה ממוצע ב-AI...';
-    status.style.color = 'var(--primary)';
-
-    const promptText = `Provide standard single portion/unit weight in grams for food item: "${selected.name}". Return ONLY a valid JSON object without code blocks: {"unit_g": number}`;
-
-    try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-      });
-
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message || 'API Error');
-
-      let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      textResult = textResult.replace(/```json|```/g, '').trim();
-
-      const parsed = JSON.parse(textResult);
-      if (parsed.unit_g && parsed.unit_g > 0) {
-        selected.unit_g = parsed.unit_g;
-        const pIdx = db.products.findIndex(x => x.name === selected.name);
-        if (pIdx >= 0) db.products[pIdx].unit_g = parsed.unit_g;
-        save();
-
-        status.textContent = `✨ הוגדר משקל יחידה אוטומטי: ${parsed.unit_g}ג׳ (נשמר במאגר)`;
-        status.style.color = 'var(--primary)';
-      } else {
-        throw new Error('משקל לא תקין');
-      }
-    } catch (e) {
-      console.error(e);
-      status.textContent = '❌ לא ניתן להעריך משקל יחידה ב-AI.';
-      status.style.color = '#c53030';
-    }
-  }
-  updateIntakePreview();
+  const unit = unitSelect.value;
+  const status = document.getElementById('aiUnitStatus');
+  status.textContent = '';
+  if (unit === 'unit' && selected && !selected.unit_g) {
+    try {
+      status.textContent = '⚡ מברר משקל יחידה ב-AI...';
+      const promptText = `Provide standard unit weight in grams for: "${selected.name}". Return ONLY valid JSON: {"unit_g": number}`;
+      const data = await callGeminiWithRetry(promptText);
+      let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(textResult);
+      if (parsed.unit_g) {
+        selected.unit_g = parsed.unit_g;
+        save();
+        status.textContent = `✨ משקל יחידה: ${parsed.unit_g}ג׳`;
+      }
+    } catch(e) { status.textContent = ''; }
+  }
+  updateIntakePreview();
 }
 
 function checkBarcodeProtection(){
-  const barcodeVal = pbarcode.value.trim();
-  if(barcodeVal) {
-    aiStatus.textContent = '🔒 מוצר בעל ברקוד מוגן מפני עדכון AI (עדיפות לנתוני האריזה בפועל)';
-    aiStatus.style.color = '#c53030';
-  } else {
-    aiStatus.textContent = '';
-    aiStatus.style.color = 'var(--text-muted)';
-  }
+  if(pbarcode.value.trim()) aiStatus.textContent = '🔒 מוצר בעל ברקוד מוגן';
 }
 
 async function fetchProductWithAI(){
-  const nameVal = pname.value.trim();
-  const barcodeVal = pbarcode.value.trim();
-  const apiKey = localStorage.getItem(API_KEY_STORAGE);
-  
-  if(barcodeVal) {
-    aiStatus.textContent = '⛔ לא ניתן לעדכן ב-AI מוצר בעל ברקוד!';
-    aiStatus.style.color = '#c53030';
-    return;
-  }
-
-  if(!nameVal) {
-    aiStatus.textContent = '❌ נא להזין קודם את שם המוצר בשדה למעלה';
-    aiStatus.style.color = '#c53030';
-    pname.focus();
-    return;
-  }
-  
-  if(!apiKey) {
-    aiStatus.textContent = '❌ לא הוגדר API Key! נא להגדיר דרך כפתור ⚙️ API במאגר';
-    aiStatus.style.color = '#c53030';
-    return;
-  }
-
-  aiStatus.textContent = '⚡ מחפש אופציות מתאימות ב-AI...';
-  aiStatus.style.color = 'var(--primary)';
-  
-  const promptText = `For the food query: "${nameVal}", provide 3 to 4 common food variations in Hebrew with accurate nutrition per 100g and estimated portion weight in grams. Return ONLY a JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
-    
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || 'API Error');
-
-    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    textResult = textResult.replace(/```json|```/g, '').trim();
-    
-    const options = JSON.parse(textResult);
-    if (Array.isArray(options) && options.length > 0) {
-      showAiOptionsModal(options);
-      aiStatus.textContent = '✅ בחר את המוצר המדויק!';
-      aiStatus.style.color = 'var(--primary)';
-    } else {
-      throw new Error('לא התקבלו אופציות לבחירה');
-    }
-  } catch(e) {
-    console.error(e);
-    aiStatus.textContent = '❌ שגיאה: ' + e.message;
-    aiStatus.style.color = '#c53030';
-  }
+  const nameVal = pname.value.trim();
+  if(!nameVal) return alert('נא להזין שם מוצר');
+  aiStatus.textContent = '⚡ מחפש נתונים ב-AI...';
+  try {
+    const promptText = `Provide nutrition per 100g and portion weight for: "${nameVal}". Return ONLY JSON array: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
+    const data = await callGeminiWithRetry(promptText);
+    const options = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
+    showAiOptionsModal(options);
+    aiStatus.textContent = '✅ בחר מוצר';
+  } catch(e) { aiStatus.textContent = '❌ ' + e.message; }
 }
 
 async function quickFillWithAI(){
-  const nameVal = foodSearch.value.trim();
-  const apiKey = localStorage.getItem(API_KEY_STORAGE);
-  const status = document.getElementById('quickAiStatus');
-
-  if(!nameVal) {
-    status.textContent = '❌ נא להזין קודם את שם המוצר בשדה החיפוש';
-    status.style.color = '#c53030';
-    return;
-  }
-  if(!apiKey) {
-    status.textContent = '❌ לא הוגדר API Key! הגדר בהגדרות ⚙️ API';
-    status.style.color = '#c53030';
-    return;
-  }
-
-  status.textContent = '⚡ מחפש אופציות מתאימות ב-AI...';
-  status.style.color = 'var(--primary)';
-
-  const promptText = `Provide 3 to 4 common food variations in Hebrew with accurate nutritional values per 100g and estimated portion unit weight in grams for food query: "${nameVal}". Return ONLY a valid JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
-    
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || 'API Error');
-
-    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    textResult = textResult.replace(/```json|```/g, '').trim();
-    const options = JSON.parse(textResult);
-
-    if (Array.isArray(options) && options.length > 0) {
-      showQuickAiOptionsModal(options);
-      status.textContent = '✅ בחר את המוצר המדויק!';
-      status.style.color = 'var(--primary)';
-    } else {
-      throw new Error('לא התקבלו תוצאות');
-    }
-  } catch(e) {
-    console.error(e);
-    status.textContent = '❌ שגיאה בחיפוש AI.';
-    status.style.color = '#c53030';
-  }
+  const nameVal = foodSearch.value.trim();
+  if(!nameVal) return alert('הזן שם מוצר');
+  document.getElementById('quickAiStatus').textContent = '⚡ מחפש ב-AI...';
+  try {
+    const promptText = `Provide nutrition per 100g for: "${nameVal}". Return ONLY JSON array: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
+    const data = await callGeminiWithRetry(promptText);
+    const options = JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim());
+    showQuickAiOptionsModal(options);
+  } catch(e) { document.getElementById('quickAiStatus').textContent = 'שגיאה'; }
 }
 
 function showQuickAiOptionsModal(options) {
-  const container = document.getElementById('aiOptionsList');
-  container.innerHTML = options.map((opt, idx) => `
-    <div class="card" style="margin-bottom:8px;cursor:pointer;background:var(--bg-app)" onclick="applyQuickAiSelection(${idx})">
-      <b>${opt.name}</b>
-      <div class="muted" style="font-size:12px;margin-top:4px">
-        🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
-        ${opt.unit_g ? `<br>⚡ משקל יחידה: ${opt.unit_g}ג׳` : ''}
-      </div>
-    </div>
-  `).join('');
-  
-  window.__currentQuickAiOptions = options;
-  document.getElementById('aiOptionsModal').classList.add('open');
+  document.getElementById('aiOptionsList').innerHTML = options.map((opt, idx) => `
+    <div class="card" style="cursor:pointer;background:var(--bg-app)" onclick="applyQuickAiSelection(${idx})">
+      <b>${opt.name}</b><div class="muted">🔥 ${opt.kcal} קק״ל ל-100ג׳</div>
+    </div>
+  `).join('');
+  window.__currentQuickAiOptions = options;
+  document.getElementById('aiOptionsModal').classList.add('open');
 }
 
-function applyQuickAiSelection(index) {
-  const opt = window.__currentQuickAiOptions[index];
-  if(!opt) return;
-  
-  foodSearch.value = opt.name;
-  if(opt.kcal) document.getElementById('quickKcal').value = opt.kcal;
-  if(opt.protein) document.getElementById('quickProt').value = opt.protein;
-  if(opt.carbs) document.getElementById('quickCarb').value = opt.carbs;
-  if(opt.fat) document.getElementById('quickFat').value = opt.fat;
-  if(opt.unit_g) document.getElementById('quickUnitG').value = opt.unit_g;
-  
-  document.getElementById('aiOptionsModal').classList.remove('open');
-  document.getElementById('quickAiStatus').textContent = '✨ נבחר בהצלחה מ-AI!';
-  document.getElementById('quickAiStatus').style.color = 'var(--primary)';
-  updateIntakePreview();
+function applyQuickAiSelection(idx) {
+  const opt = window.__currentQuickAiOptions[idx];
+  foodSearch.value = opt.name;
+  if(opt.kcal) quickKcal.value = opt.kcal;
+  if(opt.protein) quickProt.value = opt.protein;
+  if(opt.carbs) quickCarb.value = opt.carbs;
+  if(opt.fat) quickFat.value = opt.fat;
+  if(opt.unit_g) quickUnitG.value = opt.unit_g;
+  document.getElementById('aiOptionsModal').classList.remove('open');
+  updateIntakePreview();
 }
 
 function showAiOptionsModal(options) {
-  const container = document.getElementById('aiOptionsList');
-  container.innerHTML = options.map((opt, idx) => `
-    <div class="card" style="margin-bottom:8px;cursor:pointer;background:var(--bg-app)" onclick="applyAiSelection(${idx})">
-      <b>${opt.name}</b>
-      <div class="muted" style="font-size:12px;margin-top:4px">
-        🔥 ${opt.kcal} קק״ל ל-100ג׳ | 💪 ${opt.protein}ג׳ · 🍞 ${opt.carbs}ג׳ · 🥑 ${opt.fat}ג׳
-        ${opt.unit_g ? `<br>⚡ משקל יחידה: ${opt.unit_g}ג׳` : ''}
-      </div>
-    </div>
-  `).join('');
-  
-  window.__currentAiOptions = options;
-  document.getElementById('aiOptionsModal').classList.add('open');
+  document.getElementById('aiOptionsList').innerHTML = options.map((opt, idx) => `
+    <div class="card" style="cursor:pointer;background:var(--bg-app)" onclick="applyAiSelection(${idx})">
+      <b>${opt.name}</b><div class="muted">🔥 ${opt.kcal} קק״ל ל-100ג׳</div>
+    </div>
+  `).join('');
+  window.__currentAiOptions = options;
+  document.getElementById('aiOptionsModal').classList.add('open');
 }
 
-function applyAiSelection(index) {
-  const opt = window.__currentAiOptions[index];
-  if(!opt) return;
-  
-  pname.value = opt.name;
-  pkcal.value = opt.kcal || 0;
-  pprotein.value = opt.protein || 0;
-  pcarbs.value = opt.carbs || 0;
-  pfat.value = opt.fat || 0;
-  if(opt.unit_g) punitg.value = opt.unit_g;
-  
-  document.getElementById('aiOptionsModal').classList.remove('open');
-  updateProductUnitCalc();
-  checkRealtimeDuplicate();
+function applyAiSelection(idx) {
+  const opt = window.__currentAiOptions[idx];
+  pname.value = opt.name; pkcal.value = opt.kcal; pprotein.value = opt.protein;
+  pcarbs.value = opt.carbs; pfat.value = opt.fat; if(opt.unit_g) punitg.value = opt.unit_g;
+  document.getElementById('aiOptionsModal').classList.remove('open');
+  updateProductUnitCalc();
 }
 
-function previewProductImage(event) {
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    currentImageData = e.target.result;
-    document.getElementById('imgPreview').src = currentImageData;
-    document.getElementById('imgPreviewContainer').style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+function previewProductImage(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { currentImageData = ev.target.result; imgPreview.src = currentImageData; imgPreviewContainer.style.display = 'block'; };
+  reader.readAsDataURL(file);
 }
-
-function clearProductImage(){
-  currentImageData = "";
-  pImageInput.value = "";
-  document.getElementById('imgPreview').src = "";
-  document.getElementById('imgPreviewContainer').style.display = 'none';
-}
+function clearProductImage(){ currentImageData = ""; imgPreviewContainer.style.display = 'none'; }
 
 function exportBackup(){
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
-  const dlAnchorElem = document.createElement('a');
-  dlAnchorElem.setAttribute("href", dataStr);
-  dlAnchorElem.setAttribute("download", `calorie_backup_${todayKey()}.json`);
-  document.body.appendChild(dlAnchorElem);
-  dlAnchorElem.click();
-  dlAnchorElem.remove();
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+  const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "backup.json");
+  dl.click(); dl.remove();
+}
+function importBackup(){ importFile.click(); }
+function handleImportFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { db = JSON.parse(ev.target.result); save(); renderToday(); alert('שוחזר!'); };
+  reader.readAsText(file);
 }
 
-function importBackup(){ document.getElementById('importFile').click(); }
-
-function handleImportFile(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e){
-    try {
-      const imported = JSON.parse(e.target.result);
-      if(imported && typeof imported === 'object' && Array.isArray(imported.products)){
-        if(confirm('האם להחליף את הנתונים הקיימים?')){
-          db = imported;
-          if(!db.weights) db.weights = {};
-          if(!db.startWeight) db.startWeight = 108;
-          if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2', customKcal: null };
-          save();
-          renderToday();
-          renderProducts();
-          alert('הגיבוי שוחזר!');
-        }
-      } else alert('קובץ לא תקין.');
-    } catch(err) { alert('שגיאה בקריאת הקובץ.'); }
-  };
-  reader.readAsText(file);
-}
-
-const mealLabels = {
-  breakfast: '🌅 ארוחת בוקר',
-  lunch: '☀️ ארוחת צהריים',
-  dinner: '🌙 ארוחת ערב',
-  snacks: '🍎 נשנושים וביניים'
-};
+const mealLabels = { breakfast: '🌅 ארוחת בוקר', lunch: '☀️ ארוחת צהריים', dinner: '🌙 ארוחת ערב', snacks: '🍎 נשנושים וביניים' };
 
 function renderToday(){
-  const targets = calculateTargets();
-  let a=today(), k=a.reduce((s,x)=>s+(x.kcal||0),0),p=a.reduce((s,x)=>s+(x.protein||0),0),c=a.reduce((s,x)=>s+(x.carbs||0),0),f=a.reduce((s,x)=>s+(x.fat||0),0);
-  
-  kcal.textContent=Math.round(k);protein.textContent=round1(p);carbs.textContent=round1(c);fat.textContent=round1(f);
-  document.getElementById('protTarget').textContent = `/ ${targets.protein} ג׳`;
-  document.querySelectorAll('.grid .macro')[1].querySelector('small').textContent = `/ ${targets.carbs} ג׳`;
-  document.querySelectorAll('.grid .macro')[2].querySelector('small').textContent = `/ ${targets.fat} ג׳`;
-  document.getElementById('targetKcalDisplay').textContent = targets.kcal;
+  const targets = calculateTargets();
+  const a = today();
+  const k = a.reduce((s,x)=>s+(x.kcal||0),0);
+  const p = a.reduce((s,x)=>s+(x.protein||0),0);
+  const c = a.reduce((s,x)=>s+(x.carbs||0),0);
+  const f = a.reduce((s,x)=>s+(x.fat||0),0);
+  
+  kcal.textContent = Math.round(k);
+  protein.textContent = round1(p);
+  carbs.textContent = round1(c);
+  fat.textContent = round1(f);
+  protTarget.textContent = `/ ${targets.protein} ג׳`;
+  targetKcalDisplay.textContent = targets.kcal;
+  aiAssistantTarget.textContent = targets.kcal;
+  aiAssistantConsumed.textContent = Math.round(k);
 
-  const aiAssistantKcalLeft = document.getElementById('aiAssistantKcalLeft');
-  const aiAssistantTarget = document.getElementById('aiAssistantTarget');
-  const aiAssistantConsumed = document.getElementById('aiAssistantConsumed');
-  if(aiAssistantTarget) aiAssistantTarget.textContent = targets.kcal;
-  if(aiAssistantConsumed) aiAssistantConsumed.textContent = Math.round(k);
+  const left = targets.kcal - k;
+  kleft.textContent = Math.round(Math.abs(left)).toLocaleString('he-IL');
+  kleftContainer.style.color = left >= 0 ? 'var(--text-muted)' : '#c53030';
+  kleftContainer.innerHTML = left >= 0 ? `<span>${Math.round(left)}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)` : `🔴 חריגה של <span id="kleft">-${Math.round(Math.abs(left))}</span> קלוריות (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+  aiAssistantKcalLeft.textContent = `${Math.round(left)} קק״ל`;
+  aiAssistantKcalLeft.style.color = left >= 0 ? 'var(--primary)' : '#c53030';
 
-  const leftKcal = targets.kcal - k;
-  const kleftEl = document.getElementById('kleft');
-  const kleftContainer = document.getElementById('kleftContainer');
+  kbar.style.width = Math.min(100, k/targets.kcal*100) + '%';
+  
+  let grouped = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  a.forEach((item, originalIndex) => grouped[item.meal || 'lunch'].push({ item, originalIndex }));
 
-  if(leftKcal >= 0) {
-    if(kleftEl) kleftEl.textContent = Math.round(leftKcal).toLocaleString('he-IL');
-    if(kleftContainer) {
-      kleftContainer.style.color = 'var(--text-muted)';
-      kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
-    }
-    if(aiAssistantKcalLeft) {
-      aiAssistantKcalLeft.textContent = `${Math.round(leftKcal).toLocaleString('he-IL')} קק״ל`;
-      aiAssistantKcalLeft.style.color = 'var(--primary)';
-    }
-  } else {
-    let overload = Math.abs(Math.round(leftKcal));
-    if(kleftContainer) {
-      kleftContainer.style.color = '#c53030';
-      kleftContainer.innerHTML = `🔴 חריגה של <span id="kleft">-${overload.toLocaleString('he-IL')}</span> קלוריות (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
-    }
-    if(aiAssistantKcalLeft) {
-      aiAssistantKcalLeft.textContent = `-${overload.toLocaleString('he-IL')} קק״ל (חריגה)`;
-      aiAssistantKcalLeft.style.color = '#c53030';
-    }
-  }
-
-  kbar.style.width=Math.min(100,k/targets.kcal*100)+'%';
-  
-  let grouped = { breakfast: [], lunch: [], dinner: [], snacks: [] };
-  a.forEach((item, originalIndex) => {
-    let mCat = item.meal || 'lunch';
-    if(!grouped[mCat]) grouped[mCat] = [];
-    grouped[mCat].push({ item, originalIndex });
-  });
-
-  let htmlParts = [];
-  ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(cat => {
-    let itemsInCat = grouped[cat];
-    let catKcal = itemsInCat.reduce((s, x) => s + (x.item.kcal || 0), 0);
-    
-    let itemsHtml = itemsInCat.length > 0 ? itemsInCat.map(({ item, originalIndex }) => `
-      <div class="item">
-        <div>
-          <b>${item.name}</b>
-          <div class="muted" style="font-size:12px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
-          <div class="muted" style="font-size:12px">💪 ${round1(item.protein)}ג׳ · 🍞 ${round1(item.carbs)}ג׳ · 🥑 ${round1(item.fat)}ג׳</div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${originalIndex})">✏️ ערוך</button>
-          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${originalIndex})">🗑️ מחק</button>
-        </div>
-      </div>
-    `).join('') : `<div class="muted" style="font-size:12px;padding:4px 0">אין עדיין פריטים בארוחה זו.</div>`;
-
-    let recommendationBox = `
-      <div style="margin-top:10px;padding:10px 12px;background:var(--bg-card);border-radius:12px;font-size:12px;border:1px dashed var(--border-color)">
-        <button class="secondary" style="font-size:11px;padding:6px 10px;width:100%" onclick="triggerSingleMealRecommendation('${cat}')">✨ קבל המלצת AI חכמה לארוחה זו (בחלון הצף)</button>
-      </div>
-    `;
-
-    htmlParts.push(`
-      <div class="meal-container">
-        <div class="meal-header">
-          <span>${mealLabels[cat]}</span>
-          <span class="muted" style="font-size:12px">🔥 ${Math.round(catKcal)} קק״ל</span>
-        </div>
-        ${itemsHtml}
-        ${recommendationBox}
-      </div>
-    `);
-  });
-
-  intake.innerHTML = htmlParts.join('');
+  intake.innerHTML = ['breakfast', 'lunch', 'dinner', 'snacks'].map(cat => `
+    <div class="meal-container">
+      <div class="meal-header"><span>${mealLabels[cat]}</span><span>🔥 ${Math.round(grouped[cat].reduce((s,x)=>s+x.item.kcal,0))} קק״ל</span></div>
+      ${grouped[cat].length ? grouped[cat].map(({item, originalIndex}) => `
+        <div class="item">
+          <div><b>${item.name}</b><div class="muted" style="font-size:12px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${originalIndex})">✏️ ערוך</button>
+            <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${originalIndex})">🗑️ מחק</button>
+          </div>
+        </div>
+      `).join('') : '<div class="muted" style="font-size:12px">אין פריטים.</div>'}
+      <button class="secondary" style="font-size:11px;padding:6px;width:100%;margin-top:8px" onclick="triggerSingleMealRecommendation('${cat}')">✨ המלצת AI לארוחה</button>
+    </div>
+  `).join('');
 }
 
 function showDailySummaryModal(){
-  const dateStr = new Date().toLocaleDateString('he-IL');
-  const targets = calculateTargets();
-  const a = today();
-  const k = a.reduce((s,x)=>s+(x.kcal||0), 0);
-  const p = a.reduce((s,x)=>s+(x.protein||0), 0);
-  const c = a.reduce((s,x)=>s+(x.carbs||0), 0);
-  const f = a.reduce((s,x)=>s+(x.fat||0), 0);
-  
-  let txt = `📊 סיכום יומי — ${dateStr}\n\n`;
-  txt += `🔥 נצרכו: ${Math.round(k)} קלוריות\n`;
-  txt += `🎯 יעד יומי: ${targets.kcal} קלוריות\n`;
-  if(k <= targets.kcal) txt += `🟢 נשארו: ${Math.round(targets.kcal - k)} קלוריות\n`;
-  else txt += `🔴 חריגה מהיעד: -${Math.round(k - targets.kcal)} קלוריות\n`;
-  
-  txt += `\n💪 חלבון: ${round1(p)} / ${targets.protein} גרם\n`;
-  txt += `🍞 פחמימות: ${round1(c)} / ${targets.carbs} גרם\n`;
-  txt += `🥑 שומן: ${round1(f)} / ${targets.fat} גרם`;
-  
-  document.getElementById('summaryText').value = txt;
-  lockPageScroll();
-  document.getElementById('summaryModal').classList.add('open');
+  const targets = calculateTargets();
+  const a = today();
+  const k = a.reduce((s,x)=>s+(x.kcal||0),0);
+  const p = a.reduce((s,x)=>s+(x.protein||0),0);
+  const c = a.reduce((s,x)=>s+(x.carbs||0),0);
+  const f = a.reduce((s,x)=>s+(x.fat||0),0);
+  
+  let txt = `📊 סיכום יומי — ${new Date().toLocaleDateString('he-IL')}\n\n🔥 נצרכו: ${Math.round(k)} קלוריות\n🎯 יעד יומי: ${targets.kcal} קלוריות\n${k <= targets.kcal ? `🟢 נשארו: ${Math.round(targets.kcal - k)} קלוריות` : `🔴 חריגה מהיעד: -${Math.round(k - targets.kcal)} קלוריות`}\n\n💪 חלבון: ${round1(p)} / ${targets.protein} גרם\n🍞 פחמימות: ${round1(c)} / ${targets.carbs} גרם\n🥑 שומן: ${round1(f)} / ${targets.fat} גרם`;
+  summaryText.value = txt;
+  lockPageScroll(); summaryModal.classList.add('open');
 }
 
-function copySummaryText(){
-  const txt = document.getElementById('summaryText');
-  txt.select();
-  navigator.clipboard.writeText(txt.value);
-  alert('הסיכום היומי הועתק ללוח!');
-}
+function copySummaryText(){ summaryText.select(); navigator.clipboard.writeText(summaryText.value); alert('הועתק!'); }
 
 function updateProductUnitCalc(){
-  const unitG = Number(punitg.value)||0;
-  const k = Number(pkcal.value)||0;
-  const prot = Number(pprotein.value)||0;
-  const carb = Number(pcarbs.value)||0;
-  const fatVal = Number(pfat.value)||0;
-  
-  if(unitG > 0 && (k > 0 || prot > 0 || carb > 0 || fatVal > 0)){
-    productUnitPreview.style.display = 'block';
-    const mult = unitG / 100;
-    productUnitPreview.innerHTML = `<b>✨ חישוב אוטומטי ליחידה אחת (${unitG}ג׳):</b><br>` +
-      `🔥 <b>${round1(k * mult)}</b> קק״ל | 💪 <b>${round1(prot * mult)}</b>ג׳ חלבון | 🍞 <b>${round1(carb * mult)}</b>ג׳ פחמימות | 🥑 <b>${round1(fatVal * mult)}</b>ג׳ שומן`;
-  } else productUnitPreview.style.display = 'none';
+  const unitG = Number(punitg.value)||0, k = Number(pkcal.value)||0;
+  if(unitG > 0 && k > 0) {
+    productUnitPreview.style.display = 'block';
+    productUnitPreview.innerHTML = `✨ ליחידה (${unitG}ג׳): ${round1(k * unitG / 100)} קק״ל`;
+  } else productUnitPreview.style.display = 'none';
 }
 
 function renderProducts(){
- productCount.textContent=db.products.length;
- let q=(search.value||'').toLowerCase(),arr=db.products.filter(x=>(x.name+' '+(x.brand||'')+' '+(x.barcode||'')).toLowerCase().includes(q));
- productList.innerHTML=arr.map(x=>{
-   const i=db.products.indexOf(x);
-   const mult = x.unit_g ? x.unit_g / 100 : 0;
-   const unitKcal = mult ? round1(x.kcal * mult) : null;
-   const unitProt = mult ? round1((x.protein||0) * mult) : 0;
-   const unitCarb = mult ? round1((x.carbs||0) * mult) : 0;
-   const unitFat = mult ? round1((x.fat||0) * mult) : 0;
-   const hasBarcode = Boolean(x.barcode);
-
-   return `<div class="item" style="align-items:center">
-   ${x.image ? `<img src="${x.image}" class="product-img">` : ''}
-   <div style="flex:1"><b>${x.name}</b> ${hasBarcode ? '<span class="badge-barcode">🏷️ ברקוד</span>' : ''}
-   <div class="muted" style="font-size:12px">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
-   <div class="muted" style="font-size:12px">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
-   ${unitKcal !== null ? `<div class="muted" style="color:var(--primary);font-weight:600;font-size:12px">⚡ ליחידה אחת (${x.unit_g} ג׳): ${unitKcal} קק״ל | 💪 ${unitProt}ג׳ · 🍞 ${unitCarb}ג׳ · 🥑 ${unitFat}ג׳</div>` : ''}
-   </div><div style="display:flex;flex-direction:column;gap:6px;min-width:90px">
-   <button class="secondary" style="font-size:11px;padding:6px 8px" onclick="editProduct(${i})">✏️ ערוך</button>
-   <button class="secondary" style="font-size:11px;padding:6px 8px" onclick="deleteProduct(${i})">🗑️ מחק</button>
-   </div></div>`
- }).join('')||'<div class="muted" style="font-size:13px">לא נמצאו מוצרים.</div>';
+  productCount.textContent = db.products.length;
+  let q = (search.value || '').toLowerCase();
+  productList.innerHTML = db.products.filter(x => (x.name + ' ' + (x.brand || '')).toLowerCase().includes(q)).map(x => {
+    const i = db.products.indexOf(x);
+    return `
+      <div class="item">
+        <div><b>${x.name}</b><div class="muted" style="font-size:12px">${x.kcal} קק״ל ל-100ג׳</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="secondary" style="font-size:11px" onclick="editProduct(${i})">✏️ ערוך</button>
+          <button class="secondary" style="font-size:11px" onclick="deleteProduct(${i})">🗑️ מחק</button>
+        </div>
+      </div>
+    `;
+  }).join('') || '<div class="muted">אין מוצרים.</div>';
 }
 
 function renderMonth(){
-  const intakeKeys = Object.keys(db.intake).sort().reverse();
-  const targets = calculateTargets();
-  const dailyTargetKcal = targets.kcal;
-
-  if(intakeKeys.length === 0) {
-    document.getElementById('monthList').innerHTML = '<div class="muted" style="padding-top:6px;font-size:13px">אין עדיין נתונים בארכיון.</div>';
-    return;
-  }
-
-  let monthsMap = {};
-  intakeKeys.forEach(d => {
-    const monthKey = d.slice(0, 7);
-    if(!monthsMap[monthKey]) monthsMap[monthKey] = [];
-    monthsMap[monthKey].push(d);
-  });
-
-  let html = '';
-  Object.keys(monthsMap).sort().reverse().forEach(mKey => {
-    const days = monthsMap[mKey];
-    const [year, monthNum] = mKey.split('-');
-    const monthName = new Date(year, monthNum - 1, 1).toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
-    
-    let mKcal = 0, mProt = 0, mCarbs = 0, mFat = 0;
-    days.forEach(d => {
-      db.intake[d].forEach(x => {
-        mKcal += (x.kcal || 0);
-        mProt += (x.protein || 0);
-        mCarbs += (x.carbs || 0);
-        mFat += (x.fat || 0);
-      });
-    });
-
-    const monthTargetKcal = days.length * dailyTargetKcal;
-
-    html += `
-      <details class="card" style="margin-bottom:10px">
-        <summary style="cursor:pointer;font-weight:700;font-size:15px;outline:none;display:flex;justify-content:space-between;align-items:center">
-          <span>📁 ${monthName}</span>
-          <span class="muted" style="font-size:12px">🔥 נצרך ${Math.round(mKcal)} מתוך יעד ${monthTargetKcal} קק״ל</span>
-        </summary>
-        <div style="margin-top:12px;border-top:1px solid var(--border-color);padding-top:8px">
-    `;
-
-    days.forEach(d => {
-      const dayItems = db.intake[d];
-      const dKcal = dayItems.reduce((s,x)=>s+(x.kcal||0),0);
-      const dProt = dayItems.reduce((s,x)=>s+(x.protein||0),0);
-      const dCarbs = dayItems.reduce((s,x)=>s+(x.carbs||0),0);
-      const dFat = dayItems.reduce((s,x)=>s+(x.fat||0),0);
-      const formattedDate = new Date(d+'T12:00:00').toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' });
-
-      html += `
-        <details style="margin:8px 0;background:var(--bg-app);padding:10px;border-radius:12px;border:1px solid var(--border-color)">
-          <summary style="cursor:pointer;font-weight:600;font-size:13px;outline:none;display:flex;justify-content:space-between;align-items:center">
-            <span>📅 ${formattedDate}</span>
-            <span class="muted" style="font-size:11px">🔥 נצרך ${Math.round(dKcal)} / ${dailyTargetKcal} קל׳ | 💪 ${round1(dProt)}ג׳ · 🍞 ${round1(dCarbs)}ג׳ · 🥑 ${round1(dFat)}ג׳</span>
-          </summary>
-          <div style="margin-top:8px;border-top:1px dashed var(--border-color);padding-top:6px">
-      `;
-
-      dayItems.forEach(item => {
-        let mLabel = mealLabels[item.meal] || 'ארוחה';
-        html += `
-          <div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border-color)">
-            <div>
-              <b>${item.name}</b> <span class="muted" style="font-size:10px">(${mLabel})</span>
-              <div class="muted" style="font-size:11px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
-            </div>
-            <div class="muted" style="font-size:11px">💪 ${round1(item.protein)}ג׳ · 🍞 ${round1(item.carbs)}ג׳ · 🥑 ${round1(item.fat)}ג׳</div>
-          </div>
-        `;
-      });
-
-      html += `</div></details>`;
-    });
-
-    html += `</div></details>`;
-  });
-
-  document.getElementById('monthList').innerHTML = html;
+  monthList.innerHTML = Object.keys(db.intake).length ? Object.keys(db.intake).map(d => `
+    <div class="card" style="font-size:13px"><b>📅 ${d}</b>: ${Math.round(db.intake[d].reduce((s,x)=>s+x.kcal,0))} קק״ל</div>
+  `).join('') : '<div class="muted">אין נתונים.</div>';
 }
 
 function show(id){
-  ['today','aiAssistant','profile','weight','products','month'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
-  ['n1','n6','n5','n4','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','aiAssistant','profile','weight','products','month'][i]===id));
-  if(id==='today')renderToday();
-  if(id==='aiAssistant')renderToday();
-  if(id==='profile')loadProfileToInputs();
-  if(id==='weight')renderWeightScreen();
-  if(id==='products')renderProducts();
-  if(id==='month')renderMonth();
+  ['today','aiAssistant','profile','weight','products','month'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
+  ['n1','n6','n5','n4','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','aiAssistant','profile','weight','products','month'][i]===id));
+  if(id==='today') renderToday();
+  if(id==='aiAssistant') renderToday();
+  if(id==='profile') loadProfileToInputs();
+  if(id==='weight') renderWeightScreen();
+  if(id==='products') renderProducts();
+  if(id==='month') renderMonth();
 }
 
 let scrollPosition = 0;
-function lockPageScroll(){
-  scrollPosition = window.pageYOffset;
-  document.body.style.top = `-${scrollPosition}px`;
-  document.body.classList.add('modal-open');
-}
-function unlockPageScroll(){
-  document.body.classList.remove('modal-open');
-  document.body.style.top = '';
-  window.scrollTo(0, scrollPosition);
-}
+function lockPageScroll(){ scrollPosition = window.pageYOffset; document.body.style.top = `-${scrollPosition}px`; document.body.classList.add('modal-open'); }
+function unlockPageScroll(){ document.body.classList.remove('modal-open'); document.body.style.top = ''; window.scrollTo(0, scrollPosition); }
 
-function openAdd(){
-  window.editingIntakeIndex=null;
-  addModalTitle.textContent='הוספת צריכה';
-  addIntakeBtn.textContent='הוסף לצריכה';
-  lockPageScroll();
-  addModal.classList.add('open');
-  selected=null;
-  grams.value='1';
-  unitSelect.value='unit';
-  foodSearch.value='';
-  mealCategorySelect.value='lunch';
-  document.getElementById('newProductQuickFields').style.display='none';
-  document.querySelectorAll('#newProductQuickFields input').forEach(x=>x.value='');
-  document.getElementById('quickAiStatus').textContent='';
-  document.getElementById('aiUnitStatus').textContent='';
-  intakePreview.style.display='none';
-  suggestIntake();
-}
-
-function openProduct(){
-  window.editingProductIndex=null;
-  productModalTitle.textContent='הוספת מוצר למאגר';
-  document.querySelectorAll('#productModal input').forEach(x=>x.value='');
-  aiStatus.textContent = '';
-  document.getElementById('duplicateNotice').style.display = 'none';
-  currentImageData = "";
-  document.getElementById('imgPreviewContainer').style.display = 'none';
-  productUnitPreview.style.display='none';
-  lockPageScroll();
-  productModal.classList.add('open');
-}
-
-function closeModal(){
- document.querySelectorAll('.modal').forEach(x=>x.classList.remove('open'));
- unlockPageScroll();
- window.editingIntakeIndex=null;
-}
+function openAdd(){ window.editingIntakeIndex=null; addModalTitle.textContent='הוספת צריכה'; addIntakeBtn.textContent='הוסף לצריכה'; lockPageScroll(); addModal.classList.add('open'); selected=null; foodSearch.value=''; suggestIntake(); }
+function openProduct(){ window.editingProductIndex=null; productModalTitle.textContent='הוספת מוצר'; lockPageScroll(); productModal.classList.add('open'); }
+function closeModal(){ document.querySelectorAll('.modal').forEach(x=>x.classList.remove('open')); unlockPageScroll(); }
 
 function suggestIntake(){
-  let q = (foodSearch.value || '').toLowerCase();
-  
-  if(!q) {
-    let allProducts = db.products.slice(0, 10);
-    if(allProducts.length > 0) {
-      suggestions.innerHTML = '<div class="muted" style="font-size:12px;margin-bottom:4px">מוצרים נפוצים במאגר:</div>' + 
-        allProducts.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:12px;padding:7px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
-    } else {
-      suggestions.innerHTML = '';
-    }
-    document.getElementById('newProductQuickFields').style.display = 'none';
-    selected = null;
-    updateIntakePreview();
-    return;
-  }
-  
-  let matches = db.products.filter(x => (x.name + ' ' + (x.brand || '')).toLowerCase().includes(q)).slice(0, 5);
-  const exactMatch = db.products.find(x => x.name.toLowerCase() === q.toLowerCase());
-  
-  if(matches.length > 0) {
-    suggestions.innerHTML = matches.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:12px;padding:7px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
-  } else {
-    suggestions.innerHTML = '<span class="muted" style="font-size:12px">המוצר לא נמצא במאגר. השתמש בכפתור ה-AI למילוי מהיר או הזן ידנית:</span>';
-  }
-
-  if(!exactMatch && q.length >= 2) {
-    document.getElementById('newProductQuickFields').style.display = 'block';
-    selected = null;
-  } else {
-    document.getElementById('newProductQuickFields').style.display = 'none';
-  }
-  updateIntakePreview();
+  let q = (foodSearch.value || '').toLowerCase();
+  suggestions.innerHTML = db.products.filter(x => x.name.toLowerCase().includes(q)).slice(0, 5).map(x => `
+    <button type="button" class="secondary" style="margin:2px;font-size:12px;padding:6px" onclick="selectFood(${db.products.indexOf(x)})">${x.name}</button>
+  `).join('');
+  document.getElementById('newProductQuickFields').style.display = (!db.products.find(x => x.name.toLowerCase() === q) && q.length >= 2) ? 'block' : 'none';
 }
 
-let selected=null;
-function selectFood(i){
-  selected=db.products[i];
-  foodSearch.value=selected.name;
-  suggestions.innerHTML='<span class="muted" style="color:var(--primary);font-weight:600;font-size:12px">✓ נבחר מהמאגר: '+selected.name+'</span>';
-  document.getElementById('newProductQuickFields').style.display='none';
-  grams.focus({preventScroll:true});
-  handleUnitSelection();
+let selected = null;
+function selectFood(i){ selected = db.products[i]; foodSearch.value = selected.name; handleUnitSelection(); }
+
+function editIntake(i){
+  let x = today()[i], idx = db.products.findIndex(p => p.name === x.name);
+  if(!x || idx < 0) return alert('מוצר לא נמצא');
+  window.editingIntakeIndex = i; addModalTitle.textContent = 'עריכת צריכה'; addIntakeBtn.textContent = 'שמור שינוי';
+  lockPageScroll(); addModal.classList.add('open'); selectFood(idx); unitSelect.value = x.unit || 'unit'; grams.value = x.amount || '1'; mealCategorySelect.value = x.meal || 'lunch'; updateIntakePreview();
 }
 
-function calcIntake(p,unit,a){
-  a=Number(a)||0;
-  let mult = 0;
-  let unitG = p.unit_g || 0;
-
-  if(unit==='g' || unit==='ml') mult = a / 100;
-  else if(unit==='unit' && unitG > 0) mult = (a * unitG) / 100;
-  else if(unit==='tsp') mult = (a * 5) / 100;
-  else if(unit==='tbsp') mult = (a * 15) / 100;
-  else if(unit==='cup') mult = (a * 240) / 100;
-  
-  if(mult<=0 && unit==='unit') return {known:false,kcal:0,protein:0,carbs:0,fat:0};
-  
-  return {
-    known:true,
-    kcal: (p.kcal||0)*mult,
-    protein: (p.protein||0)*mult,
-    carbs: (p.carbs||0)*mult,
-    fat: (p.fat||0)*mult
-  };
+function calcIntake(p, unit, a){
+  a = Number(a)||0;
+  let mult = (unit === 'g' || unit === 'ml') ? a / 100 : (unit === 'unit' ? (a * (p.unit_g || 100)) / 100 : a / 100);
+  return { known: true, kcal: p.kcal * mult, protein: (p.protein||0) * mult, carbs: (p.carbs||0) * mult, fat: (p.fat||0) * mult };
 }
 
 function updateIntakePreview(){
-  let activeProduct = selected;
-  if(!activeProduct && document.getElementById('newProductQuickFields').style.display !== 'none') {
-    const qKcal = Number(document.getElementById('quickKcal').value);
-    if(qKcal > 0) {
-      activeProduct = {
-        name: foodSearch.value.trim(),
-        kcal: qKcal,
-        protein: Number(document.getElementById('quickProt').value) || 0,
-        carbs: Number(document.getElementById('quickCarb').value) || 0,
-        fat: Number(document.getElementById('quickFat').value) || 0,
-        unit_g: Number(document.getElementById('quickUnitG').value) || 0
-      };
-    }
-  }
-
- if(!activeProduct || !(Number(grams.value) > 0)){
-   intakePreview.style.display='none';
-   return;
- }
-
- let unit = unitSelect.value;
- let r=calcIntake(activeProduct, unit, grams.value);
- intakePreview.style.display='block';
- intakePreview.innerHTML=r.known?`<b style="font-size:13px">לפני הוספה</b><div style="margin-top:6px;font-size:13px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted" style="font-size:12px">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b style="font-size:13px">אין משקל יחידה מוגדר</b><div class="muted" style="font-size:12px">הזן משקל יחידה או בחר גרמים.</div>`;
+  let p = selected;
+  if(!p && document.getElementById('newProductQuickFields').style.display !== 'none') {
+    p = { kcal: Number(quickKcal.value)||0, protein: Number(quickProt.value)||0, carbs: Number(quickCarb.value)||0, fat: Number(quickFat.value)||0, unit_g: Number(quickUnitG.value)||100 };
+  }
+  if(!p || !Number(grams.value)) { intakePreview.style.display = 'none'; return; }
+  let r = calcIntake(p, unitSelect.value, grams.value);
+  intakePreview.style.display = 'block';
+  intakePreview.innerHTML = `🔥 ${round1(r.kcal)} קלוריות`;
 }
 
 function addIntake(){
- let a = Number(grams.value);
- let productName = foodSearch.value.trim();
- let mealCat = mealCategorySelect.value || 'lunch';
- 
- if(!selected) {
-   const qKcal = Number(document.getElementById('quickKcal').value);
-   if(!productName || !qKcal) return alert('נא להזין שם מוצר תקין וקלוריות ל-100 גרם');
-   
-   selected = {
-     name: productName,
-     brand: '',
-     barcode: '',
-     kcal: qKcal,
-     protein: Number(document.getElementById('quickProt').value) || 0,
-     carbs: Number(document.getElementById('quickCarb').value) || 0,
-     fat: Number(document.getElementById('quickFat').value) || 0,
-     unit_g: Number(document.getElementById('quickUnitG').value) || 0,
-     image: '',
-     updated: new Date().toLocaleDateString('he-IL')
-   };
-   db.products.push(selected);
-   save();
- }
-
- if(!selected || !a || a <= 0) return alert('בחר מוצר והזן כמות');
- 
- let unit = unitSelect.value || 'unit';
- let r = calcIntake(selected, unit, a);
- if(!r.known) return alert('למוצר זה לא הוגדר משקל יחידה במאגר.');
- 
- let label = unitSelect.options[unitSelect.selectedIndex]?.text || 'יחידה';
- let item = {
-   name: selected.name,
-   amount: a,
-   unit: unit,
-   unitLabel: label,
-   meal: mealCat,
-   kcal: r.kcal,
-   protein: r.protein,
-   carbs: r.carbs,
-   fat: r.fat
- };
- 
- if(window.editingIntakeIndex !== null && window.editingIntakeIndex !== undefined) {
-   db.intake[todayKey()][window.editingIntakeIndex] = item;
- } else {
-   (db.intake[todayKey()] ??= []).push(item);
- }
- 
- save();
- selected = null;
- grams.value = '1';
- foodSearch.value = '';
- document.getElementById('newProductQuickFields').style.display = 'none';
- document.getElementById('aiUnitStatus').textContent = '';
- intakePreview.style.display = 'none';
- closeModal();
- renderToday();
+  let a = Number(grams.value);
+  if(!selected) {
+    selected = { name: foodSearch.value.trim(), kcal: Number(quickKcal.value)||0, protein: Number(quickProt.value)||0, carbs: Number(quickCarb.value)||0, fat: Number(quickFat.value)||0, unit_g: Number(quickUnitG.value)||100 };
+    db.products.push(selected); save();
+  }
+  let r = calcIntake(selected, unitSelect.value, a);
+  let item = { name: selected.name, amount: a, unit: unitSelect.value, unitLabel: unitSelect.options[unitSelect.selectedIndex].text, meal: mealCategorySelect.value, kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat };
+  
+  if(window.editingIntakeIndex !== null && window.editingIntakeIndex !== undefined) {
+    db.intake[todayKey()][window.editingIntakeIndex] = item;
+  } else {
+    (db.intake[todayKey()] ??= []).push(item);
+  }
+  save(); closeModal(); renderToday();
 }
 
-function editIntake(i){
- let x=today()[i],idx=db.products.findIndex(p=>p.name===x.name);if(!x||idx<0)return alert('המוצר לא נמצא במאגר.');
- window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'unit';grams.value=x.amount||'1';mealCategorySelect.value=x.meal||'lunch';updateIntakePreview();
-}
-
-function removeIntake(i){if(!today()[i])return;if(!confirm('למחוק את הצריכה הזו?'))return;today().splice(i,1);save();renderToday()}
-
+function removeIntake(i){ today().splice(i,1); save(); renderToday(); }
 function saveProduct(){
- let p={
-  name:pname.value.trim(),
-  brand:pbrand.value.trim(),
-  barcode:pbarcode.value.trim(),
-  kcal:Number(pkcal.value)||0,
-  protein:Number(pprotein.value)||0,
-  carbs:Number(pcarbs.value)||0,
-  fat:Number(pfat.value)||0,
-  unit_g:Number(punitg.value)||0,
-  image:currentImageData||"",
-  updated:new Date().toLocaleDateString('he-IL')
- };
- if(!p.name||p.kcal<0)return alert('שם המוצר וקלוריות ל-100 גרם הם חובה');
- const editing=window.editingProductIndex;
- 
- if(p.barcode){
-   const duplicate=db.products.findIndex((x,i)=>i!==editing && x.barcode && cleanCode(x.barcode)===cleanCode(p.barcode));
-   if(duplicate>=0){
-     if(confirm(`מוצר עם ברקוד זה כבר קיים במאגר ("${db.products[duplicate].name}"). האם להחליף ולעדכן את הנתונים שלו?`)){
-       db.products[duplicate]=Object.assign({}, db.products[duplicate], p);
-       save();closeModal();renderProducts();return;
-     } else return;
-   }
- } else {
-   let val = normalizeStr(p.name);
-   let matchedIndex = -1;
-   db.products.forEach((x, i) => {
-     if(editing === null || editing === undefined || i !== editing) {
-       let target = normalizeStr(x.name);
-       if(target.includes(val) || val.includes(target)) {
-         matchedIndex = i;
-       }
-     }
-   });
-
-   if(matchedIndex >= 0) {
-     const similarName = db.products[matchedIndex].name;
-     if(confirm(`⚠️ מצאנו מוצר דומה במאגר: "${similarName}".\n\nהאם מדובר באותו מוצר? לחץ 'אישור' כדי לעדכן אותו.`)) {
-       db.products[matchedIndex] = Object.assign({}, db.products[matchedIndex], p);
-       save();closeModal();renderProducts();return;
-     }
-   }
- }
- 
- if(editing!==null&&editing!==undefined)db.products[editing]=p;else db.products.push(p);
- save();closeModal();renderProducts();
+  let p = { name: pname.value.trim(), brand: pbrand.value.trim(), barcode: pbarcode.value.trim(), kcal: Number(pkcal.value)||0, protein: Number(pprotein.value)||0, carbs: Number(pcarbs.value)||0, fat: Number(pfat.value)||0, unit_g: Number(punitg.value)||0, image: currentImageData };
+  const editing = window.editingProductIndex;
+  if(editing !== null && editing !== undefined) db.products[editing] = p; else db.products.push(p);
+  save(); closeModal(); renderProducts();
 }
-
 function editProduct(i){
- const p=db.products[i];if(!p)return;
- window.editingProductIndex=i;
- productModalTitle.textContent='עריכת/השלמת מוצר במאגר';
- lockPageScroll();productModal.classList.add('open');
- pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
- pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
- punitg.value=p.unit_g||'';
- currentImageData = p.image || "";
- if(currentImageData) {
-   document.getElementById('imgPreview').src = currentImageData;
-   document.getElementById('imgPreviewContainer').style.display = 'block';
- } else {
-   document.getElementById('imgPreviewContainer').style.display = 'none';
- }
- document.getElementById('duplicateNotice').style.display = 'none';
- checkBarcodeProtection();
- updateProductUnitCalc();
+  const p = db.products[i]; if(!p) return;
+  window.editingProductIndex = i; productModalTitle.textContent = 'עריכת מוצר';
+  lockPageScroll(); productModal.classList.add('open');
+  pname.value = p.name; pbrand.value = p.brand || ''; pbarcode.value = p.barcode || '';
+  pkcal.value = p.kcal; pprotein.value = p.protein || ''; pcarbs.value = p.carbs || ''; pfat.value = p.fat || ''; punitg.value = p.unit_g || '';
+  currentImageData = p.image || '';
 }
+function deleteProduct(i){ db.products.splice(i,1); save(); renderProducts(); }
 
-function deleteProduct(i){
- const p=db.products[i];if(!p)return;
- if(!confirm('למחוק את המוצר "'+p.name+'" מהמאגר?'))return;
- db.products.splice(i,1);save();renderProducts();
-}
-
-let scannerStream=null;
+let scannerStream = null;
 let isScanningActive = false;
-
 async function openScanner(){
- lockPageScroll();scannerModal.classList.add('open');scannerStatus.textContent='מכוון מצלמה לזיהוי ברקוד אוטומטי...';barcodeResult.style.display='none';
- isScanningActive = true;
- try{
-   if(!navigator.mediaDevices?.getUserMedia) throw new Error('camera unavailable');
-   scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-   barcodeVideo.srcObject=scannerStream;await barcodeVideo.play();
-   requestAnimationFrame(scanLoop);
- }catch(e){scannerStatus.textContent='לא ניתן לפתוח את המצלמה.';}
+  lockPageScroll(); scannerModal.classList.add('open'); isScanningActive = true;
+  try {
+    scannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    barcodeVideo.srcObject = scannerStream; await barcodeVideo.play();
+    requestAnimationFrame(scanLoop);
+  } catch(e) { scannerStatus.textContent = 'מצלמה לא זמינה'; }
 }
 
 async function scanLoop(){
- if(!isScanningActive || !window.ZXingBrowser || !barcodeVideo.videoWidth) {
-   if(isScanningActive) requestAnimationFrame(scanLoop);
-   return;
- }
- try{
-   const canvas=document.createElement('canvas');canvas.width=barcodeVideo.videoWidth;canvas.height=barcodeVideo.videoHeight;
-   const ctx=canvas.getContext('2d');ctx.drawImage(barcodeVideo,0,0);
-   const reader=new ZXingBrowser.BrowserMultiFormatReader();
-   const result=await reader.decodeFromImageUrl(canvas.toDataURL('image/jpeg'));
-   const code=result.getText();
-   if(code) {
-     isScanningActive = false;
-     stopScanner();
-     await searchBarcode(code);
-     return;
-   }
- }catch(e){/* ממשיך לסרוק ברקף */}
- if(isScanningActive) requestAnimationFrame(scanLoop);
-}
-
-async function searchBarcode(code){
- barcodeResult.style.display='block';barcodeResult.innerHTML='מחפש ברקוד במאגר וברשת...';
- 
- const cleanC = cleanCode(code);
- const localMatches = db.products.filter(x => x.barcode && cleanCode(x.barcode) === cleanC);
- 
- if(localMatches.length > 0) {
-   if(localMatches.length === 1) {
-     const p = localMatches[0];
-     const pIdx = db.products.indexOf(p);
-     barcodeResult.innerHTML = `<b>⚠️ המוצר קיים במאגר:</b><br>${p.name} (${p.kcal} קק״ל/100ג׳)<br><button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>`;
-   } else {
-     showBarcodeOptionsModal(localMatches, code);
-   }
-   return;
- }
-
- try{
-   const res=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(cleanC));
-   const data=await res.json();
-   if(data.status===1&&data.product){
-     const p=data.product, n=p.nutriments||{};
-     let unitG = Number(p.product_quantity) || 0;
-     
-     const found = {
-       name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
-       unit_g:unitG,
-       kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
-       image:p.image_front_url||'',
-       updated:new Date().toLocaleDateString('he-IL')
-     };
-     
-     window.foundProduct = found;
-     let unitText = unitG > 0 ? `<br>יחידה אחת (${unitG}ג׳): ${round1(found.kcal * unitG / 100)} קק״ל` : '';
-     barcodeResult.innerHTML=`<b>${found.name}</b><br>קלוריות ל-100ג׳: ${found.kcal} קק״ל${unitText}<br><button class="primary" style="margin-top:8px" onclick="addFoundProduct()">＋ הוסף למאגר</button>`;
-   } else {
-     barcodeResult.innerHTML=`הברקוד ${code} לא נמצא. <button class="primary" style="margin-top:8px" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש עם ברקוד זה</button>`;
-   }
- }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד';}
-}
-
-function showBarcodeOptionsModal(matches, code) {
- const container = document.getElementById('aiOptionsList');
- container.innerHTML = matches.map((m) => {
-   const idx = db.products.indexOf(m);
-   return `
-     <div class="card" style="margin-bottom:8px;cursor:pointer;background:var(--bg-app)" onclick="closeScanner();editProduct(${idx})">
-       <b>${m.name}</b>
-       <div class="muted" style="font-size:12px;margin-top:4px">
-         🔥 ${m.kcal} קק״ל ל-100ג׳ | מותג: ${m.brand||'כללי'}
-       </div>
-     </div>
-   `;
- }).join('');
- document.getElementById('aiOptionsModal').classList.add('open');
- barcodeResult.innerHTML = `נמצאו מספר מוצרים התואמים לברקוד ${code}. בחר מהרשימה שנפתחה.`;
-}
-
-function addFoundProduct(){
- if(!window.foundProduct)return;
- const p=window.foundProduct;
- const idx=db.products.findIndex(x=>x.barcode&&cleanCode(x.barcode)===cleanCode(p.barcode));
- if(idx>=0) db.products[idx]=Object.assign({},db.products[idx],p);
- else db.products.push(p);
- save();closeScanner();show('products');
+  if(!isScanningActive || !window.ZXingBrowser || !barcodeVideo.videoWidth) {
+    if(isScanningActive) requestAnimationFrame(scanLoop);
+    return;
+  }
+  try{
+    const canvas = document.createElement('canvas'); canvas.width = barcodeVideo.videoWidth; canvas.height = barcodeVideo.videoHeight;
+    const ctx = canvas.getContext('2d'); ctx.drawImage(barcodeVideo,0,0);
+    const reader = new ZXingBrowser.BrowserMultiFormatReader();
+    const result = await reader.decodeFromImageUrl(canvas.toDataURL('image/jpeg'));
+    const code = result.getText();
+    if(code) {
+      isScanningActive = false; stopScanner();
+      barcodeResult.style.display = 'block'; barcodeResult.innerHTML = `נמצא ברקוד: ${code}`;
+      return;
+    }
+  }catch(e){}
+  if(isScanningActive) requestAnimationFrame(scanLoop);
 }
 
 function stopScanner(){
- isScanningActive = false;
- if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null;}
+  isScanningActive = false;
+  if(scannerStream) scannerStream.getTracks().forEach(t=>t.stop());
 }
-function closeScanner(){stopScanner();scannerModal.classList.remove('open');unlockPageScroll();}
+function closeScanner(){ stopScanner(); scannerModal.classList.remove('open'); unlockPageScroll(); }
 
-dateText();renderToday();
+dateText(); renderToday();
 </script>
 </body>
 </html>
