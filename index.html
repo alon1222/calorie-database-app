@@ -1326,16 +1326,25 @@ Answer in clear Hebrew. If the user asked for a coaching analysis, meal recommen
 
       
 
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
-
         headers: { 'Content-Type': 'application/json' },
-
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-
+        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }),
+        signal: controller.signal
       });
-
+      clearTimeout(timeoutId);
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') {
+        throw new Error('השרת לא הגיב בזמן (Timeout). נסה שוב בעוד מספר רגעים.');
+      }
+      throw fetchErr;
+    }
       const data = await res.json();
 
       if (data.error) throw new Error(data.error.message || 'API Error');
