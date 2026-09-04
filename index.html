@@ -1353,7 +1353,7 @@ function renderMonth(){
     
     let mKcal = 0;
     days.forEach(d => {
-      db.intake[d].forEach(x => { mKcal += (x.kcal || 0); });
+      (db.intake[d] || []).forEach(x => { mKcal += (x.kcal || 0); });
     });
 
     const monthTargetKcal = days.length * dailyTargetKcal;
@@ -1368,15 +1368,27 @@ function renderMonth(){
     `;
 
     days.forEach(d => {
-      const dayItems = db.intake[d];
+      const dayItems = db.intake[d] || [];
       const dKcal = dayItems.reduce((s,x)=>s+(x.kcal||0),0);
       const formattedDate = new Date(d+'T12:00:00').toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
-      html += `
-        <div style="margin:6px 0;background:var(--bg-app);padding:8px 10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
-          <span>📅 ${formattedDate}</span>
-          <span class="muted" style="font-size:12px">🔥 ${Math.round(dKcal)} / ${dailyTargetKcal} קק״ל</span>
+      let itemsListHtml = dayItems.length > 0 ? dayItems.map(item => `
+        <div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">
+          <span>• <b>${item.name}</b> (${item.amount} ${item.unitLabel || 'גרם'})</span>
+          <span class="muted">🔥 ${Math.round(item.kcal)} קק״ל</span>
         </div>
+      `).join('') : '<div class="muted" style="font-size:12px;padding:4px 0">לא נרשמו פריטים ביום זה.</div>';
+
+      html += `
+        <details style="margin:8px 0;background:var(--bg-app);padding:10px;border-radius:12px;border:1px solid var(--border-color)">
+          <summary style="cursor:pointer;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;outline:none">
+            <span>📅 ${formattedDate}</span>
+            <span class="muted" style="font-size:12px">🔥 ${Math.round(dKcal)} / ${dailyTargetKcal} קק״ל (לחץ לפירוט)</span>
+          </summary>
+          <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-color)">
+            ${itemsListHtml}
+          </div>
+        </details>
       `;
     });
 
