@@ -102,7 +102,7 @@ textarea{resize:vertical;min-height:80px}
 .chat-bubble-user { background: var(--chat-user-bg); padding: 10px 14px; border-radius: 14px 14px 2px 14px; margin-bottom: 8px; border: 1px solid var(--border-color); align-self: flex-start; }
 .chat-bubble-ai { background: var(--chat-ai-bg); padding: 10px 14px; border-radius: 14px 14px 14px 2px; margin-bottom: 8px; border: 1px solid var(--chat-ai-border); }
 
-/* סגנונות לחלון הצף החדש (Floating AI Widget) */
+/* סגנונות לחלון הצף המהיר (Floating AI Widget) */
 #ai-chat-widget {
   position: fixed;
   bottom: 80px;
@@ -376,19 +376,28 @@ textarea{resize:vertical;min-height:80px}
 </nav>
 </div>
 
-<!-- חלון צף (Floating AI Widget) בתוך האפליקציה -->
+<!-- חלון צף (Floating AI Widget) אינטראקטיבי מלא בתוך האפליקציה -->
 <div id="ai-chat-widget">
   <button id="ai-fab-btn" onclick="toggleAIWidget()" title="עוזר אישי מהיר">🤖</button>
   <div id="aiWidgetModal" class="ai-widget-modal" style="display: none;">
     <div class="ai-widget-header">
-      <span>עוזר מהיר באפליקציה</span>
+      <span>עוזר תזונה חכם באפליקציה</span>
       <button onclick="toggleAIWidget()" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
     </div>
     <div class="ai-widget-body">
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">שאל שאלה מהירה או רשום פריט:</div>
-      <textarea id="aiWidgetInput" placeholder="למשל: כמה קלוריות יש ב-2 תפוחים?" rows="2" style="margin-bottom: 6px; font-size: 13px;"></textarea>
-      <button class="ai-btn" style="padding: 8px; font-size: 13px;" onclick="sendAIWidgetMessage()">שלח לשאלה מהירה</button>
-      <div id="aiWidgetResponse" style="margin-top: 8px; font-size: 12px; background: var(--bg-app); padding: 8px; border-radius: 8px; max-height: 100px; overflow-y: auto; display: none; border: 1px solid var(--border-color);"></div>
+      <!-- היסטוריית השיחה בחלון הצף -->
+      <div id="aiWidgetChatHistory" style="height: 150px; overflow-y: auto; margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; padding: 4px; background: var(--bg-app); border-radius: 8px; border: 1px solid var(--border-color);">
+        <div style="background: var(--chat-ai-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--chat-ai-border);">
+          <b>עוזר חכם:</b> שלום! איך אפשר לעזור לך עם הקלוריות או הנתונים להיום?
+        </div>
+      </div>
+
+      <textarea id="aiWidgetInput" placeholder="כתוב שאלה או בקשה (למשל: כמה נשאר לי לאכול?)..." rows="2" style="margin-bottom: 6px; font-size: 13px; resize: none;"></textarea>
+      
+      <div style="display: flex; gap: 6px;">
+        <button class="ai-btn" style="padding: 8px; font-size: 12px; flex: 2;" onclick="sendAIWidgetMessage()">שלח הודעה</button>
+        <button class="secondary" style="padding: 8px; font-size: 12px; flex: 1;" onclick="resetAIWidgetChat()">איפוס</button>
+      </div>
     </div>
   </div>
 </div>
@@ -603,22 +612,27 @@ const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 function toggleAIWidget() {
   const modal = document.getElementById('aiWidgetModal');
   modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+  if(modal.style.display === 'block') {
+    const historyDiv = document.getElementById('aiWidgetChatHistory');
+    historyDiv.scrollTop = historyDiv.scrollHeight;
+  }
 }
 
 async function sendAIWidgetMessage() {
-  const input = document.getElementById('aiWidgetInput').value.trim();
-  const respArea = document.getElementById('aiWidgetResponse');
+  const inputEl = document.getElementById('aiWidgetInput');
+  const historyDiv = document.getElementById('aiWidgetChatHistory');
+  const query = inputEl.value.trim();
   const apiKey = localStorage.getItem(API_KEY_STORAGE);
 
-  if(!input) return;
-  if(!apiKey) {
-    respArea.style.display = 'block';
-    respArea.innerHTML = 'שגיאה: נא להגדיר תחילה API Key בהגדרות (⚙️ API).';
-    return;
-  }
+  if(!query) return;
 
-  respArea.style.display = 'block';
-  respArea.innerHTML = '⚡ מעבד שאלה...';
+  historyDiv.innerHTML += `<div class="chat-bubble-user" style="background: var(--chat-user-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-color); align-self: flex-start;"><b>אתה:</b> ${query}</div>`;
+  inputEl.value = '';
+  historyDiv.scrollTop = historyDiv.scrollHeight;
+
+  const typingId = 'typing_' + Date.now();
+  historyDiv.innerHTML += `<div id="${typingId}" class="muted" style="font-size: 11px; padding: 2px;">⚡ מעבד תשובה...</div>`;
+  historyDiv.scrollTop = historyDiv.scrollHeight;
 
   try {
     const targets = calculateTargets();
@@ -626,20 +640,44 @@ async function sendAIWidgetMessage() {
     const consumed = a.reduce((s,x)=>s+(x.kcal||0),0);
     const remaining = Math.max(0, targets.kcal - consumed);
 
-    const promptText = `You are a helpful nutrition assistant in a calorie tracking app. User's remaining calories today: ${remaining} kcal. User's query: "${input}". Answer concisely and accurately in Hebrew.`;
-
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || 'API Error');
-    let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
-    respArea.innerHTML = `<div style="white-space:pre-line">${textResult}</div>`;
+    if(apiKey) {
+      const promptText = `You are a helpful nutrition assistant widget inside a calorie tracking app. User's remaining calories today: ${remaining} kcal out of ${targets.kcal}. User query: "${query}". Answer briefly and directly in Hebrew.`;
+      
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'API Error');
+      let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
+      
+      document.getElementById(typingId).remove();
+      historyDiv.innerHTML += `<div class="chat-bubble-ai" style="background: var(--chat-ai-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--chat-ai-border);"><b>עוזר חכם:</b><div style="margin-top:2px; white-space:pre-line;">${textResult}</div></div>`;
+    } else {
+      document.getElementById(typingId).remove();
+      let localAnswer = `נשארו לך להיום ${remaining} קלוריות מתוך יעד של ${targets.kcal}. (לשאלות מתקדמות, הגדר API Key בהגדרות).`;
+      if(query.includes('קלוריות') || query.includes('כמה')) {
+        localAnswer = `🔥 נצרכו היום ${consumed} קק״ל. נותרו לך ${remaining} קק״ל.`;
+      }
+      historyDiv.innerHTML += `<div class="chat-bubble-ai" style="background: var(--chat-ai-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--chat-ai-border);"><b>עוזר חכם:</b><br>${localAnswer}</div>`;
+    }
+    historyDiv.scrollTop = historyDiv.scrollHeight;
   } catch(e) {
-    respArea.innerHTML = `<span style="color:#c53030">שגיאה: ${e.message}</span>`;
+    const typingEl = document.getElementById(typingId);
+    if(typingEl) typingEl.remove();
+    historyDiv.innerHTML += `<div style="color:#c53030; font-size:11px;">שגיאה בתקשורת: ${e.message}</div>`;
+    historyDiv.scrollTop = historyDiv.scrollHeight;
   }
+}
+
+function resetAIWidgetChat() {
+  document.getElementById('aiWidgetChatHistory').innerHTML = `
+    <div style="background: var(--chat-ai-bg); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--chat-ai-border);">
+      <b>עוזר חכם:</b> השיחה אופסה. איך אוכל לעזור?
+    </div>
+  `;
+  document.getElementById('aiWidgetInput').value = '';
 }
 
 async function getAiDailyCoachFeedback() {
