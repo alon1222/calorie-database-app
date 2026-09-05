@@ -757,7 +757,6 @@ JSON_ACTION: {"action": "food_info", "name": "...", "kcal": number, "protein": n
         try {
           const actionJson = JSON.parse(parts[1].trim());
           if(actionJson.action === 'food_info') {
-            // יצירת מזהה ייחודי או שמירת הנתונים בזיכרון זמני כדי שהכפתורים יוכלו להשתמש בהם
             const foodPayload = encodeURIComponent(JSON.stringify(actionJson));
             actionButtonsHtml = `
               <div style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
@@ -843,7 +842,6 @@ function addFoodItemToIntakeByAI(encodedJson) {
 
     (db.intake[todayKey()] ??= []).push(intakeItem);
 
-    // הוספה אוטומטית למאגר אם אינו קיים
     if(!db.products.some(p => normalizeStr(p.name) === normalizeStr(item.name))) {
       db.products.push({
         name: item.name,
@@ -1268,13 +1266,28 @@ function applyAiSelection(index) {
 }
 
 function exportBackup(){
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
-  const dlAnchorElem = document.createElement('a');
-  dlAnchorElem.setAttribute("href", dataStr);
-  dlAnchorElem.setAttribute("download", `calorie_backup_${todayKey()}.json`);
-  document.body.appendChild(dlAnchorElem);
-  dlAnchorElem.click();
-  dlAnchorElem.remove();
+  try {
+    const dataStr = JSON.stringify(db, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.style.display = 'none';
+    dlAnchorElem.href = url;
+    dlAnchorElem.download = `calorie_backup_${todayKey()}.json`;
+    
+    document.body.appendChild(dlAnchorElem);
+    dlAnchorElem.click();
+    
+    setTimeout(() => {
+      document.body.removeChild(dlAnchorElem);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+    
+    alert('קובץ הגיבוי נוצר בהצלחה והורד למכשיר!');
+  } catch(e) {
+    alert('שגיאה ביצירת קובץ הגיבוי: ' + e.message);
+  }
 }
 
 function importBackup(){ document.getElementById('importFile').click(); }
