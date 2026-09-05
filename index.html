@@ -182,7 +182,6 @@ textarea{resize:vertical;min-height:80px}
 <div class="card" style="margin-top:14px;display:flex;gap:10px;background:transparent;border:none;padding:0">
 <button class="primary" style="flex:2" onclick="openAdd()">＋ הוסף צריכה</button>
 <button class="secondary" style="flex:1" onclick="openScanner()">📷 סרוק</button>
-<button class="secondary" style="flex:1" onclick="showDailySummaryModal()">📋 סיכום</button>
 </div>
 
 <div class="card" style="margin-top:14px">
@@ -391,13 +390,6 @@ textarea{resize:vertical;min-height:80px}
 <div class="muted" style="font-size:13px;margin-bottom:12px">מפתח ה-API משמש למילוי אוטומטי והמרות AI:</div>
 <input id="apiKeyInput" type="password" placeholder="הדבק API Key כאן (AIzaSy...)">
 <button class="primary" onclick="saveApiKey()">שמור מפתח</button>
-<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
-</div></div>
-
-<div class="modal" id="summaryModal"><div class="sheet">
-<h2>📊 סיכום יומי</h2>
-<textarea id="summaryText" readonly style="width:100%;height:180px;font-family:monospace;font-size:14px;margin-top:10px"></textarea>
-<button class="primary" onclick="copySummaryText()">📋 העתק טקסט</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">סגור</button>
 </div></div>
 
@@ -612,18 +604,15 @@ if(mainContainerEl) {
       const diffX = touchEndX - touchStartX;
       const diffY = touchEndY - touchStartY;
 
-      // בדיקה שהתנועה אופקית מובהקת ולא גלילה אנכית
       if(Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY)) {
         const currentTab = getCurrentActiveTab();
         const currentIndex = tabOrder.indexOf(currentTab);
         
         if(diffX < 0) {
-          // החלקה שמאלה -> מעבר ללשונית הבאה
           if(currentIndex < tabOrder.length - 1) {
             show(tabOrder[currentIndex + 1]);
           }
         } else {
-          // החלקה ימינה -> מעבר ללשונית הקודמת
           if(currentIndex > 0) {
             show(tabOrder[currentIndex - 1]);
           }
@@ -633,7 +622,6 @@ if(mainContainerEl) {
   }, {passive: true});
 }
 
-// פונקציות Caching חכמות ל-AI
 function getAICache(queryKey) {
   try {
     const cache = JSON.parse(localStorage.getItem('ai_cache_v1') || '{}');
@@ -649,7 +637,6 @@ function setAICache(queryKey, data) {
   } catch(e) {}
 }
 
-// פונקציות לחלון הצף המרכזי עם שליטה מלאה וביצוע פעולות אוטומטיות ואופציות הוספה
 function toggleAIWidget(customPrompt = null, customTitle = 'עוזר תזונה חכם באפליקציה') {
   const modal = document.getElementById('aiWidgetModal');
   const titleEl = document.getElementById('aiWidgetTitle');
@@ -692,7 +679,6 @@ async function sendAIWidgetMessage() {
 
     let systemActionMsg = '';
 
-    // זיהוי פקודת עדכון משקל
     if(query.includes('משקל') && (query.includes('עדכן') || query.includes('שמור') || query.includes('היה'))) {
       const matchNum = query.match(/\d+(\.\d+)?/);
       if(matchNum) {
@@ -793,7 +779,6 @@ JSON_ACTION: {"action": "food_info", "name": "...", "kcal": number, "protein": n
   }
 }
 
-// פונקציות עזר להוספת פריט מה-AI למאגר או לצריכה היומית
 function addFoodItemToDatabaseByAI(encodedJson) {
   try {
     const item = JSON.parse(decodeURIComponent(encodedJson));
@@ -1409,37 +1394,6 @@ function renderToday(){
   });
 
   intake.innerHTML = htmlParts.join('');
-}
-
-function showDailySummaryModal(){
-  const dateStr = new Date().toLocaleDateString('he-IL');
-  const targets = calculateTargets();
-  const a = today();
-  const k = a.reduce((s,x)=>s+(x.kcal||0), 0);
-  const p = a.reduce((s,x)=>s+(x.protein||0), 0);
-  const c = a.reduce((s,x)=>s+(x.carbs||0), 0);
-  const f = a.reduce((s,x)=>s+(x.fat||0), 0);
-  
-  let txt = `📊 סיכום יומי — ${dateStr}\n\n`;
-  txt += `🔥 נצרכו: ${Math.round(k)} קלוריות\n`;
-  txt += `🎯 יעד יומי: ${targets.kcal} קלוריות\n`;
-  if(k <= targets.kcal) txt += `🟢 נשארו: ${Math.round(targets.kcal - k)} קלוריות\n`;
-  else txt += `🔴 חריגה מהיעד: -${Math.round(k - targets.kcal)} קלוריות\n`;
-  
-  txt += `\n💪 חלבון: ${round1(p)} / ${targets.protein} גרם\n`;
-  txt += `🍞 פחמימות: ${round1(c)} / ${targets.carbs} גרם\n`;
-  txt += `🥑 שומן: ${round1(f)} / ${targets.fat} גרם`;
-  
-  document.getElementById('summaryText').value = txt;
-  lockPageScroll();
-  document.getElementById('summaryModal').classList.add('open');
-}
-
-function copySummaryText(){
-  const txt = document.getElementById('summaryText');
-  txt.select();
-  navigator.clipboard.writeText(txt.value);
-  alert('הסיכום היומי הועתק ללוח!');
 }
 
 function updateProductUnitCalc(){
