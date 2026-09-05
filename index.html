@@ -166,7 +166,7 @@ textarea{resize:vertical;min-height:80px}
     <span class="admin-badge">מנהל</span>
   </div>
 </header>
-<main>
+<main id="mainContainer">
 <section id="today">
 <div class="card kcal-card">
   <div class="muted" style="font-weight:600;font-size:13px">נצרכו היום</div>
@@ -365,14 +365,14 @@ textarea{resize:vertical;min-height:80px}
       <!-- היסטוריית השיחה בחלון הצף -->
       <div id="aiWidgetChatHistory" style="height: 190px; overflow-y: auto; margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-app); border-radius: 8px; border: 1px solid var(--border-color);">
         <div class="chat-bubble-ai">
-          <b>עוזר חכם:</b> שלום! איך אפשר לעזור לך היום? תוכל לבקש ממני לעדכן משקל, להוסיף ארוחה, לנתח מתכון או לשאול כל שאלה.
+          <b>עוזר חכם:</b> שלום! איך אפשר לעזור לך היום? תוכל לשאול על קלוריות של כל מוצר או לבקש להוסיף ארוחות ועדכוני משקל.
         </div>
       </div>
 
-      <textarea id="aiWidgetInput" placeholder="כתוב בקשה או פעולה (למשל: אכלתי 2 ביצים בארוחת בוקר)..." rows="2" style="margin-bottom: 6px; font-size: 13px; resize: none;"></textarea>
+      <textarea id="aiWidgetInput" placeholder="כתוב שאלה או בקשה (למשל: כמה קלוריות יש בגמבה אדומה?)..." rows="2" style="margin-bottom: 6px; font-size: 13px; resize: none;"></textarea>
       
       <div style="display: flex; gap: 6px;">
-        <button class="ai-btn" style="padding: 8px; font-size: 12px; flex: 2;" onclick="sendAIWidgetMessage()">שלח פעולה</button>
+        <button class="ai-btn" style="padding: 8px; font-size: 12px; flex: 2;" onclick="sendAIWidgetMessage()">שלח הודעה</button>
         <button class="secondary" style="padding: 8px; font-size: 12px; flex: 1;" onclick="resetAIWidgetChat()">איפוס</button>
       </div>
     </div>
@@ -582,7 +582,74 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-// פונקציות לחלון הצף המרכזי עם שליטה מלאה וביצוע פעולות אוטומטיות
+// רשימת הלשוניות לניווט בהחלקת אצבע
+const tabOrder = ['today', 'aiAssistant', 'profile', 'weight', 'products', 'month'];
+function getCurrentActiveTab() {
+  for(let id of tabOrder) {
+    const el = document.getElementById(id);
+    if(el && !el.classList.contains('hidden')) return id;
+  }
+  return 'today';
+}
+
+// ניווט מסכים בהחלקת אצבע (Swipe)
+let touchStartX = 0;
+let touchStartY = 0;
+const mainContainerEl = document.getElementById('mainContainer');
+
+if(mainContainerEl) {
+  mainContainerEl.addEventListener('touchstart', e => {
+    if(e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }, {passive: true});
+
+  mainContainerEl.addEventListener('touchend', e => {
+    if(e.changedTouches.length === 1) {
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffX = touchEndX - touchStartX;
+      const diffY = touchEndY - touchStartY;
+
+      // בדיקה שהתנועה אופקית מובהקת ולא גלילה אנכית
+      if(Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY)) {
+        const currentTab = getCurrentActiveTab();
+        const currentIndex = tabOrder.indexOf(currentTab);
+        
+        if(diffX < 0) {
+          // החלקה שמאלה -> מעבר ללשונית הבאה
+          if(currentIndex < tabOrder.length - 1) {
+            show(tabOrder[currentIndex + 1]);
+          }
+        } else {
+          // החלקה ימינה -> מעבר ללשונית הקודמת
+          if(currentIndex > 0) {
+            show(tabOrder[currentIndex - 1]);
+          }
+        }
+      }
+    }
+  }, {passive: true});
+}
+
+// פונקציות Caching חכמות ל-AI
+function getAICache(queryKey) {
+  try {
+    const cache = JSON.parse(localStorage.getItem('ai_cache_v1') || '{}');
+    return cache[String(queryKey || '').toLowerCase().trim()] || null;
+  } catch(e) { return null; }
+}
+
+function setAICache(queryKey, data) {
+  try {
+    const cache = JSON.parse(localStorage.getItem('ai_cache_v1') || '{}');
+    cache[String(queryKey || '').toLowerCase().trim()] = data;
+    localStorage.setItem('ai_cache_v1', JSON.stringify(cache));
+  } catch(e) {}
+}
+
+// פונקציות לחלון הצף המרכזי עם שליטה מלאה וביצוע פעולות אוטומטיות ואופציות הוספה
 function toggleAIWidget(customPrompt = null, customTitle = 'עוזר תזונה חכם באפליקציה') {
   const modal = document.getElementById('aiWidgetModal');
   const titleEl = document.getElementById('aiWidgetTitle');
@@ -649,58 +716,55 @@ App current state:
 
 User request: "${query}"
 
-If the user wants to log food (e.g., "אכלתי 2 פרוסות לחם"), parse the food name, amount, and calculate or estimate its nutritional values (kcal, protein, carbs, fat per 100g and for the amount) and output a JSON block at the very end of your response in this exact format:
-JSON_ACTION: {"action": "add_intake", "name": "...", "amount": number, "unitLabel": "...", "meal": "lunch/breakfast/dinner/snacks", "kcal": number, "protein": number, "carbs": number, "fat": number}
+Provide a clear, helpful response in Hebrew. If the user asks about nutritional values of a food item (e.g. "כמה קלוריות יש בגמבה אדומה?"), estimate its values per 100g and for a standard portion, and at the very end include a JSON block in this exact format so the user can easily add it to their database or daily intake:
+JSON_ACTION: {"action": "food_info", "name": "...", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number, "defaultAmount": number, "defaultUnitLabel": "..."}`;
+      
+      let data;
+      const cachedData = getAICache(promptText);
+      if (cachedData) {
+        data = cachedData;
+      } else {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        let res;
+        try {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+        } catch (fetchErr) {
+          clearTimeout(timeoutId);
+          if (fetchErr.name === 'AbortError') {
+            throw new Error('השרת לא הגיב בזמן (Timeout). נסה שוב בעוד מספר רגעים.');
+          }
+          throw fetchErr;
+        }
 
-If no food logging is requested, just answer in clear, helpful Hebrew.`;
-      
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message || 'API Error');
+        data = await res.json();
+        if (data.error) throw new Error(data.error.message || 'API Error');
+        setAICache(promptText, data);
+      }
+
       let textResult = data.candidates?.[0]?.content?.parts?.[0]?.text || 'אין מענה';
-      
-      // בדיקה אם ה-AI החזיר פקודת הוספת צריכה JSON_ACTION
+      let actionButtonsHtml = '';
+
       if(textResult.includes('JSON_ACTION:')) {
         const parts = textResult.split('JSON_ACTION:');
         textResult = parts[0].trim();
         try {
           const actionJson = JSON.parse(parts[1].trim());
-          if(actionJson.action === 'add_intake') {
-            const intakeItem = {
-              name: actionJson.name,
-              amount: actionJson.amount,
-              unit: 'g',
-              unitLabel: actionJson.unitLabel || 'גרם',
-              meal: actionJson.meal || 'lunch',
-              kcal: actionJson.kcal,
-              protein: actionJson.protein || 0,
-              carbs: actionJson.carbs || 0,
-              fat: actionJson.fat || 0
-            };
-            (db.intake[todayKey()] ??= []).push(intakeItem);
-            
-            // שמירה גם במאגר אם לא קיים
-            if(!db.products.some(p => normalizeStr(p.name) === normalizeStr(actionJson.name))) {
-              db.products.push({
-                name: actionJson.name,
-                brand: 'הוספה דרך AI',
-                barcode: '',
-                kcal: (actionJson.kcal / actionJson.amount) * 100,
-                protein: (actionJson.protein / actionJson.amount) * 100,
-                carbs: (actionJson.carbs / actionJson.amount) * 100,
-                fat: (actionJson.fat / actionJson.amount) * 100,
-                unit_g: 100,
-                image: '',
-                updated: new Date().toLocaleDateString('he-IL')
-              });
-            }
-            save();
-            renderToday();
-            systemActionMsg = `🍽️ נוסף בהצלחה לצריכה היומית: ${actionJson.name} (${actionJson.amount} ${actionJson.unitLabel}, ${Math.round(actionJson.kcal)} קק״ל)!`;
+          if(actionJson.action === 'food_info') {
+            // יצירת מזהה ייחודי או שמירת הנתונים בזיכרון זמני כדי שהכפתורים יוכלו להשתמש בהם
+            const foodPayload = encodeURIComponent(JSON.stringify(actionJson));
+            actionButtonsHtml = `
+              <div style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap;">
+                <button class="primary" style="font-size: 11px; padding: 6px 10px; flex: 1;" onclick='addFoodItemToDatabaseByAI("${foodPayload}")'>➕ הוסף למאגר</button>
+                <button class="ai-btn" style="font-size: 11px; padding: 6px 10px; flex: 1;" onclick='addFoodItemToIntakeByAI("${foodPayload}")'>🍽️ הוסף לצריכה יומית</button>
+              </div>
+            `;
           }
         } catch(err) {
           console.error("Failed to parse AI action JSON", err);
@@ -713,7 +777,7 @@ If no food logging is requested, just answer in clear, helpful Hebrew.`;
       if(systemActionMsg) {
         fullHtmlResponse += `<div style="color:var(--primary-dark); font-weight:bold; margin-bottom:4px;">${systemActionMsg}</div>`;
       }
-      fullHtmlResponse += `<div style="white-space:pre-line;">${textResult}</div>`;
+      fullHtmlResponse += `<div style="white-space:pre-line;">${textResult}</div>${actionButtonsHtml}`;
 
       historyDiv.innerHTML += `<div class="chat-bubble-ai"><b>עוזר חכם:</b><div style="margin-top:4px;">${fullHtmlResponse}</div></div>`;
     } else {
@@ -727,6 +791,79 @@ If no food logging is requested, just answer in clear, helpful Hebrew.`;
     if(typingEl) typingEl.remove();
     historyDiv.innerHTML += `<div style="color:#c53030; font-size:11px;">שגיאה בתקשורת: ${e.message}</div>`;
     historyDiv.scrollTop = historyDiv.scrollHeight;
+  }
+}
+
+// פונקציות עזר להוספת פריט מה-AI למאגר או לצריכה היומית
+function addFoodItemToDatabaseByAI(encodedJson) {
+  try {
+    const item = JSON.parse(decodeURIComponent(encodedJson));
+    if(!db.products.some(p => normalizeStr(p.name) === normalizeStr(item.name))) {
+      db.products.push({
+        name: item.name,
+        brand: 'עוזר AI',
+        barcode: '',
+        kcal: item.kcal || 0,
+        protein: item.protein || 0,
+        carbs: item.carbs || 0,
+        fat: item.fat || 0,
+        unit_g: item.unit_g || 100,
+        image: '',
+        updated: new Date().toLocaleDateString('he-IL')
+      });
+      save();
+      alert(`המוצר "${item.name}" נוסף בהצלחה למאגר המוצרים!`);
+      renderProducts();
+    } else {
+      alert(`המוצר "${item.name}" כבר קיים במאגר המוצרים שלך.`);
+    }
+  } catch(e) {
+    alert('שגיאה בהוספת המוצר למאגר.');
+  }
+}
+
+function addFoodItemToIntakeByAI(encodedJson) {
+  try {
+    const item = JSON.parse(decodeURIComponent(encodedJson));
+    const amount = item.defaultAmount || 100;
+    const unitLabel = item.defaultUnitLabel || 'גרם';
+    const mult = amount / 100;
+
+    const intakeItem = {
+      name: item.name,
+      amount: amount,
+      unit: 'g',
+      unitLabel: unitLabel,
+      meal: 'lunch',
+      kcal: (item.kcal || 0) * mult,
+      protein: (item.protein || 0) * mult,
+      carbs: (item.carbs || 0) * mult,
+      fat: (item.fat || 0) * mult
+    };
+
+    (db.intake[todayKey()] ??= []).push(intakeItem);
+
+    // הוספה אוטומטית למאגר אם אינו קיים
+    if(!db.products.some(p => normalizeStr(p.name) === normalizeStr(item.name))) {
+      db.products.push({
+        name: item.name,
+        brand: 'עוזר AI',
+        barcode: '',
+        kcal: item.kcal || 0,
+        protein: item.protein || 0,
+        carbs: item.carbs || 0,
+        fat: item.fat || 0,
+        unit_g: item.unit_g || 100,
+        image: '',
+        updated: new Date().toLocaleDateString('he-IL')
+      });
+    }
+
+    save();
+    renderToday();
+    alert(`נוסף בהצלחה לצריכה היומית: ${item.name} (${amount} ${unitLabel}, ${Math.round(intakeItem.kcal)} קק״ל)!`);
+  } catch(e) {
+    alert('שגיאה בהוספה לצריכה היומית.');
   }
 }
 
@@ -1407,6 +1544,7 @@ function show(id){
   if(id==='weight')renderWeightScreen();
   if(id==='products')renderProducts();
   if(id==='month')renderMonth();
+  window.scrollTo(0, 0);
 }
 
 let scrollPosition = 0;
