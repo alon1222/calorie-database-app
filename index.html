@@ -329,6 +329,9 @@ textarea{resize:vertical;min-height:80px}
     <button class="primary" style="flex:1" onclick="openScanner()">📷 סרוק ברקוד</button>
     <button class="ai-btn" style="flex:1" onclick="openProduct()">＋ הוסף מוצר (AI)</button>
   </div>
+  <div style="margin-top:8px">
+    <button class="secondary" style="width:100%;font-size:13px" onclick="openProductManual()">＋ הוסף מוצר ידנית (ללא AI)</button>
+  </div>
 </div>
 <div class="card" id="productList"></div>
 </section>
@@ -467,7 +470,7 @@ textarea{resize:vertical;min-height:80px}
 <input id="pname" placeholder="שם המוצר *" style="font-size:16px;font-weight:600" oninput="debouncedCheckDuplicate()">
 <div id="duplicateNotice" class="duplicate-warning"></div>
 
-<div class="ai-box">
+<div class="ai-box" id="productAiBoxContainer">
   <button type="button" id="aiFillBtn" class="ai-btn" onclick="fetchProductWithAI()">🪄 מילוי/השלמת נתונים ב-AI</button>
   <div id="aiStatus" class="muted" style="font-size:12px;margin-top:6px;text-align:center;min-height:16px;"></div>
 </div>
@@ -1589,13 +1592,29 @@ function openAdd(){
 
 function openProduct(){
   window.editingProductIndex=null;
-  productModalTitle.textContent='הוספת מוצר במאגר';
+  productModalTitle.textContent='הוספת מוצר במאגר (AI)';
   document.querySelectorAll('#productModal input').forEach(x=>x.value='');
   aiStatus.textContent = '';
   document.getElementById('duplicateNotice').style.display = 'none';
   currentImageData = "";
   document.getElementById('imgPreviewContainer').style.display = 'none';
   productUnitPreview.style.display='none';
+  document.getElementById('productAiBoxContainer').style.display = 'block';
+  lockPageScroll();
+  productModal.classList.add('open');
+}
+
+function openProductManual(barcodeVal = ''){
+  window.editingProductIndex=null;
+  productModalTitle.textContent='הוספת מוצר ידנית (ללא AI)';
+  document.querySelectorAll('#productModal input').forEach(x=>x.value='');
+  if(barcodeVal) pbarcode.value = barcodeVal;
+  aiStatus.textContent = '';
+  document.getElementById('duplicateNotice').style.display = 'none';
+  currentImageData = "";
+  document.getElementById('imgPreviewContainer').style.display = 'none';
+  productUnitPreview.style.display='none';
+  document.getElementById('productAiBoxContainer').style.display = 'none'; // הסתרת תיבת ה-AI לחלוטין במסלול הידני
   lockPageScroll();
   productModal.classList.add('open');
 }
@@ -1875,6 +1894,7 @@ function editProduct(i){
  }
  window.editingProductIndex=i;
  productModalTitle.textContent='עריכת מוצר במאגר';
+ document.getElementById('productAiBoxContainer').style.display = p.barcode ? 'none' : 'block';
  lockPageScroll();productModal.classList.add('open');
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
@@ -1928,14 +1948,12 @@ async function scanLoop(){
  if(isScanningActive) requestAnimationFrame(scanLoop);
 }
 
-// הפרדה מוחלטת ועצירת המצלמה בעת בחירת קובץ מהגלריה
 function triggerFileScanner() {
-  stopScanner(); // עוצר את המצלמה מיד
+  stopScanner();
   scannerStatus.textContent = '📁 מעבד תמונה נבחרת מהגלריה...';
   document.getElementById('barcodeFileInput').click();
 }
 
-// פונקציית הקטנה ודחיסה חכמה של התמונה לפני שליחה לפענוח
 function resizeImageForScanning(file, maxDimension = 800, quality = 0.8) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -2028,7 +2046,11 @@ async function searchBarcode(code){
      save();
      barcodeResult.innerHTML=`<b>נמצא ונשמר מהרשת:</b> ${found.name}<br><button class="primary" style="margin-top:8px" onclick="closeScanner();show('products')">📦 צפה במאגר</button>`;
    } else {
-     barcodeResult.innerHTML=`הברקוד (${code}) לא נמצא במאגר העולמי. <button class="primary" style="margin-top:8px" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש</button>`;
+     barcodeResult.innerHTML=`הברקוד (${code}) לא נמצא במאגר העולמי.<br>` +
+       `<div style="display:flex;gap:6px;margin-top:8px">` +
+         `<button class="ai-btn" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();openProduct();pbarcode.value='${code}';">✨ הוסף עם AI</button>` +
+         `<button class="secondary" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();openProductManual('${code}');">＋ הוסף ידנית</button>` +
+       `</div>`;
    }
  }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד ברשת.';}
 }
