@@ -415,7 +415,7 @@ textarea{resize:vertical;min-height:80px}
 <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר ארוחה:</label>
 <select id="mealCategorySelect" style="margin-bottom:10px">
   <option value="breakfast">🌅 ארוחת בוקר</option>
-  <option value="lunch" selected>☀️ ארוחת צהריים</option>
+  <option value="lunch">☀️ ארוחת צהריים</option>
   <option value="dinner">🌙 ארוחת ערב</option>
   <option value="snacks">🍎 נשנושים וביניים</option>
 </select>
@@ -1571,6 +1571,14 @@ function unlockPageScroll(){
   window.scrollTo(0, scrollPosition);
 }
 
+function getDefaultMealCategoryByHour() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'breakfast';
+  if (hour >= 12 && hour < 17) return 'lunch';
+  if (hour >= 17 && hour < 22) return 'dinner';
+  return ''; // לילה / נשנושים נשאר פתוח לבחירה יזומית
+}
+
 function openAdd(){
   window.editingIntakeIndex=null;
   addModalTitle.textContent='הוספת צריכה';
@@ -1581,7 +1589,13 @@ function openAdd(){
   grams.value='1';
   unitSelect.value='unit';
   foodSearch.value='';
-  mealCategorySelect.value='lunch';
+  
+  // עדכון ארוחה אוטומטי לפי השעה המקומית במכשיר בשעות היום המוגדרות בלבד
+  const autoMeal = getDefaultMealCategoryByHour();
+  if(autoMeal) {
+    mealCategorySelect.value = autoMeal;
+  }
+
   document.getElementById('newProductQuickFields').style.display='none';
   document.querySelectorAll('#newProductQuickFields input').forEach(x=>x.value='');
   document.getElementById('quickAiStatus').textContent='';
