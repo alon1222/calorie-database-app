@@ -345,8 +345,8 @@ textarea{resize:vertical;min-height:80px}
 <div class="spacer"></div>
 </main>
 <nav>
-<button id="n1" class="active" onclick="show('today')">היום שלי</button>
-<button id="n6" onclick="show('aiAssistant')">ניתוח נתונים</button>
+<button id="n6" class="active" onclick="show('aiAssistant')">📊 ניתוח נתונים</button>
+<button id="n1" onclick="show('today')">היום שלי</button>
 <button id="n5" onclick="show('profile')">פרופיל</button>
 <button id="n4" onclick="show('weight')">משקל</button>
 <button id="n2" onclick="show('products')">מאגר</button>
@@ -574,6 +574,8 @@ window.addEventListener('DOMContentLoaded', () => {
       badge.className = 'user-badge';
     }
   }
+  // Set default active tab to aiAssistant on load since it's now first in tabOrder/nav
+  show('aiAssistant');
 });
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
@@ -617,13 +619,13 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-const tabOrder = ['today', 'aiAssistant', 'profile', 'weight', 'products', 'month'];
+const tabOrder = ['aiAssistant', 'today', 'profile', 'weight', 'products', 'month'];
 function getCurrentActiveTab() {
   for(let id of tabOrder) {
     const el = document.getElementById(id);
     if(el && !el.classList.contains('hidden')) return id;
   }
-  return 'today';
+  return 'aiAssistant';
 }
 
 let touchStartX = 0;
@@ -1607,7 +1609,7 @@ function renderMonth(){
 
 function show(id){
   ['today','aiAssistant','profile','weight','products','month'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
-  ['n1','n6','n5','n4','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','aiAssistant','profile','weight','products','month'][i]===id));
+  ['n6','n1','n5','n4','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['aiAssistant','today','profile','weight','products','month'][i]===id));
   if(id==='today')renderToday();
   if(id==='aiAssistant')renderToday();
   if(id==='profile')loadProfileToInputs();
