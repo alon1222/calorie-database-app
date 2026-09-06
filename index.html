@@ -198,30 +198,6 @@ textarea{resize:vertical;min-height:80px}
 </div>
 </section>
 
-<section id="aiAssistant" class="hidden">
-<div class="card" style="display:flex;justify-content:space-between;align-items:center">
-  <div>
-    <div style="font-size:12px;color:var(--text-muted);font-weight:600">יתרה קלוריות נוכחית להיום:</div>
-    <div style="font-size:20px;font-weight:800;color:var(--primary)" id="aiAssistantKcalLeft">2,000 קק״ל</div>
-  </div>
-  <div style="text-align:left;font-size:12px;color:var(--text-muted)">
-    יעד יומי: <span id="aiAssistantTarget">2000</span><br>נצרך: <span id="aiAssistantConsumed">0</span>
-  </div>
-</div>
-
-<div class="card" style="background:linear-gradient(135deg, var(--primary-light) 0%, var(--bg-card) 100%)">
-  <b style="color:var(--primary-dark)">🌟 חוות דעת חכמה ומוטיבציה להיום</b>
-  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור (נפתח בחלון הצף):</div>
-  <button class="ai-btn" onclick="triggerAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי להיום</button>
-</div>
-
-<div class="card" style="background:linear-gradient(135deg, var(--primary-light) 0%, var(--bg-card) 100%)">
-  <b style="color:var(--primary-dark)">📈 ניתוח מצטבר וסקירת תקופה מהמאמן</b>
-  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל חוות דעת כוללת על ההתנהלות התזונתית שלך (נפתח בחלון הצף):</div>
-  <button class="ai-btn" onclick="triggerAiCumulativeCoachFeedback()">📊 בקש ניתוח כולל עד כה</button>
-</div>
-</section>
-
 <section id="profile" class="hidden">
 <div class="card">
   <b style="font-size:15px">👤 פרופיל אישי וחישוב יעדים קלוריים</b>
@@ -342,15 +318,39 @@ textarea{resize:vertical;min-height:80px}
   <div id="monthList"></div>
 </div>
 </section>
+
+<section id="aiAssistant" class="hidden">
+<div class="card" style="display:flex;justify-content:space-between;align-items:center">
+  <div>
+    <div style="font-size:12px;color:var(--text-muted);font-weight:600">יתרה קלוריות נוכחית להיום:</div>
+    <div style="font-size:20px;font-weight:800;color:var(--primary)" id="aiAssistantKcalLeft">2,000 קק״ל</div>
+  </div>
+  <div style="text-align:left;font-size:12px;color:var(--text-muted)">
+    יעד יומי: <span id="aiAssistantTarget">2000</span><br>נצרך: <span id="aiAssistantConsumed">0</span>
+  </div>
+</div>
+
+<div class="card" style="background:linear-gradient(135deg, var(--primary-light) 0%, var(--bg-card) 100%)">
+  <b style="color:var(--primary-dark)">🌟 חוות דעת חכמה ומוטיבציה להיום</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל ניתוח של התזונה שלך להיום, משפט חיזוק וטיפים לשיפור (נפתח בחלון הצף):</div>
+  <button class="ai-btn" onclick="triggerAiDailyCoachFeedback()">💬 בקש ניתוח ופידבק אישי להיום</button>
+</div>
+
+<div class="card" style="background:linear-gradient(135deg, var(--primary-light) 0%, var(--bg-card) 100%)">
+  <b style="color:var(--primary-dark)">📈 ניתוח מצטבר וסקירת תקופה מהמאמן</b>
+  <div class="muted" style="font-size:12px;margin-top:4px;margin-bottom:12px">קבל חוות דעת כוללת על ההתנהלות התזונתית שלך (נפתח בחלון הצף):</div>
+  <button class="ai-btn" onclick="triggerAiCumulativeCoachFeedback()">📊 בקש ניתוח כולל עד כה</button>
+</div>
+</section>
 <div class="spacer"></div>
 </main>
 <nav>
-<button id="n6" class="active" onclick="show('aiAssistant')">📊 ניתוח נתונים</button>
-<button id="n1" onclick="show('today')">היום שלי</button>
-<button id="n5" onclick="show('profile')">פרופיל</button>
+<button id="n1" class="active" onclick="show('today')">היום שלי</button>
+<button id="n5" onclick="show('profile')">👤 פרופיל</button>
 <button id="n4" onclick="show('weight')">משקל</button>
 <button id="n2" onclick="show('products')">מאגר</button>
 <button id="n3" onclick="show('month')">חודש</button>
+<button id="n6" onclick="show('aiAssistant')">ניתוח נתונים</button>
 </nav>
 </div>
 
@@ -574,8 +574,6 @@ window.addEventListener('DOMContentLoaded', () => {
       badge.className = 'user-badge';
     }
   }
-  // Set default active tab to aiAssistant on load since it's now first in tabOrder/nav
-  show('aiAssistant');
 });
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
@@ -619,13 +617,13 @@ const debouncedRenderProducts = debounce(renderProducts, 200);
 const debouncedSuggestIntake = debounce(suggestIntake, 200);
 const debouncedCheckDuplicate = debounce(checkRealtimeDuplicate, 200);
 
-const tabOrder = ['aiAssistant', 'today', 'profile', 'weight', 'products', 'month'];
+const tabOrder = ['today', 'profile', 'weight', 'products', 'month', 'aiAssistant'];
 function getCurrentActiveTab() {
   for(let id of tabOrder) {
     const el = document.getElementById(id);
     if(el && !el.classList.contains('hidden')) return id;
   }
-  return 'aiAssistant';
+  return 'today';
 }
 
 let touchStartX = 0;
@@ -1608,8 +1606,8 @@ function renderMonth(){
 }
 
 function show(id){
-  ['today','aiAssistant','profile','weight','products','month'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
-  ['n6','n1','n5','n4','n2','n3'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['aiAssistant','today','profile','weight','products','month'][i]===id));
+  ['today','profile','weight','products','month','aiAssistant'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
+  ['n1','n5','n4','n2','n3','n6'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','profile','weight','products','month','aiAssistant'][i]===id));
   if(id==='today')renderToday();
   if(id==='aiAssistant')renderToday();
   if(id==='profile')loadProfileToInputs();
