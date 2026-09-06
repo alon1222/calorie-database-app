@@ -59,7 +59,9 @@ main{padding:18px}
 .muted{color:var(--text-muted)}
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.macro{background:var(--bg-app);border:1px solid var(--border-color);border-radius:14px;padding:12px;text-align:center}
+.macro{background:var(--bg-app);border:1px solid var(--border-color);border-radius:14px;padding:12px;text-align:center;cursor:pointer;transition:transform 0.1s ease, border-color 0.2s}
+.macro:active{transform:scale(0.97)}
+.macro:hover{border-color:var(--primary)}
 .macro span{font-size:12px;color:var(--text-muted);font-weight:600}
 .macro b{display:block;font-size:18px;margin-top:4px}
 .macro small{font-size:11px;color:var(--text-muted)}
@@ -176,9 +178,9 @@ textarea{resize:vertical;min-height:80px}
   <div class="muted" id="kleftContainer" style="font-size:13px"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div>
 </div>
 <div class="grid">
-<div class="macro"><span>💪 חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
-<div class="macro"><span>🍞 פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
-<div class="macro"><span>🥑 שומן</span><b id="fat">0</b><small>/ 67 ג׳</small></div>
+<div class="macro" onclick="openMacroDetails('protein')" title="לחץ לצפייה בפירוט המאכלים"><span>💪 חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
+<div class="macro" onclick="openMacroDetails('carbs')" title="לחץ לצפייה בפירוט המאכלים"><span>🍞 פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
+<div class="macro" onclick="openMacroDetails('fat')" title="לחץ לצפייה בפירוט המאכלים"><span>🥑 שומן</span><b id="fat">0</b><small>/ 67 ג׳</small></div>
 </div>
 <div class="card" style="margin-top:14px;display:flex;gap:10px;background:transparent;border:none;padding:0">
 <button class="primary" style="flex:2" onclick="openAdd()">＋ הוסף צריכה</button>
@@ -384,6 +386,12 @@ textarea{resize:vertical;min-height:80px}
 <div id="profilePreviewContent" class="card" style="background:var(--primary-light);margin-bottom:14px"></div>
 <button class="primary" onclick="confirmAndSaveProfile()">✅ שמור והחל יעדים מעודכנים</button>
 <button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">✕ ביטול</button>
+</div></div>
+
+<div class="modal" id="macroDetailsModal"><div class="sheet">
+<h2 id="macroDetailsTitle">פירוט מאכלים</h2>
+<div id="macroDetailsContent" style="margin-top:12px; margin-bottom:14px;"></div>
+<button class="secondary" style="width:100%" onclick="closeModal()">סגור</button>
 </div></div>
 
 <div class="modal" id="settingsModal"><div class="sheet">
@@ -911,6 +919,50 @@ function triggerSingleMealRecommendation(cat) {
   const mealNamesMap = { breakfast: 'ארוחת בוקר', lunch: 'ארוחת צהריים', dinner: 'ארוחת ערב', snacks: 'נשנושים וביניים' };
   const prompt = `המלץ לי על מנה אחת מדויקת ובריאה עבור ${mealNamesMap[cat]} שמתאימה בדיוק ליתרת הקלוריות שלי להיום, כולל כמויות וערכים תזונתיים.`;
   toggleAIWidget(prompt, `✨ המלצת AI לארוחת ${mealNamesMap[cat]}`);
+}
+
+const macroLabelsMap = {
+  protein: { name: 'חלבון', unit: 'ג׳', key: 'protein' },
+  carbs: { name: 'פחמימות', unit: 'ג׳', key: 'carbs' },
+  fat: { name: 'שומן', unit: 'ג׳', key: 'fat' }
+};
+
+function openMacroDetails(macroKey) {
+  const info = macroLabelsMap[macroKey];
+  if(!info) return;
+
+  document.getElementById('macroDetailsTitle').textContent = `📊 פירוט צריכת ${info.name} להיום`;
+  
+  const dayItems = today();
+  let filteredItems = dayItems.filter(item => (item[info.key] || 0) > 0);
+
+  let html = '';
+  if(filteredItems.length === 0) {
+    html = `<div class="muted" style="text-align:center; padding:10px;">לא נרשמו היום מאכלים המכילים ${info.name}.</div>`;
+  } else {
+    let totalMacro = filteredItems.reduce((sum, item) => sum + (item[info.key] || 0), 0);
+    
+    html = `<div style="font-size:13px; margin-bottom:10px; font-weight:bold; color:var(--primary-dark);">סה״כ ${info.name} צבור: ${round1(totalMacro)} ${info.unit}</div>`;
+    
+    html += filteredItems.map(item => {
+      const val = round1(item[info.key] || 0);
+      return `
+        <div class="item">
+          <div>
+            <b>${item.name}</b>
+            <div class="muted" style="font-size:12px">${item.amount} ${item.unitLabel || 'גרם'}</div>
+          </div>
+          <div style="text-align:left; font-weight:bold; color:var(--primary-dark);">
+            +${val} ${info.unit}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  document.getElementById('macroDetailsContent').innerHTML = html;
+  lockPageScroll();
+  document.getElementById('macroDetailsModal').classList.add('open');
 }
 
 function calculateTargetsForProfile(prof) {
@@ -1576,7 +1628,7 @@ function getDefaultMealCategoryByHour() {
   if (hour >= 5 && hour < 12) return 'breakfast';
   if (hour >= 12 && hour < 17) return 'lunch';
   if (hour >= 17 && hour < 22) return 'dinner';
-  return ''; // לילה / נשנושים נשאר פתוח לבחירה יזומית
+  return '';
 }
 
 function openAdd(){
@@ -1590,7 +1642,6 @@ function openAdd(){
   unitSelect.value='unit';
   foodSearch.value='';
   
-  // עדכון ארוחה אוטומטי לפי השעה המקומית במכשיר בשעות היום המוגדרות בלבד
   const autoMeal = getDefaultMealCategoryByHour();
   if(autoMeal) {
     mealCategorySelect.value = autoMeal;
@@ -1614,7 +1665,6 @@ function openProduct(){
   document.getElementById('imgPreviewContainer').style.display = 'none';
   productUnitPreview.style.display='none';
   document.getElementById('productAiBoxContainer').style.display = 'block';
-  // הסתרת שדה הברקוד במסלול הוספת מוצר ב-AI
   document.getElementById('pbarcode').style.display = 'none';
   lockPageScroll();
   productModal.classList.add('open');
@@ -1630,8 +1680,7 @@ function openProductManual(barcodeVal = ''){
   currentImageData = "";
   document.getElementById('imgPreviewContainer').style.display = 'none';
   productUnitPreview.style.display='none';
-  document.getElementById('productAiBoxContainer').style.display = 'none'; // הסתרת תיבת ה-AI לחלוטין במסלול הידני
-  // הצגת שדה הברקוד במסלול הידני
+  document.getElementById('productAiBoxContainer').style.display = 'none';
   document.getElementById('pbarcode').style.display = 'block';
   lockPageScroll();
   productModal.classList.add('open');
