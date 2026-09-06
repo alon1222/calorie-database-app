@@ -161,7 +161,7 @@ textarea{resize:vertical;min-height:80px}
 <div class="app">
 <header>
   <div>
-    <h1>היום שלי</h1>
+    <h1 id="pageTitle">היום שלי</h1>
     <div class="date" id="date"></div>
   </div>
   <div class="header-actions">
@@ -1605,9 +1605,25 @@ function renderMonth(){
   document.getElementById('monthList').innerHTML = html;
 }
 
+const pageTitlesMap = {
+  today: 'היום שלי',
+  profile: 'פרופיל',
+  weight: 'משקל',
+  products: 'מאגר',
+  month: 'חודש',
+  aiAssistant: 'ניתוח נתונים'
+};
+
 function show(id){
   ['today','profile','weight','products','month','aiAssistant'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
   ['n1','n5','n4','n2','n3','n6'].forEach((x,i)=>document.getElementById(x).classList.toggle('active',['today','profile','weight','products','month','aiAssistant'][i]===id));
+  
+  // עדכון הכותרת הראשית לפי הכרטיסייה הנוכחית
+  const titleEl = document.getElementById('pageTitle');
+  if(titleEl && pageTitlesMap[id]) {
+    titleEl.textContent = pageTitlesMap[id];
+  }
+
   if(id==='today')renderToday();
   if(id==='aiAssistant')renderToday();
   if(id==='profile')loadProfileToInputs();
