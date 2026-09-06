@@ -181,13 +181,13 @@ textarea{resize:vertical;min-height:80px}
   <div class="muted" id="kleftContainer" style="font-size:13px; text-align:center;"><span id="kleft">2,000</span> קלוריות נותרו</div>
 </div>
 <div class="grid">
-<div class="macro" onclick="openMacroDetails('protein')" title="לחץ לצפייה בפירוט המאכלים"><span>💪 חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
-<div class="macro" onclick="openMacroDetails('carbs')" title="לחץ לצפייה בפירוט המאכלים"><span>🍞 פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
-<div class="macro" onclick="openMacroDetails('fat')" title="לחץ לצפייה בפירוט המאכלים"><span>🥑 שומן</span><b id="fat">0</b><small>/ 67 ג׳</small></div>
+<div class="macro" onclick="openMacroDetails('protein')" title="לחץ לצפייה בפירוט המאכלים"><span>חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
+<div class="macro" onclick="openMacroDetails('carbs')" title="לחץ לצפייה בפירוט המאכלים"><span>פחמימות</span><b id="carbs">0</b><small>/ 200 ג׳</small></div>
+<div class="macro" onclick="openMacroDetails('fat')" title="לחץ לצפייה בפירוט המאכלים"><span>שומן</span><b id="fat">0</b><small>/ 67 ג׳</small></div>
 </div>
 <div class="card" style="margin-top:14px;display:flex;gap:10px;background:transparent;border:none;padding:0">
-<button class="primary" style="flex:2" onclick="openAdd()">＋ הוסף צריכה</button>
-<button class="secondary" style="flex:1" onclick="openScanner()">📷 סרוק</button>
+<button class="primary" style="flex:2" onclick="openAdd()">＋ הוסף למעקב</button>
+<button class="secondary" style="flex:1" onclick="openScanner()">📷 סריקת ברקוד</button>
 </div>
 
 <div class="card" style="margin-top:14px">
@@ -1461,7 +1461,7 @@ function renderToday(){
         <div>
           <b>${item.name}</b>
           <div class="muted" style="font-size:12px">${item.amount} ${item.unitLabel||'גרם'} · ${Math.round(item.kcal)} קל׳</div>
-          <div class="muted" style="font-size:12px">💪 ${round1(item.protein)}ג׳ · 🍞 ${round1(item.carbs)}ג׳ · 🥑 ${round1(item.fat)}ג׳</div>
+          <div class="muted" style="font-size:12px">${round1(item.protein)}ג׳ חלבון · ${round1(item.carbs)}ג׳ פחמימות · ${round1(item.fat)}ג׳ שומן</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${originalIndex})">✏️ ערוך</button>
@@ -1502,7 +1502,7 @@ function updateProductUnitCalc(){
     productUnitPreview.style.display = 'block';
     const mult = unitG / 100;
     productUnitPreview.innerHTML = `<b>✨ חישוב אוטומטי ליחידה אחת (${unitG}ג׳):</b><br>` +
-      `🔥 <b>${round1(k * mult)}</b> קק״ל | 💪 <b>${round1(prot * mult)}</b>ג׳ חלבון | 🍞 <b>${round1(carb * mult)}</b>ג׳ פחמימות | 🥑 <b>${round1(fatVal * mult)}</b>ג׳ שומן`;
+      `🔥 <b>${round1(k * mult)}</b> קק״ל | <b>${round1(prot * mult)}</b>ג׳ חלבון | <b>${round1(carb * mult)}</b>ג׳ פחמימות | <b>${round1(fatVal * mult)}</b>ג׳ שומן`;
   } else productUnitPreview.style.display = 'none';
 }
 
@@ -1523,7 +1523,7 @@ function renderProducts(){
      ${hasBarcode ? '<span class="badge-barcode">🏷️ ברקוד</span>' : ''}
      ${!isAdmin && !isProductCustom ? '<span class="badge-global">גלובלי</span>' : ''}
      <div class="muted" style="font-size:12px">מותג: ${x.brand||'כללי'} | ברקוד: ${x.barcode||'ללא'}</div>
-     <div class="muted" style="font-size:12px">ל-100ג׳: ${x.kcal} קק״ל | 💪 ${x.protein||0}ג׳ · 🍞 ${x.carbs||0}ג׳ · 🥑 ${x.fat||0}ג׳</div>
+     <div class="muted" style="font-size:12px">ל-100ג׳: ${x.kcal} קק״ל | ${x.protein||0}ג׳ חלבון · ${x.carbs||0}ג׳ פחמימות · ${x.fat||0}ג׳ שומן</div>
    </div>
    <div style="display:flex;flex-direction:column;gap:6px;min-width:90px">
      ${canManageThisProduct ? `
@@ -1861,7 +1861,7 @@ function updateIntakePreview(){
  let unit = unitSelect.value;
  let r=calcIntake(activeProduct, unit, grams.value);
  intakePreview.style.display='block';
- intakePreview.innerHTML=r.known?`<b style="font-size:13px">לפני הוספה</b><div style="margin-top:6px;font-size:13px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted" style="font-size:12px">💪 ${round1(r.protein)} ג׳ חלבון · 🍞 ${round1(r.carbs)} ג׳ פחמימות · 🥑 ${round1(r.fat)} ג׳ שומן</div>`:`<b style="font-size:13px">אין משקל יחידה מוגדר</b>`;
+ intakePreview.innerHTML=r.known?`<b style="font-size:13px">לפני הוספה</b><div style="margin-top:6px;font-size:13px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted" style="font-size:12px">${round1(r.protein)}ג׳ חלבון · ${round1(r.carbs)}ג׳ פחמימות · ${round1(r.fat)}ג׳ שומן</div>`:`<b style="font-size:13px">אין משקל יחידה מוגדר</b>`;
 }
 
 function addIntake(){
