@@ -63,7 +63,7 @@ main{padding:18px}
 .macro:active{transform:scale(0.97)}
 .macro:hover{border-color:var(--primary)}
 .macro span{font-size:12px;color:var(--text-muted);font-weight:600}
-.macro b{display:block;font-size:18px;margin-top:4px;transition:color 0.2s}
+.macro b{display:block;font-size:18px;margin-top:4px;color:var(--primary);transition:color 0.2s}
 .macro small{font-size:11px;color:var(--text-muted)}
 
 .progress{height:10px;background:var(--border-color);border-radius:20px;overflow:hidden;margin:12px 0}
@@ -1420,7 +1420,7 @@ function updateMacroRubric(cardId, numElId, targetElId, currentVal, targetVal) {
     const fillPct = Math.min(100, Math.max(0, pct));
     card.style.background = `linear-gradient(to top, var(--primary-light) ${fillPct}%, var(--bg-app) ${fillPct}%)`;
     card.style.borderColor = 'var(--border-color)';
-    numEl.style.color = 'var(--text-main)';
+    numEl.style.color = 'var(--primary)';
   }
 }
 
@@ -1430,7 +1430,6 @@ function renderToday(){
   
   kcal.textContent=Math.round(k);
   
-  // עדכון הרובריקות הנפרדות של חלבון, פחמימות ושומן (כולל התמלאות וצבע חריגה)
   updateMacroRubric('macroProtein', 'protein', 'protTarget', p, targets.protein);
   updateMacroRubric('macroCarbs', 'carbs', 'carbTarget', c, targets.carbs);
   updateMacroRubric('macroFat', 'fat', 'fatTarget', f, targets.fat);
