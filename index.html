@@ -476,7 +476,7 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <div id="productFormFields">
-  <div style="display:flex;gap:8px">
+  <div style="display:flex;gap:8px" id="brandBarcodeRow">
     <input id="pbrand" placeholder="מותג/יצרן (רשות)">
     <input id="pbarcode" placeholder="ברקוד (רשות)" oninput="checkBarcodeProtection()">
   </div>
@@ -1600,6 +1600,8 @@ function openProduct(){
   document.getElementById('imgPreviewContainer').style.display = 'none';
   productUnitPreview.style.display='none';
   document.getElementById('productAiBoxContainer').style.display = 'block';
+  // הסתרת שדה הברקוד במסלול הוספת מוצר ב-AI
+  document.getElementById('pbarcode').style.display = 'none';
   lockPageScroll();
   productModal.classList.add('open');
 }
@@ -1615,6 +1617,8 @@ function openProductManual(barcodeVal = ''){
   document.getElementById('imgPreviewContainer').style.display = 'none';
   productUnitPreview.style.display='none';
   document.getElementById('productAiBoxContainer').style.display = 'none'; // הסתרת תיבת ה-AI לחלוטין במסלול הידני
+  // הצגת שדה הברקוד במסלול הידני
+  document.getElementById('pbarcode').style.display = 'block';
   lockPageScroll();
   productModal.classList.add('open');
 }
@@ -1895,6 +1899,7 @@ function editProduct(i){
  window.editingProductIndex=i;
  productModalTitle.textContent='עריכת מוצר במאגר';
  document.getElementById('productAiBoxContainer').style.display = p.barcode ? 'none' : 'block';
+ document.getElementById('pbarcode').style.display = 'block';
  lockPageScroll();productModal.classList.add('open');
  pname.value=p.name||'';pbrand.value=p.brand||'';pbarcode.value=p.barcode||'';
  pkcal.value=p.kcal||'';pprotein.value=p.protein||'';pcarbs.value=p.carbs||'';pfat.value=p.fat||'';
@@ -2048,7 +2053,7 @@ async function searchBarcode(code){
    } else {
      barcodeResult.innerHTML=`הברקוד (${code}) לא נמצא במאגר העולמי.<br>` +
        `<div style="display:flex;gap:6px;margin-top:8px">` +
-         `<button class="ai-btn" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();openProduct();pbarcode.value='${code}';">✨ הוסף עם AI</button>` +
+         `<button class="ai-btn" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();openProduct();pname.value='';">✨ הוסף עם AI</button>` +
          `<button class="secondary" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();openProductManual('${code}');">＋ הוסף ידנית</button>` +
        `</div>`;
    }
