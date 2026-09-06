@@ -63,7 +63,7 @@ main{padding:18px}
 .macro:active{transform:scale(0.97)}
 .macro:hover{border-color:var(--primary)}
 .macro span{font-size:12px;color:var(--text-muted);font-weight:600}
-.macro b{display:block;font-size:18px;margin-top:4px;color:var(--primary);transition:color 0.2s}
+.macro b{display:block;font-size:18px;margin-top:4px;color:var(--text-main);transition:color 0.2s}
 .macro small{font-size:11px;color:var(--text-muted)}
 
 .progress{height:10px;background:var(--border-color);border-radius:20px;overflow:hidden;margin:12px 0}
@@ -1411,16 +1411,16 @@ function updateMacroRubric(cardId, numElId, targetElId, currentVal, targetVal) {
   const pct = targetVal > 0 ? (currentVal / targetVal) * 100 : 0;
   
   if (currentVal > targetVal) {
-    // חריגה מהיעד - הרובריקה מלאה בירוק והמספר נצבע באדום
-    card.style.background = 'var(--primary-light)';
-    card.style.borderColor = 'var(--primary)';
+    // חריגה מהיעד - הרובריקה מלאה בירוק כהה והמספר נצבע באדום
+    card.style.background = 'rgba(5, 150, 105, 0.15)';
+    card.style.borderColor = 'var(--primary-dark)';
     numEl.style.color = '#c53030';
   } else {
-    // התמלאות הדרגתית של הצבע מלמטה למעלה
+    // התמלאות הדרגתית של הצבע הירוק הכהה יותר מלמטה למעלה, והמספר נשאר בשחור/לבן קריא
     const fillPct = Math.min(100, Math.max(0, pct));
-    card.style.background = `linear-gradient(to top, var(--primary-light) ${fillPct}%, var(--bg-app) ${fillPct}%)`;
+    card.style.background = `linear-gradient(to top, rgba(5, 150, 105, 0.2) ${fillPct}%, var(--bg-app) ${fillPct}%)`;
     card.style.borderColor = 'var(--border-color)';
-    numEl.style.color = 'var(--primary)';
+    numEl.style.color = 'var(--text-main)';
   }
 }
 
