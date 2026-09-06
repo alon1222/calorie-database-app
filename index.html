@@ -1398,6 +1398,13 @@ const mealLabels = {
   snacks: '🍎 נשנושים וביניים'
 };
 
+const mealRecommendationLabels = {
+  breakfast: 'המלצה לארוחת בוקר',
+  lunch: 'המלצה לארוחת צהריים',
+  dinner: 'המלצה לארוחת ערב',
+  snacks: 'המלצה לנשנוש או ביניים'
+};
+
 function renderToday(){
   const targets = calculateTargets();
   let a=today(), k=a.reduce((s,x)=>s+(x.kcal||0),0),p=a.reduce((s,x)=>s+(x.protein||0),0),c=a.reduce((s,x)=>s+(x.carbs||0),0),f=a.reduce((s,x)=>s+(x.fat||0),0);
@@ -1471,8 +1478,8 @@ function renderToday(){
     `).join('') : `<div class="muted" style="font-size:12px;padding:4px 0">אין עדיין פריטים בארוחה זו.</div>`;
 
     let recommendationBox = `
-      <div style="margin-top:10px;padding:10px 12px;background:var(--bg-card);border-radius:12px;font-size:12px;border:1px dashed var(--border-color)">
-        <button class="secondary" style="font-size:11px;padding:6px 10px;width:100%" onclick="triggerSingleMealRecommendation('${cat}')">✨ קבל המלצת AI חכמה לארוחה זו (בחלון הצף)</button>
+      <div style="margin-top:10px;padding:6px 0;text-align:left;">
+        <span style="font-size:13px; color:var(--primary-dark); cursor:pointer; text-decoration:underline; font-weight:600;" onclick="triggerSingleMealRecommendation('${cat}')">${mealRecommendationLabels[cat]}</span>
       </div>
     `;
 
