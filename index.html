@@ -1928,37 +1928,71 @@ async function scanLoop(){
  if(isScanningActive) requestAnimationFrame(scanLoop);
 }
 
-// הפרדה מוחלטת: לחיצה על בחירת קובץ עוצרת מיד את הסריקה החיה של המצלמה
+// הפרדה מוחלטת ועצירת המצלמה בעת בחירת קובץ מהגלריה
 function triggerFileScanner() {
-  stopScanner(); // עצירת מצלמת הוידאו מיד כדי שלא תסרוק בטעות ברקודים ברקע
+  stopScanner(); // עוצר את המצלמה מיד
   scannerStatus.textContent = '📁 מעבד תמונה נבחרת מהגלריה...';
   document.getElementById('barcodeFileInput').click();
+}
+
+// פונקציית הקטנה ודחיסה חכמה של התמונה לפני שליחה לפענוח
+function resizeImageForScanning(file, maxDimension = 800, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    img.onload = function() {
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > height) {
+        if (width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        }
+      } else {
+        if (height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 async function handleBarcodeFile(event) {
   const file = event.target.files[0];
   if(!file) return;
+  
   barcodeResult.style.display='block';
-  barcodeResult.innerHTML='מפענח ברקוד מהתמונה שנבחרה...';
+  barcodeResult.innerHTML='🔄 מעבד וממקד תמונה לפענוח מהיר...';
 
   try {
-    const readerObj = new FileReader();
-    readerObj.onload = async function(e) {
-      const dataUrl = e.target.result;
-      if(window.ZXingBrowser) {
-        const reader = new ZXingBrowser.BrowserMultiFormatReader();
-        const result = await reader.decodeFromImageUrl(dataUrl);
-        const code = result.getText();
-        if(code) {
-          await searchBarcode(code);
-        } else {
-          barcodeResult.innerHTML='לא נמצא ברקוד בתמונה זו. נסה תמונה ברורה יותר.';
-        }
+    const compressedDataUrl = await resizeImageForScanning(file, 800, 0.8);
+
+    if(window.ZXingBrowser) {
+      const reader = new ZXingBrowser.BrowserMultiFormatReader();
+      const result = await reader.decodeFromImageUrl(compressedDataUrl);
+      const code = result.getText();
+      if(code) {
+        await searchBarcode(code);
       } else {
-        barcodeResult.innerHTML='ספריית הפענוח טרם נטענה. נסה שוב בעוד רגע.';
+        barcodeResult.innerHTML='לא נמצא ברקוד בתמונה זו. נסה תמונה ברורה יותר.';
       }
-    };
-    readerObj.readAsDataURL(file);
+    } else {
+      barcodeResult.innerHTML='ספריית הפענוח טרם נטענה. נסה שוב בעוד רגע.';
+    }
   } catch(err) {
     barcodeResult.innerHTML='שגיאה בפענוח התמונה.';
   }
