@@ -1478,8 +1478,8 @@ function renderToday(){
     `).join('') : `<div class="muted" style="font-size:12px;padding:4px 0">אין עדיין פריטים בארוחה זו.</div>`;
 
     let recommendationBox = `
-      <div style="margin-top:10px;padding:6px 0;text-align:left;">
-        <span style="font-size:13px; color:var(--primary-dark); cursor:pointer; text-decoration:underline; font-weight:600;" onclick="triggerSingleMealRecommendation('${cat}')">${mealRecommendationLabels[cat]}</span>
+      <div style="margin-top:10px;">
+        <button class="secondary" style="font-size:11px;padding:6px 10px;width:100%" onclick="triggerSingleMealRecommendation('${cat}')">✨ ${mealRecommendationLabels[cat]}</button>
       </div>
     `;
 
