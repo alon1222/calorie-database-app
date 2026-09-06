@@ -536,9 +536,7 @@ const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 const ADMIN_FLAG_KEY='is_admin_user_v1';
 
-// זיהוי או הגדרת מצב מנהל אצל היוצר (אתה)
 if(localStorage.getItem(ADMIN_FLAG_KEY) === null) {
-  // בהפעלה ראשונה אצלך במכשיר המנהל נגדיר כברירת מחדל כמנהל
   localStorage.setItem(ADMIN_FLAG_KEY, 'true');
 }
 const isAdmin = localStorage.getItem(ADMIN_FLAG_KEY) === 'true';
@@ -553,7 +551,6 @@ if(!db.weights) db.weights = {};
 if(!db.startWeight) db.startWeight = 108;
 if(!db.profile) db.profile = { weight: 104, targetWeight: 90, height: 178, age: 30, gender: 'male', goal: 'cut', activity: '1.2', customKcal: null };
 
-// עדכון באג של תצוגת התפקיד בכותרת
 window.addEventListener('DOMContentLoaded', () => {
   const badge = document.getElementById('roleBadge');
   if(badge) {
@@ -640,6 +637,7 @@ if(mainContainerEl) {
         const currentTab = getCurrentActiveTab();
         const currentIndex = tabOrder.indexOf(currentTab);
         
+        // תיקון כיוון ההחלקות בחזרה לכיוון הנכון
         if(diffX > 0) {
           if(currentIndex > 0) {
             show(tabOrder[currentIndex - 1]);
@@ -825,7 +823,7 @@ function addFoodItemToDatabaseByAI(encodedJson) {
         fat: item.fat || 0,
         unit_g: item.unit_g || 100,
         image: '',
-        isCustom: !isAdmin, // אם משתמש רגיל הוסיף, זה נחשב מוצר אישי שלו
+        isCustom: !isAdmin,
         updated: new Date().toLocaleDateString('he-IL')
       });
       save();
@@ -1452,9 +1450,6 @@ function renderProducts(){
  productList.innerHTML=arr.map(x=>{
    const i=db.products.indexOf(x);
    const hasBarcode = Boolean(x.barcode);
-   
-   // בדיקת הרשאות עריכה ומחיקה במאגר:
-   // אם זה מנהל - הכל פתוח. אם זה משתמש רגיל - מוצרים שאינם אישיים (שנשלחו מהמאגר הגלובלי) יוצגו ללא כפתורי עריכה/מחיקה.
    const isProductCustom = Boolean(x.isCustom);
    const canManageThisProduct = isAdmin || isProductCustom;
 
@@ -1802,11 +1797,9 @@ function saveProduct(){
  const editing=window.editingProductIndex;
  
  if(editing!==null&&editing!==undefined) {
-   // בדיקה שאם זה משתמש רגיל הוא עורך רק מוצר אישי שלו
    if(!isAdmin && !db.products[editing].isCustom) {
      return alert('אין הרשאה לערוך מוצר גלובלי של המערכת.');
    }
-   // שמירת הסטטוס המקורי של isCustom אם קיים
    p.isCustom = db.products[editing].isCustom;
    db.products[editing]=p;
  } else {
@@ -1817,7 +1810,6 @@ function saveProduct(){
 
 function editProduct(i){
  const p=db.products[i];if(!p)return;
- // אם משתמש רגיל מנסה לערוך מוצר שאינו אישי שלו
  if(!isAdmin && !p.isCustom) {
    return alert('מוצר זה שייך למאגר הגלובלי ולכן ניתן לצפייה בלבד.');
  }
