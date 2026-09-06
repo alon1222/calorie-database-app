@@ -637,14 +637,15 @@ if(mainContainerEl) {
         const currentTab = getCurrentActiveTab();
         const currentIndex = tabOrder.indexOf(currentTab);
         
-        // תיקון כיוון ההחלקות בחזרה לכיוון הנכון
         if(diffX > 0) {
-          if(currentIndex > 0) {
-            show(tabOrder[currentIndex - 1]);
-          }
-        } else {
+          // החלקה ימינה -> מעבר ללשונית הבאה (ימינה)
           if(currentIndex < tabOrder.length - 1) {
             show(tabOrder[currentIndex + 1]);
+          }
+        } else {
+          // החלקה שמאלה -> מעבר ללשונית הקודמת (שמאלה)
+          if(currentIndex > 0) {
+            show(tabOrder[currentIndex - 1]);
           }
         }
       }
