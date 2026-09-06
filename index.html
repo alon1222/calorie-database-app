@@ -393,13 +393,18 @@ textarea{resize:vertical;min-height:80px}
 
 <div class="modal" id="scannerModal"><div class="sheet">
 <h2>📷 סריקת ברקוד אוטומטית</h2>
-<div id="scannerStatus" class="muted" style="margin-bottom:10px">מכוון מצלמה לזיהוי ברקוד אוטומטי...</div>
-<div style="position:relative;width:100%;background:#111;border-radius:16px;overflow:hidden">
-  <video id="barcodeVideo" playsinline muted style="width:100%;max-height:50vh;object-fit:cover;display:block"></video>
+<div id="scannerStatus" class="muted" style="margin-bottom:10px">כוון מצלמה לברקוד, או בחר תמונה מהגלריה:</div>
+<div style="position:relative;width:100%;background:#111;border-radius:16px;overflow:hidden;margin-bottom:10px">
+  <video id="barcodeVideo" playsinline muted style="width:100%;max-height:40vh;object-fit:cover;display:block"></video>
   <div style="position:absolute;inset:15%;border:2px dashed var(--primary);border-radius:12px;pointer-events:none;box-shadow:0 0 0 1000px rgba(0,0,0,0.5)"></div>
 </div>
+
+<!-- כפתור גיבוי מובטח לבחירת תמונה מהגלריה/מצלמה -->
+<button class="secondary" style="width:100%;margin-bottom:10px" onclick="document.getElementById('barcodeFileInput').click()">📁 בחר תמונת ברקוד מהגלריה / קובץ</button>
+<input type="file" id="barcodeFileInput" accept="image/*" style="display:none" onchange="handleBarcodeFile(event)">
+
 <div id="barcodeResult" class="card" style="display:none;margin-top:12px"></div>
-<button class="secondary" style="width:100%;margin-top:12px" onclick="closeScanner()">✕ סגור מצלמה</button>
+<button class="secondary" style="width:100%;margin-top:8px" onclick="closeScanner()">✕ סגור מצלמה</button>
 </div></div>
 
 <div class="modal" id="addModal"><div class="sheet">
@@ -638,12 +643,10 @@ if(mainContainerEl) {
         const currentIndex = tabOrder.indexOf(currentTab);
         
         if(diffX > 0) {
-          // החלקה ימינה -> מעבר ללשונית הבאה (ימינה)
           if(currentIndex < tabOrder.length - 1) {
             show(tabOrder[currentIndex + 1]);
           }
         } else {
-          // החלקה שמאלה -> מעבר ללשונית הקודמת (שמאלה)
           if(currentIndex > 0) {
             show(tabOrder[currentIndex - 1]);
           }
@@ -1838,14 +1841,14 @@ let scannerStream=null;
 let isScanningActive = false;
 
 async function openScanner(){
- lockPageScroll();scannerModal.classList.add('open');scannerStatus.textContent='מכוון מצלמה...';barcodeResult.style.display='none';
+ lockPageScroll();scannerModal.classList.add('open');scannerStatus.textContent='כוון מצלמה לברקוד, או בחר תמונה מהגלריה:';barcodeResult.style.display='none';
  isScanningActive = true;
  try{
    if(!navigator.mediaDevices?.getUserMedia) throw new Error('camera unavailable');
    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
    barcodeVideo.srcObject=scannerStream;await barcodeVideo.play();
    requestAnimationFrame(scanLoop);
- }catch(e){scannerStatus.textContent='לא ניתן לפתוח מצלמה.';}
+ }catch(e){scannerStatus.textContent='מצלמה לא זמינה או נחסמה. השתמש בכפתור הבחירה מהגלריה למטה.';}
 }
 
 async function scanLoop(){
@@ -1869,6 +1872,35 @@ async function scanLoop(){
  if(isScanningActive) requestAnimationFrame(scanLoop);
 }
 
+async function handleBarcodeFile(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  barcodeResult.style.display='block';
+  barcodeResult.innerHTML='מפענח ברקוד מהתמונה שנבחרה...';
+
+  try {
+    const readerObj = new FileReader();
+    readerObj.onload = async function(e) {
+      const dataUrl = e.target.result;
+      if(window.ZXingBrowser) {
+        const reader = new ZXingBrowser.BrowserMultiFormatReader();
+        const result = await reader.decodeFromImageUrl(dataUrl);
+        const code = result.getText();
+        if(code) {
+          await searchBarcode(code);
+        } else {
+          barcodeResult.innerHTML='לא נמצא ברקוד בתמונה זו. נסה תמונה ברורה יותר.';
+        }
+      } else {
+        barcodeResult.innerHTML='ספריית הפענוח טרם נטענה. נסה שוב בעוד רגע.';
+      }
+    };
+    readerObj.readAsDataURL(file);
+  } catch(err) {
+    barcodeResult.innerHTML='שגיאה בפענוח התמונה.';
+  }
+}
+
 async function searchBarcode(code){
  barcodeResult.style.display='block';barcodeResult.innerHTML='מחפש ברקוד...';
  const cleanC = cleanCode(code);
@@ -1878,7 +1910,7 @@ async function searchBarcode(code){
    const p = localMatches[0];
    const pIdx = db.products.indexOf(p);
    const canEditLocal = isAdmin || p.isCustom;
-   barcodeResult.innerHTML = `<b>מוצר קיים:</b><br>${p.name}<br>` + (canEditLocal ? `<button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>` : `<div class="muted" style="margin-top:8px;font-size:12px">מוצר גלובלי (צפייה בלבד)</div>`);
+   barcodeResult.innerHTML = `<b>מוצר קיים במאגר:</b><br>${p.name}<br>` + (canEditLocal ? `<button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>` : `<div class="muted" style="margin-top:8px;font-size:12px">מוצר גלובלי (צפייה בלבד)</div>`);
    return;
  }
 
@@ -1897,11 +1929,11 @@ async function searchBarcode(code){
      };
      db.products.push(found);
      save();
-     barcodeResult.innerHTML=`<b>נמצא ונשמר:</b> ${found.name}<br><button class="primary" style="margin-top:8px" onclick="closeScanner();show('products')">📦 צפה במאגר</button>`;
+     barcodeResult.innerHTML=`<b>נמצא ונשמר מהרשת:</b> ${found.name}<br><button class="primary" style="margin-top:8px" onclick="closeScanner();show('products')">📦 צפה במאגר</button>`;
    } else {
-     barcodeResult.innerHTML=`הברקוד לא נמצא. <button class="primary" style="margin-top:8px" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש</button>`;
+     barcodeResult.innerHTML=`הברקוד (${code}) לא נמצא במאגר העולמי. <button class="primary" style="margin-top:8px" onclick="closeScanner();openProduct();pbarcode.value='${code}';">＋ צור מוצר חדש</button>`;
    }
- }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש';}
+ }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד ברשת.';}
 }
 
 function stopScanner(){
