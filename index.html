@@ -102,7 +102,6 @@ textarea{resize:vertical;min-height:80px}
 .chat-bubble-user { background: var(--chat-user-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 6px; }
 .chat-bubble-ai { background: var(--chat-ai-bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--chat-ai-border); margin-bottom: 6px; }
 
-/* סגנונות לחלון הצף האינטראקטיבי המרכזי */
 #ai-chat-widget {
   position: fixed;
   bottom: 80px;
@@ -192,7 +191,6 @@ textarea{resize:vertical;min-height:80px}
 </div>
 </section>
 
-<!-- לשונית עוזר אישי AI מרכזית -->
 <section id="aiAssistant" class="hidden">
 <div class="card" style="display:flex;justify-content:space-between;align-items:center">
   <div>
@@ -352,7 +350,6 @@ textarea{resize:vertical;min-height:80px}
 </nav>
 </div>
 
-<!-- חלון צף (Floating AI Widget) מרכזי המאפשר כל פעולה באפליקציה -->
 <div id="ai-chat-widget">
   <button id="ai-fab-btn" onclick="toggleAIWidget()" title="עוזר אישי מהיר">🤖</button>
   <div id="aiWidgetModal" class="ai-widget-modal" style="display: none;">
@@ -361,7 +358,6 @@ textarea{resize:vertical;min-height:80px}
       <button onclick="toggleAIWidget()" style="background:none;border:none;color:var(--primary-dark);font-size:16px;cursor:pointer;padding:0;">✕</button>
     </div>
     <div class="ai-widget-body">
-      <!-- היסטוריית השיחה בחלון הצף -->
       <div id="aiWidgetChatHistory" style="height: 190px; overflow-y: auto; margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--bg-app); border-radius: 8px; border: 1px solid var(--border-color);">
         <div class="chat-bubble-ai">
           <b>עוזר חכם:</b> שלום! איך אפשר לעזור לך היום? תוכל לשאול על קלוריות של כל מוצר או לבקש להוסיף ארוחות ועדכוני משקל.
@@ -506,6 +502,16 @@ textarea{resize:vertical;min-height:80px}
 <button class="secondary" style="width:100%;margin-top:8px" onclick="document.getElementById('aiOptionsModal').classList.remove('open')">✕ ביטול</button>
 </div></div>
 
+<script>
+// רישום Service Worker לעדכון אוטומטי ברקע
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.log('SW registration failed: ', err);
+    });
+  });
+}
+</script>
 <script>
 (function(){
   function load(src, fallback){
@@ -1616,7 +1622,6 @@ function adjustQuantity(delta) {
   let currentVal = parseFloat(grams.value) || 0;
   let unit = unitSelect.value;
   
-  // אם מדובר ביחידות או כפיות/כפות, נשנה בדרך כלל ב-1 או 0.5. אם זה גרם, נשנה בקפיצות של 10 או 50
   let step = 1;
   if (unit === 'g' || unit === 'ml') {
     step = 50;
