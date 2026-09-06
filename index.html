@@ -80,7 +80,7 @@ input,select,textarea{width:100%;padding:13px 14px;border:1px solid var(--border
 input:focus,select:focus,textarea:focus{border-color:var(--primary)}
 
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:560px;width:100%;background:var(--nav-bg);backdrop-filter:blur(10px);border-top:1px solid var(--border-color);display:grid;grid-template-columns:repeat(6,1fr);padding:8px;z-index:5}
-nav button{background:transparent;color:var(--text-muted);font-size:11px;padding:6px 2px;border-radius:10px;font-weight:600}
+nav button{background:transparent;color:var(--text-muted);font-size:10px;padding:6px 1px;border-radius:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 nav button.active{background:var(--primary-light);color:var(--primary-dark);font-weight:700}
 
 .item{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-color);align-items:center}
@@ -346,9 +346,9 @@ textarea{resize:vertical;min-height:80px}
 </main>
 <nav>
 <button id="n1" class="active" onclick="show('today')">היום שלי</button>
-<button id="n6" onclick="show('aiAssistant')">📊 ניתוח נתונים</button>
-<button id="n5" onclick="show('profile')">👤 פרופיל</button>
-<button id="n4" onclick="show('weight')">⚖️ משקל</button>
+<button id="n6" onclick="show('aiAssistant')">ניתוח נתונים</button>
+<button id="n5" onclick="show('profile')">פרופיל</button>
+<button id="n4" onclick="show('weight')">משקל</button>
 <button id="n2" onclick="show('products')">מאגר</button>
 <button id="n3" onclick="show('month')">חודש</button>
 </nav>
