@@ -172,10 +172,13 @@ textarea{resize:vertical;min-height:80px}
 <main id="mainContainer">
 <section id="today">
 <div class="card kcal-card">
-  <div class="muted" style="font-weight:600;font-size:13px">נצרכו היום</div>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div class="muted" style="font-weight:600;font-size:13px">נצרכו היום</div>
+    <div class="muted" style="font-weight:600;font-size:13px">יעד: <span id="targetKcalDisplay">2000</span> קק״ל</div>
+  </div>
   <div><span class="kcal" id="kcal">0</span> <span style="font-size:16px;font-weight:700">קלוריות</span></div>
   <div class="progress"><span id="kbar"></span></div>
-  <div class="muted" id="kleftContainer" style="font-size:13px"><span id="kleft">2,000</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">2000</span>)</div>
+  <div class="muted" id="kleftContainer" style="font-size:13px; text-align:center;"><span id="kleft">2,000</span> קלוריות נותרו</div>
 </div>
 <div class="grid">
 <div class="macro" onclick="openMacroDetails('protein')" title="לחץ לצפייה בפירוט המאכלים"><span>💪 חלבון</span><b id="protein">0</b><small id="protTarget">/ 150 ג׳</small></div>
@@ -1419,7 +1422,8 @@ function renderToday(){
     if(kleftEl) kleftEl.textContent = Math.round(leftKcal).toLocaleString('he-IL');
     if(kleftContainer) {
       kleftContainer.style.color = 'var(--text-muted)';
-      kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו (יעד: <span id="targetKcalDisplay">${targets.kcal}</span>)`;
+      kleftContainer.style.textAlign = 'center';
+      kleftContainer.innerHTML = `<span id="kleft">${Math.round(leftKcal).toLocaleString('he-IL')}</span> קלוריות נותרו`;
     }
     if(aiAssistantKcalLeft) {
       aiAssistantKcalLeft.textContent = `${Math.round(leftKcal).toLocaleString('he-IL')} קק״ל`;
@@ -1429,6 +1433,7 @@ function renderToday(){
     let overload = Math.abs(Math.round(leftKcal));
     if(kleftContainer) {
       kleftContainer.style.color = '#c53030';
+      kleftContainer.style.textAlign = 'center';
       kleftContainer.innerHTML = `🔴 חריגה של <span id="kleft">-${overload.toLocaleString('he-IL')}</span> קלוריות`;
     }
     if(aiAssistantKcalLeft) {
