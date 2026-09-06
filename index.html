@@ -399,7 +399,7 @@ textarea{resize:vertical;min-height:80px}
   <div style="position:absolute;inset:15%;border:2px dashed var(--primary);border-radius:12px;pointer-events:none;box-shadow:0 0 0 1000px rgba(0,0,0,0.5)"></div>
 </div>
 
-<button class="secondary" style="width:100%;margin-bottom:10px" onclick="document.getElementById('barcodeFileInput').click()">📁 בחר תמונת ברקוד מהגלריה / קובץ</button>
+<button class="secondary" style="width:100%;margin-bottom:10px" onclick="triggerFileScanner()">📁 בחר תמונת ברקוד מהגלריה / קובץ</button>
 <input type="file" id="barcodeFileInput" accept="image/*" style="display:none" onchange="handleBarcodeFile(event)">
 
 <div id="barcodeResult" class="card" style="display:none;margin-top:12px"></div>
@@ -1633,7 +1633,6 @@ function suggestIntake(){
     suggestions.innerHTML = matches.map(x => `<button type="button" class="secondary" style="margin:2px;font-size:12px;padding:7px 10px" onclick="selectFood(${db.products.indexOf(x)})">${x.name} (${x.kcal} קק״ל/100ג׳)</button>`).join('');
     document.getElementById('newProductQuickFields').style.display = 'none';
   } else {
-    // חיפוש אוטומטי מהיר ברשת ברקע
     suggestions.innerHTML = `<span class="muted" style="font-size:12px;color:var(--primary)">🔍 מחפש אוטומטית במאגר העולמי ברשת...</span>`;
     
     clearTimeout(onlineSearchTimeout);
@@ -1927,6 +1926,13 @@ async function scanLoop(){
    }
  }catch(e){}
  if(isScanningActive) requestAnimationFrame(scanLoop);
+}
+
+// הפרדה מוחלטת: לחיצה על בחירת קובץ עוצרת מיד את הסריקה החיה של המצלמה
+function triggerFileScanner() {
+  stopScanner(); // עצירת מצלמת הוידאו מיד כדי שלא תסרוק בטעות ברקודים ברקע
+  scannerStatus.textContent = '📁 מעבד תמונה נבחרת מהגלריה...';
+  document.getElementById('barcodeFileInput').click();
 }
 
 async function handleBarcodeFile(event) {
