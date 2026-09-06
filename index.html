@@ -48,8 +48,8 @@ h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-0.5px}
 .date{color:var(--text-muted);margin-top:3px;font-size:12px;font-weight:500}
 .header-actions{display:flex;align-items:center;gap:8px}
 .theme-toggle{background:var(--bg-app);border:1px solid var(--border-color);color:var(--text-main);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px}
-.admin-badge{background:var(--primary-light);color:var(--primary-dark);font-size:11px;padding:5px 10px;border-radius:20px;font-weight:700;border:1px solid var(--border-color)}
-.user-badge{background:#e0e7ff;color:#3730a3;font-size:11px;padding:5px 10px;border-radius:20px;font-weight:700;border:1px solid var(--border-color)}
+.admin-badge{background:var(--primary-light);color:var(--primary-dark);font-size:11px;padding:5px 10px;border-radius:20px;font-weight:700;border:1px solid var(--border-color);cursor:pointer}
+.user-badge{background:#e0e7ff;color:#3730a3;font-size:11px;padding:5px 10px;border-radius:20px;font-weight:700;border:1px solid var(--border-color);cursor:pointer}
 
 main{padding:18px}
 .card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01);transition:background 0.3s, border-color 0.3s}
@@ -166,7 +166,7 @@ textarea{resize:vertical;min-height:80px}
   </div>
   <div class="header-actions">
     <button class="theme-toggle" onclick="toggleTheme()" title="החלף מצב תאורה">🌙</button>
-    <span id="roleBadge" class="admin-badge">מנהל</span>
+    <span id="roleBadge" class="user-badge" onclick="promptAdminLogin()" title="לחץ להתחברות מנהל">משתמש</span>
   </div>
 </header>
 <main id="mainContainer">
@@ -548,10 +548,33 @@ const KEY='calorie_db_v1';
 const API_KEY_STORAGE='gemini_api_key_v1';
 const ADMIN_FLAG_KEY='is_admin_user_v1';
 
+// ברירת מחדל לכל משתמש חדש או פתיחה ממכשיר אחר היא משתמש רגיל (false)
 if(localStorage.getItem(ADMIN_FLAG_KEY) === null) {
-  localStorage.setItem(ADMIN_FLAG_KEY, 'true');
+  localStorage.setItem(ADMIN_FLAG_KEY, 'false');
 }
 const isAdmin = localStorage.getItem(ADMIN_FLAG_KEY) === 'true';
+
+// פונקציית התחברות למנהל בסיסמה
+function promptAdminLogin() {
+  if (isAdmin) {
+    if (confirm('אתה מחובר כרגע כמנהל. האם ברצונך להתנתק ולחזור למצב משתמש רגיל?')) {
+      localStorage.setItem(ADMIN_FLAG_KEY, 'false');
+      location.reload();
+    }
+    return;
+  }
+
+  const pwd = prompt('הכנס סיסמת מנהל:');
+  if (pwd === null) return;
+
+  if (pwd === 'TaliaFit2026!') {
+    localStorage.setItem(ADMIN_FLAG_KEY, 'true');
+    alert('התחברת בהצלחה כמנהל מערכת!');
+    location.reload();
+  } else {
+    alert('סיסמה שגויה!');
+  }
+}
 
 let currentImageData = "";
 let db = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -567,10 +590,10 @@ window.addEventListener('DOMContentLoaded', () => {
   const badge = document.getElementById('roleBadge');
   if(badge) {
     if(isAdmin) {
-      badge.textContent = 'מנהל';
+      badge.textContent = 'מנהל (לחץ להתנתקות)';
       badge.className = 'admin-badge';
     } else {
-      badge.textContent = 'משתמש';
+      badge.textContent = 'משתמש (לחץ להתחברות מנהל)';
       badge.className = 'user-badge';
     }
   }
@@ -1411,12 +1434,10 @@ function updateMacroRubric(cardId, numElId, targetElId, currentVal, targetVal) {
   const pct = targetVal > 0 ? (currentVal / targetVal) * 100 : 0;
   
   if (currentVal > targetVal) {
-    // חריגה מהיעד - הרובריקה מלאה בירוק כהה והמספר נצבע באדום
     card.style.background = 'rgba(5, 150, 105, 0.15)';
     card.style.borderColor = 'var(--primary-dark)';
     numEl.style.color = '#c53030';
   } else {
-    // התמלאות הדרגתית של הצבע הירוק הכהה יותר מלמטה למעלה, והמספר נשאר בשחור/לבן קריא
     const fillPct = Math.min(100, Math.max(0, pct));
     card.style.background = `linear-gradient(to top, rgba(5, 150, 105, 0.2) ${fillPct}%, var(--bg-app) ${fillPct}%)`;
     card.style.borderColor = 'var(--border-color)';
