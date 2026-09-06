@@ -1679,7 +1679,7 @@ function getDefaultMealCategoryByHour() {
   return '';
 }
 
-function openAdd(){
+function openAdd(preSelectProductIndex = null){
   window.editingIntakeIndex=null;
   addModalTitle.textContent='הוספת צריכה';
   addIntakeBtn.textContent='הוסף לצריכה';
@@ -1700,7 +1700,12 @@ function openAdd(){
   document.getElementById('quickAiStatus').textContent='';
   document.getElementById('aiUnitStatus').textContent='';
   intakePreview.style.display='none';
-  suggestIntake();
+
+  if(preSelectProductIndex !== null && preSelectProductIndex !== undefined) {
+    selectFood(preSelectProductIndex);
+  } else {
+    suggestIntake();
+  }
 }
 
 function openProduct(){
@@ -2141,7 +2146,11 @@ async function searchBarcode(code){
    const p = localMatches[0];
    const pIdx = db.products.indexOf(p);
    const canEditLocal = isAdmin || p.isCustom;
-   barcodeResult.innerHTML = `<b>מוצר קיים במאגר:</b><br>${p.name}<br>` + (canEditLocal ? `<button class="primary" style="margin-top:8px" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>` : `<div class="muted" style="margin-top:8px;font-size:12px">מוצר גלובלי (צפייה בלבד)</div>`);
+   barcodeResult.innerHTML = `<b>מוצר קיים במאגר:</b><br>${p.name}<br>` +
+     `<div style="display:flex;gap:6px;margin-top:8px">` +
+       `<button class="ai-btn" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();closeModal();openAdd(${pIdx});">🍽️ הוסף לצריכה</button>` +
+       (canEditLocal ? `<button class="secondary" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>` : ``) +
+     `</div>`;
    return;
  }
 
@@ -2160,7 +2169,12 @@ async function searchBarcode(code){
      };
      db.products.push(found);
      save();
-     barcodeResult.innerHTML=`<b>נמצא ונשמר מהרשת:</b> ${found.name}<br><button class="primary" style="margin-top:8px" onclick="closeScanner();show('products')">📦 צפה במאגר</button>`;
+     const newIdx = db.products.length - 1;
+     barcodeResult.innerHTML=`<b>נמצא ונשמר מהרשת:</b> ${found.name}<br>` +
+       `<div style="display:flex;gap:6px;margin-top:8px">` +
+         `<button class="ai-btn" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();closeModal();openAdd(${newIdx});">🍽️ הוסף לצריכה</button>` +
+         `<button class="secondary" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();show('products')">📦 צפה במאגר</button>` +
+       `</div>`;
    } else {
      barcodeResult.innerHTML=`הברקוד (${code}) לא נמצא במאגר העולמי.<br>` +
        `<div style="display:flex;gap:6px;margin-top:8px">` +
