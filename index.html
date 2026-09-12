@@ -465,8 +465,12 @@ textarea{resize:vertical;min-height:80px}
 <div id="aiUnitStatus" class="muted" style="font-size:12px;margin-top:6px;text-align:center;min-height:16px"></div>
 
 <div id="intakePreview" class="card" style="display:none;margin-top:6px;background:var(--bg-app)"></div>
-<button class="primary" id="addIntakeBtn" style="margin-top:8px" onclick="addIntake()">הוסף לצריכה</button>
-<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול</button>
+
+<div style="display:flex; gap:8px; margin-top:8px;">
+  <button class="primary" id="addIntakeBtn" style="flex:1" onclick="addIntake(false)">הוסף לצריכה</button>
+  <button class="ai-btn" id="addAndMoreIntakeBtn" style="flex:1" onclick="addIntake(true)">➕ הוסף והמשך להזין</button>
+</div>
+<button class="secondary" style="width:100%;margin-top:8px" onclick="closeModal()">ביטול / סגור</button>
 </div></div>
 
 <div class="modal" id="productModal"><div class="sheet">
@@ -776,7 +780,7 @@ JSON_ACTION: {"action": "food_info", "name": "...", "kcal": number, "protein": n
         const timeoutId = setTimeout(() => controller.abort(), 20000);
         let res;
         try {
-          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] }),
@@ -1236,7 +1240,7 @@ async function handleUnitSelection() {
     const promptText = `Provide standard single portion/unit weight in grams for food item: "${selected.name}". Return ONLY a valid JSON object without code blocks: {"unit_g": number}`;
 
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -1301,7 +1305,7 @@ async function fetchProductWithAI(){
   const promptText = `For the food query: "${nameVal}", provide 3 to 4 common food variations in Hebrew with accurate nutrition per 100g and estimated portion weight in grams. Return ONLY a JSON array without code blocks: [{"name": "string", "kcal": number, "protein": number, "carbs": number, "fat": number, "unit_g": number}]`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -1931,7 +1935,7 @@ function updateIntakePreview(){
  intakePreview.innerHTML=r.known?`<b style="font-size:13px">לפני הוספה</b><div style="margin-top:6px;font-size:13px">🔥 ${round1(r.kcal)} קלוריות</div><div class="muted" style="font-size:12px">${round1(r.protein)}ג׳ חלבון · ${round1(r.carbs)}ג׳ פחמימות · ${round1(r.fat)}ג׳ שומן</div>`:`<b style="font-size:13px">אין משקל יחידה מוגדר</b>`;
 }
 
-function addIntake(){
+function addIntake(keepOpen = false){
  let a = Number(grams.value);
  let productName = foodSearch.value.trim();
  let mealCat = mealCategorySelect.value || 'lunch';
@@ -1983,11 +1987,24 @@ function addIntake(){
  }
  
  save();
- selected = null;
- grams.value = '1';
- foodSearch.value = '';
- closeModal();
  renderToday();
+
+ if(keepOpen) {
+   // איפוס שדות ההוספה מבלי לסגור את החלון
+   selected = null;
+   grams.value = '1';
+   foodSearch.value = '';
+   suggestions.innerHTML = '';
+   document.getElementById('newProductQuickFields').style.display = 'none';
+   document.querySelectorAll('#newProductQuickFields input').forEach(x=>x.value='');
+   intakePreview.style.display = 'none';
+   foodSearch.focus();
+ } else {
+   selected = null;
+   grams.value = '1';
+   foodSearch.value = '';
+   closeModal();
+ }
 }
 
 function editIntake(i){
