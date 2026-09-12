@@ -1994,7 +1994,6 @@ function addIntake(keepOpen = false){
  };
  
  if(window.editingIntakeIndex !== null && window.editingIntakeIndex !== undefined && window.editingIntakeDate) {
-   // אם החלפנו תאריך בעריכה, נוודא שמוחקים מהתאריך הישן ומעבירים לחדש
    if(window.editingIntakeDate !== targetDate) {
      db.intake[window.editingIntakeDate].splice(window.editingIntakeIndex, 1);
      if(db.intake[window.editingIntakeDate].length === 0) delete db.intake[window.editingIntakeDate];
@@ -2238,9 +2237,10 @@ async function searchBarcode(code){
    const pIdx = db.products.indexOf(p);
    const canEditLocal = isAdmin || p.isCustom;
    barcodeResult.innerHTML = `<b>מוצר קיים במאגר:</b><br>${p.name}<br>` +
-     `<div style="display:flex;gap:6px;margin-top:8px">` +
-       `<button class="ai-btn" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();closeModal();openAdd(${pIdx});">🍽️ הוסף לצריכה</button>` +
-       (canEditLocal ? `<button class="secondary" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>` : ``) +
+     `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">` +
+       `<button class="ai-btn" style="font-size:12px;padding:8px;width:100%" onclick="closeScanner();closeModal();openAdd(${pIdx});">🍽️ הוסף לצריכה</button>` +
+       `<button class="ai-btn" style="font-size:12px;padding:8px;width:100%;background:linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" onclick="addScannedItemQuickly(${pIdx}, true)">➕ הוסף והמשך לסרוק עוד</button>` +
+       (canEditLocal ? `<button class="secondary" style="font-size:12px;padding:8px;width:100%" onclick="closeScanner();editProduct(${pIdx})">✏️ ערוך מוצר</button>` : ``) +
      `</div>`;
    return;
  }
@@ -2253,7 +2253,7 @@ async function searchBarcode(code){
      const found = {
        name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
        unit_g:Number(p.product_quantity)||100,
-     kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
+       kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
        image:p.image_front_url||'',
        isCustom: !isAdmin,
        updated:new Date().toLocaleDateString('he-IL')
@@ -2262,9 +2262,10 @@ async function searchBarcode(code){
      save();
      const newIdx = db.products.length - 1;
      barcodeResult.innerHTML=`<b>נמצא ונשמר מהרשת:</b> ${found.name}<br>` +
-       `<div style="display:flex;gap:6px;margin-top:8px">` +
-         `<button class="ai-btn" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();closeModal();openAdd(${newIdx});">🍽️ הוסף לצריכה</button>` +
-         `<button class="secondary" style="font-size:12px;padding:8px;flex:1" onclick="closeScanner();show('products')">📦 צפה במאגר</button>` +
+       `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">` +
+         `<button class="ai-btn" style="font-size:12px;padding:8px;width:100%" onclick="closeScanner();closeModal();openAdd(${newIdx});">🍽️ הוסף לצריכה</button>` +
+         `<button class="ai-btn" style="font-size:12px;padding:8px;width:100%;background:linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" onclick="addScannedItemQuickly(${newIdx}, true)">➕ הוסף והמשך לסרוק עוד</button>` +
+         `<button class="secondary" style="font-size:12px;padding:8px;width:100%" onclick="closeScanner();show('products')">📦 צפה במאגר</button>` +
        `</div>`;
    } else {
      barcodeResult.innerHTML=`הברקוד (${code}) לא נמצא במאגר העולמי.<br>` +
@@ -2274,6 +2275,42 @@ async function searchBarcode(code){
        `</div>`;
    }
  }catch(e){barcodeResult.innerHTML='שגיאה בחיפוש הברקוד ברשת.';}
+}
+
+function addScannedItemQuickly(productIndex, keepScanning = true) {
+  const p = db.products[productIndex];
+  if(!p) return;
+
+  const defaultAmount = p.unit_g > 0 ? 1 : 100;
+  const unit = p.unit_g > 0 ? 'unit' : 'g';
+  const unitLabel = p.unit_g > 0 ? 'יחידה' : 'גרם';
+  const mult = p.unit_g > 0 ? (p.unit_g / 100) : 1;
+
+  const intakeItem = {
+    name: p.name,
+    amount: defaultAmount,
+    unit: unit,
+    unitLabel: unitLabel,
+    meal: getDefaultMealCategoryByHour() || 'lunch',
+    kcal: (p.kcal || 0) * mult,
+    protein: (p.protein || 0) * mult,
+    carbs: (p.carbs || 0) * mult,
+    fat: (p.fat || 0) * mult
+  };
+
+  (db.intake[todayKey()] ??= []).push(intakeItem);
+  save();
+  renderToday();
+  renderMonth();
+
+  if(keepScanning) {
+    barcodeResult.innerHTML = `<div style="color:var(--primary-dark);font-weight:bold;margin-bottom:6px">✅ נוסף בהצלחה: ${p.name}!</div>כוון מצלמה לברקוד נוסף להמשך סריקה:`;
+    isScanningActive = true;
+    requestAnimationFrame(scanLoop);
+  } else {
+    closeScanner();
+    closeModal();
+  }
 }
 
 function stopScanner(){
