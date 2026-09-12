@@ -314,7 +314,7 @@ textarea{resize:vertical;min-height:80px}
 <section id="month" class="hidden">
 <div class="card">
   <b style="font-size:15px">📅 ארכיון חודשים וצריכה יומית</b>
-  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">צפה בצריכה היומית מול היעד בכל חודש:</div>
+  <div class="muted" style="font-size:13px;margin-top:4px;margin-bottom:14px">צפה וערוך את הצריכה בכל יום בארכיון:</div>
   <div id="monthList"></div>
 </div>
 </section>
@@ -416,6 +416,8 @@ textarea{resize:vertical;min-height:80px}
 
 <div class="modal" id="addModal"><div class="sheet">
 <h2 id="addModalTitle">הוספת צריכה</h2>
+
+<input id="targetDateInput" type="date" style="margin-bottom:10px" title="תאריך רישום">
 
 <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600">בחר ארוחה:</label>
 <select id="mealCategorySelect" style="margin-bottom:10px">
@@ -1515,8 +1517,8 @@ function renderToday(){
           <div class="muted" style="font-size:12px">${round1(item.protein)}ג׳ חלבון · ${round1(item.carbs)}ג׳ פחמימות · ${round1(item.fat)}ג׳ שומן</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake(${originalIndex})">✏️ ערוך</button>
-          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake(${originalIndex})">🗑️ מחק</button>
+          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="editIntake('${todayKey()}', ${originalIndex})">✏️ ערוך</button>
+          <button class="secondary" style="font-size:11px;padding:5px 8px" onclick="removeIntake('${todayKey()}', ${originalIndex})">🗑️ מחק</button>
         </div>
       </div>
     `).join('') : `<div class="muted" style="font-size:12px;padding:4px 0">אין עדיין פריטים בארוחה זו.</div>`;
@@ -1629,10 +1631,16 @@ function renderMonth(){
       const dKcal = dayItems.reduce((s,x)=>s+(x.kcal||0),0);
       const formattedDate = new Date(d+'T12:00:00').toLocaleDateString('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
-      let itemsListHtml = dayItems.length > 0 ? dayItems.map(item => `
-        <div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">
-          <span>• <b>${item.name}</b> (${item.amount} ${item.unitLabel || 'גרם'})</span>
-          <span class="muted">🔥 ${Math.round(item.kcal)} קק״ל</span>
+      let itemsListHtml = dayItems.length > 0 ? dayItems.map((item, itemIdx) => `
+        <div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <b>${item.name}</b> (${item.amount} ${item.unitLabel || 'גרם'})
+            <div class="muted" style="font-size:11px">🔥 ${Math.round(item.kcal)} קק״ל</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button class="secondary" style="font-size:10px;padding:3px 6px" onclick="editIntake('${d}', ${itemIdx})">✏️ ערוך</button>
+            <button class="secondary" style="font-size:10px;padding:3px 6px" onclick="removeIntake('${d}', ${itemIdx})">🗑️ מחק</button>
+          </div>
         </div>
       `).join('') : '<div class="muted" style="font-size:12px;padding:4px 0">לא נרשמו פריטים ביום זה.</div>';
 
@@ -1640,7 +1648,7 @@ function renderMonth(){
         <details style="margin:8px 0;background:var(--bg-app);padding:10px;border-radius:12px;border:1px solid var(--border-color)">
           <summary style="cursor:pointer;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;outline:none">
             <span>📅 ${formattedDate}</span>
-            <span class="muted" style="font-size:12px">🔥 ${Math.round(dKcal)} / ${dailyTargetKcal} קק״ל (לחץ לפירוט)</span>
+            <span class="muted" style="font-size:12px">🔥 ${Math.round(dKcal)} / ${dailyTargetKcal} קק״ל</span>
           </summary>
           <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border-color)">
             ${itemsListHtml}
@@ -1702,8 +1710,9 @@ function getDefaultMealCategoryByHour() {
   return '';
 }
 
-function openAdd(preSelectProductIndex = null){
-  window.editingIntakeIndex=null;
+function openAdd(preSelectProductIndex = null, targetDateOverride = null){
+  window.editingIntakeIndex = null;
+  window.editingIntakeDate = null;
   addModalTitle.textContent='הוספת צריכה';
   addIntakeBtn.textContent='הוסף לצריכה';
   lockPageScroll();
@@ -1713,6 +1722,8 @@ function openAdd(preSelectProductIndex = null){
   unitSelect.value='unit';
   foodSearch.value='';
   
+  targetDateInput.value = targetDateOverride || todayKey();
+
   const autoMeal = getDefaultMealCategoryByHour();
   if(autoMeal) {
     mealCategorySelect.value = autoMeal;
@@ -1766,6 +1777,7 @@ function closeModal(){
  document.querySelectorAll('.modal').forEach(x=>x.classList.remove('open'));
  unlockPageScroll();
  window.editingIntakeIndex=null;
+ window.editingIntakeDate=null;
 }
 
 let onlineSearchTimeout = null;
@@ -1939,6 +1951,7 @@ function addIntake(keepOpen = false){
  let a = Number(grams.value);
  let productName = foodSearch.value.trim();
  let mealCat = mealCategorySelect.value || 'lunch';
+ let targetDate = targetDateInput.value || todayKey();
  
  if(!selected) {
    const qKcal = Number(document.getElementById('quickKcal').value);
@@ -1980,17 +1993,24 @@ function addIntake(keepOpen = false){
    fat: r.fat
  };
  
- if(window.editingIntakeIndex !== null && window.editingIntakeIndex !== undefined) {
-   db.intake[todayKey()][window.editingIntakeIndex] = item;
+ if(window.editingIntakeIndex !== null && window.editingIntakeIndex !== undefined && window.editingIntakeDate) {
+   // אם החלפנו תאריך בעריכה, נוודא שמוחקים מהתאריך הישן ומעבירים לחדש
+   if(window.editingIntakeDate !== targetDate) {
+     db.intake[window.editingIntakeDate].splice(window.editingIntakeIndex, 1);
+     if(db.intake[window.editingIntakeDate].length === 0) delete db.intake[window.editingIntakeDate];
+     (db.intake[targetDate] ??= []).push(item);
+   } else {
+     db.intake[targetDate][window.editingIntakeIndex] = item;
+   }
  } else {
-   (db.intake[todayKey()] ??= []).push(item);
+   (db.intake[targetDate] ??= []).push(item);
  }
  
  save();
  renderToday();
+ renderMonth();
 
  if(keepOpen) {
-   // איפוס שדות ההוספה מבלי לסגור את החלון
    selected = null;
    grams.value = '1';
    foodSearch.value = '';
@@ -2007,12 +2027,47 @@ function addIntake(keepOpen = false){
  }
 }
 
-function editIntake(i){
- let x=today()[i],idx=db.products.findIndex(p=>p.name===x.name);if(!x||idx<0)return alert('המוצר לא נמצא.');
- window.editingIntakeIndex=i;addModalTitle.textContent='עריכת צריכה';addIntakeBtn.textContent='שמור שינוי';lockPageScroll();addModal.classList.add('open');selectFood(idx);unitSelect.value=x.unit||'unit';grams.value=x.amount||'1';mealCategorySelect.value=x.meal||'lunch';updateIntakePreview();
+function editIntake(dateStr, i){
+ let dayArray = db.intake[dateStr];
+ if(!dayArray || !dayArray[i]) return alert('הפריט לא נמצא.');
+ let x = dayArray[i];
+ let idx = db.products.findIndex(p => p.name === x.name);
+ 
+ window.editingIntakeIndex = i;
+ window.editingIntakeDate = dateStr;
+ 
+ addModalTitle.textContent = 'עריכת צריכה (' + dateStr + ')';
+ addIntakeBtn.textContent = 'שמור שינוי';
+ lockPageScroll();
+ addModal.classList.add('open');
+ 
+ if(idx >= 0) {
+   selectFood(idx);
+ } else {
+   foodSearch.value = x.name;
+   selected = { name: x.name, kcal: x.kcal / (x.amount / 100), unit_g: 100 };
+ }
+ 
+ targetDateInput.value = dateStr;
+ unitSelect.value = x.unit || 'unit';
+ grams.value = x.amount || '1';
+ mealCategorySelect.value = x.meal || 'lunch';
+ updateIntakePreview();
 }
 
-function removeIntake(i){if(!today()[i])return;if(!confirm('למחוק את הצריכה הזו?'))return;today().splice(i,1);save();renderToday()}
+function removeIntake(dateStr, i){
+ let dayArray = db.intake[dateStr];
+ if(!dayArray || !dayArray[i]) return;
+ if(!confirm('למחוק את הצריכה הזו?')) return;
+ 
+ dayArray.splice(i, 1);
+ if(dayArray.length === 0) {
+   delete db.intake[dateStr];
+ }
+ save();
+ renderToday();
+ renderMonth();
+}
 
 function saveProduct(){
  let p={
@@ -2198,7 +2253,7 @@ async function searchBarcode(code){
      const found = {
        name:p.product_name||'מוצר ללא שם',brand:p.brands||'',barcode:code,
        unit_g:Number(p.product_quantity)||100,
-       kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
+     kcal:n['energy-kcal_100g']||0,protein:n['proteins_100g']||0,carbs:n['carbohydrates_100g']||0,fat:n['fat_100g']||0,
        image:p.image_front_url||'',
        isCustom: !isAdmin,
        updated:new Date().toLocaleDateString('he-IL')
